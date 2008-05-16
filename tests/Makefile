@@ -9,4 +9,4 @@ thread_pool_test:
 	gcc -g -ansi -pedantic -Wall -o  task_pool_test task_pool_test.o task_pool.o log.o xstdlib.o -lpthread
 
 clean:
-	rm -f thread_pool_test *.o
+	rm -f task_pool_test *.o
