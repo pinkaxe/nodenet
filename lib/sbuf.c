@@ -78,10 +78,11 @@ char *sbuf_find(const char *buf, const char *str)
 	while(*s){
 		ss = s;
 		needle = str; 
-		while(*s && *s++ == *needle++)
-			;
-		needle--;
-		if(*needle == '\0'){
+		while(*s++ == *needle){
+			if(!*needle) break;
+			needle++;
+		}
+		if(!*needle){
 			return (char *)ss;
 		}
 	}		
@@ -107,12 +108,10 @@ int sbuf_replace(struct sbuf *b, const char *old, const char *new, int num)
 			buf = match + newl;
 		}
 	}else{
-		char *newstartp, *oldstart, *oldstartp;
-		char *oldend;
-		size_t oldsize;
+		char *oldstart, *oldstartp, *oldend;
+		size_t oldsize, offset = 0;
 
-		oldstartp = b->start;
-		oldstart = b->start;
+		oldstart = oldstartp = b->start;
 		oldend =  b->end;
 		oldsize = b->size;
 
@@ -120,9 +119,6 @@ int sbuf_replace(struct sbuf *b, const char *old, const char *new, int num)
 			b->start = oldstart;
 			return -1;
 		}
-		newstartp = b->start;
-		b->end = b->start;
-
 
 		for(i=0; i < num; i++){
 
@@ -130,18 +126,16 @@ int sbuf_replace(struct sbuf *b, const char *old, const char *new, int num)
 				break;
 			}
 
-			memcpy(newstartp, oldstartp, match - oldstartp);
-			newstartp += match - oldstartp;
-			b->end += match - oldstartp;
+			memcpy(b->start + offset, oldstartp, match - oldstartp);
+			offset += match - oldstartp;
 			oldstartp += match - oldstartp;
 
 			if(ldiff > 0){
-				sbuf_grow(b, b->size + ldiff);
 				b->size += ldiff;
+				sbuf_grow(b, b->size);
 			}
-			memcpy(newstartp, new, newl);
-			newstartp += newl;
-			b->end += newl;
+			memcpy(b->start + offset, new, newl);
+			offset += newl;
 			oldstartp += oldl;
 
 			res++;
@@ -149,6 +143,7 @@ int sbuf_replace(struct sbuf *b, const char *old, const char *new, int num)
 
 		if(res){
 			free(oldstart);
+			b->end = b->start + offset;
 			*b->end = '\0';
 		}else{
 			free(b->start);
@@ -157,38 +152,6 @@ int sbuf_replace(struct sbuf *b, const char *old, const char *new, int num)
 			b->size = oldsize;
 		}
 
-	}
-	return res;
-}
-
-int xsbuf_replace(struct sbuf *b, const char *old, const char *new, int num)
-{
-	int i, res = 0;
-	size_t need;
-	char *match;
-	char *buf = b->start;
-	size_t newl = strlen(new);
-	size_t oldl = strlen(old);
-	int ldiff = newl - oldl;
-
-	for(i=0; i < num; i++){
-		if(!(match = sbuf_find(buf, old))){
-			break;
-		}
-		res++;
-		if(ldiff != 0){
-			need = b->end - b->start + ldiff;
-			sbuf_grow(b, need);
-			if(!(match = sbuf_find(buf, old))){
-				break;
-			}
-			printf("len: %d\n", b->end - (match + oldl));
-			memmove(match + newl, match + oldl, b->end - (match +
-						oldl));
-			b->end += ldiff; 
-		}
-		memcpy(match, new, newl);
-		buf = match + newl;
 	}
 	return res;
 }
