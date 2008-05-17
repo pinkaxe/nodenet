@@ -73,17 +73,17 @@ char *sbuf_find(const char *buf, const char *str)
 {
 	const char *needle = str;
 	const char *s = buf;
-	const char *ss; /* saved start of match */
+	const char *start; /* saved start of match */
 
 	while(*s){
-		ss = s;
+		start = s;
 		needle = str; 
 		while(*s++ == *needle){
 			if(!*needle) break;
 			needle++;
 		}
 		if(!*needle){
-			return (char *)ss;
+			return (char *)start;
 		}
 	}		
 	return NULL;
@@ -110,6 +110,7 @@ int sbuf_replace(struct sbuf *b, const char *old, const char *new, int num)
 	}else{
 		char *oldstart, *oldstartp, *oldend;
 		size_t oldsize, offset = 0;
+		size_t dupl; /* duplicate length to just copy over */
 
 		oldstart = oldstartp = b->start;
 		oldend =  b->end;
@@ -126,18 +127,19 @@ int sbuf_replace(struct sbuf *b, const char *old, const char *new, int num)
 				break;
 			}
 
-			memcpy(b->start + offset, oldstartp, match - oldstartp);
-			offset += match - oldstartp;
-			oldstartp += match - oldstartp;
-
 			if(ldiff > 0){
 				b->size += ldiff;
 				sbuf_grow(b, b->size);
 			}
+
+			dupl = match - oldstartp;
+			memcpy(b->start + offset, oldstartp, dupl);
+			offset += dupl;
+			oldstartp = match;
+
 			memcpy(b->start + offset, new, newl);
 			offset += newl;
 			oldstartp += oldl;
-
 			res++;
 		}
 
