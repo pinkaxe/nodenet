@@ -2,6 +2,8 @@
 #include<stddef.h>
 #include<stdlib.h>
 #include<string.h>
+#include<stdio.h>
+#include<stdarg.h>
 
 #include "sbuf.h"
 #include "xstdlib.h"
@@ -49,11 +51,12 @@ int sbuf_grow(struct sbuf *b, size_t size)
 }
 
 
-int sbuf_append(struct sbuf *b, const char *buf, size_t len)
+			
+static int insert(struct sbuf *b, size_t pos, const char *buf)
 {
-	size_t need; 
+	size_t need, len; 
 
-	if(!len) len = strlen(buf);
+	len = strlen(buf);
 	need = b->end - b->start + len + 1;
 
 	if(need > len){
@@ -62,12 +65,57 @@ int sbuf_append(struct sbuf *b, const char *buf, size_t len)
 		}
 	}
 
-	strcpy(b->end, buf);
+	memmove(b->start + pos + len, b->start + pos, 
+			b->end - b->start - pos);
+	memcpy(b->start + pos, buf, len);
 	b->end += len;
+	*b->end = '\0';
 
 	return 0;
 }
-			
+
+int sbuf_insert(struct sbuf *b, size_t pos, const char *fmt, ...)
+{
+	int res;
+	va_list args;
+	char *buf;
+
+	va_start(args, fmt);
+
+	if(vasprintf(&buf, fmt, args) == -1){
+		return -1;
+	}
+
+	res = insert(b, pos, buf);
+
+	free(buf);
+
+	return res;
+}
+
+int sbuf_append(struct sbuf *b, const char *fmt, ...)
+{
+	int res;
+	va_list args;
+	size_t pos;
+	char *buf;
+
+	va_start(args, fmt);
+
+	if(vasprintf(&buf, fmt, args) == -1){
+		return -1;
+	}
+
+	pos = b->end - b->start;
+
+	res = insert(b, pos, buf);
+
+	free(buf);
+
+	return res;
+}
+
+
 
 char *sbuf_find(const char *buf, const char *str)
 {
