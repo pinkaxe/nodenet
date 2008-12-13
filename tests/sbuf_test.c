@@ -2,9 +2,8 @@
 #include<stdarg.h>
 #include<string.h>
 
-#include "util/sbuf.h"
 #include "util/log.h"
-
+#include "util/sbuf.h"
 int main(int argc, char **argv)
 {
 	int e;
@@ -12,11 +11,11 @@ int main(int argc, char **argv)
 	struct sbuf *b, *b2;
 	for(;;){
 		if(!(b = sbuf_init(0, &e))){
-			log1(err, "sbuf_init failed: %d", e);
+			log1(LERR, "sbuf_init failed: %d", e);
 		}
 
 		if(!(b2 = sbuf_init(128, &e))){
-			log1(err, "sbuf_init failed: %d", e);
+			log1(LERR, "sbuf_init failed: %d", e);
 		}
 
 		for(i=0; i < 100; i++){
