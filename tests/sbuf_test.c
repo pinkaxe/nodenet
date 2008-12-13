@@ -2,8 +2,8 @@
 #include<stdarg.h>
 #include<string.h>
 
-#include "sbuf.h"
-#include "log.h"
+#include "util/sbuf.h"
+#include "util/log.h"
 
 int main(int argc, char **argv)
 {
