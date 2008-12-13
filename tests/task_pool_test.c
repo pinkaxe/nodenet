@@ -9,7 +9,7 @@
 #include<signal.h>
 #include<getopt.h>
 
-#include "lib/task_pool.h"
+#include "task_pool.h"
 
 
 void *worker_task(void *arg)

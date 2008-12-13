@@ -2,15 +2,23 @@
 #include<stdarg.h>
 #include<string.h>
 
-#include "../lib/sbuf.h"
+#include "sbuf.h"
+#include "log.h"
 
 int main(int argc, char **argv)
 {
+	int e;
 	int i;
 	struct sbuf *b, *b2;
 	for(;;){
-		b = sbuf_init(0);
-		b2 = sbuf_init(128);
+		if(!(b = sbuf_init(0, &e))){
+			log1(err, "sbuf_init failed: %d", e);
+		}
+
+		if(!(b2 = sbuf_init(128, &e))){
+			log1(err, "sbuf_init failed: %d", e);
+		}
+
 		for(i=0; i < 100; i++){
 			sbuf_append(b, "love");
 			sbuf_append(b, "ya");

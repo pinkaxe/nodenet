@@ -16,17 +16,19 @@ struct sbuf {
 
 
 
-struct sbuf *sbuf_init(size_t size)
+struct sbuf *sbuf_init(size_t size, int *e)
 {
 	struct sbuf *b;
 
 	if(!(b = malloc(sizeof *b))){
+		*e = -1;
 		return NULL;
 	}
 
 	if(!size) size = 1;
 	if(!(b->start = malloc(size))){
 		free(b);
+		*e = -1;
 		return NULL;
 	}
 

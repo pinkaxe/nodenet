@@ -8,6 +8,12 @@ typedef pthread_mutex_t mutex_t;
 typedef	pthread_cond_t cond_t;	
 
 
+#ifdef NDEBUG
+
+#define dbg_thread(call) call
+
+#else
+
 #define dbg_thread(call) \
 { \
 	int ret; \
@@ -16,6 +22,8 @@ typedef	pthread_cond_t cond_t;
 			#call, strerror(ret)); \
 	} \
 }
+
+#endif
 
 #define mutex_init(mutex, data) \
 	dbg_thread(pthread_mutex_init(mutex, data))
