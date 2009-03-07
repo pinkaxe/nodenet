@@ -47,57 +47,6 @@ int *upper(void *arg, void **res)
 	return NULL;
 }
 
-/*
-#define MAP(type, from, to, func) \
-int #type#_map(){ \
-	while(*fromi){ \
-		func(*fromi++, toi++); \
-	}		\
-	*toi = NULL; \
-} while(0); 
-*/
-
-/*
-int map(void **elems, void **res, int *(*func)(void *arg, void **res))
-{
-	while(*elems){
-		func(*elems++, res++);
-	}			
-	*res = NULL;
-	return 0;
-}
-
-#define MAP(from, to, func) \
-	map((void **)from, (void **)to, func);
-
-struct test_map1 {
-}
-
-int test_map1(void){
-*/
-
-int xmain(int argc, char **argv)
-{
-
-	/*struct thread_pool *tpoolh;*/
-	char *testval[] = {"one", "two bla bla fla", "more bla bla bal", "@!#!@!@ cla", NULL};
-	char *testres[sizeof testval], **testrespp;
-	/*int res;*/
-	
-	testrespp = testres;
-
-	/*MAP(char, testval, testres, upper);*/
-
-	/*map((void **)testval, testres, (void **)upper);*/
-	
-
-	/*res = map(testval, testres, upper);*/
-
-	while(*testrespp){
-		printf("%s\n", *testrespp++);
-	}
-	return EXIT_SUCCESS;
-}
 
 int main(int argc, char **argv)
 {

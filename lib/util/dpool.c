@@ -10,15 +10,15 @@
 #include "util/dpool.h"
 
 struct dpool{
-    int bufsize;
-    int max_no;
+    size_t bufsize;
+    size_t max_no;
     struct dpool_buf **bufs;
     struct bitmap *bitmap;
 };
 
-struct dpool *dpool_create(int bufsize, int max_no, int opt)
+struct dpool *dpool_create(size_t bufsize, size_t max_no, int opt)
 {
-    int err;
+    int i;
     struct dpool *h = NULL;
 
     h = calloc(1, sizeof(struct dpool));
@@ -43,8 +43,7 @@ struct dpool *dpool_create(int bufsize, int max_no, int opt)
     }
 
     //if(opt & DPOOL_OPT_ALLOC){
-        int i;
-        for(i=0; i < h->max_no; i++){
+        for(i=0; i < (int)h->max_no; i++){
             h->bufs[i] = malloc(sizeof(struct dpool_buf));
             if(!h->bufs[i]){
                 dpool_free(h);
@@ -67,7 +66,7 @@ err:
 void dpool_free(struct dpool *h)
 {
     int i;
-    for(i=0; i < h->max_no; i++){
+    for(i=0; i < (int) h->max_no; i++){
         free(h->bufs[i]->data);
         free(h->bufs[i]);
     }
@@ -111,37 +110,3 @@ int dpool_ret_buf(struct dpool *h, struct dpool_buf *buf)
     return bitmap_ret_bit(h->bitmap, buf->id);
 }
 
-
-#if 0
-#include<errno.h>
-
-
-static struct buf *_get_free_buf(struct dpool *h) 
-{
-    struct buf *buf;
-    int i;
-    for(i = 0; i < 64; i++){
-        if((h->bitmap >> i) & 1){
-           buf =  
-        }
-    }
-
-}
-
-
-void *dpool_get_buf(struct dpool *h)
-{
-    if(get_free_buf()){
-    }
-    if(ll_get_size(h->ll) > h->max_no){
-        errno = -ENONEAVAIL;
-        goto err;
-    }
-
-err:
-}
-
-int dpool_ret_buf()
-{
-}
-#endif

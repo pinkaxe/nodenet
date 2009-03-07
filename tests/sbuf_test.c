@@ -9,6 +9,7 @@ int main(int argc, char **argv)
 	int e;
 	int i;
 	struct sbuf *b, *b2;
+
 	for(;;){
 		if(!(b = sbuf_init(0, &e))){
 			log1(LERR, "sbuf_init failed: %d", e);
@@ -18,17 +19,20 @@ int main(int argc, char **argv)
 			log1(LERR, "sbuf_init failed: %d", e);
 		}
 
+
 		for(i=0; i < 100; i++){
 			sbuf_append(b, "love");
 			sbuf_append(b, "ya");
 			sbuf_append(b, "free ");
 		}
+
 		for(i=0; i < 100; i++){
 			sbuf_append(b2, "1");
 			sbuf_append(b2, "22");
 			sbuf_append(b2, "333");
 		}
 
+		printf("find: %p\n", sbuf_find("I am free", "I am"));
 		printf("find: %p\n", sbuf_find("I am free", "I am"));
 		printf("find: %p\n", sbuf_find("I am free", "free"));
 		printf("find: %p\n", sbuf_find("I am free", "bla"));

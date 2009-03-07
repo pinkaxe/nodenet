@@ -14,7 +14,7 @@ enum {
     ENONEAVAIL = 0xFF
 }ERRNUM;
 
-struct dpool *dpool_create(int bufsize, int max_no, int opt);
+struct dpool *dpool_create(size_t bufsize, size_t max_no, int opt);
 void dpool_free(struct dpool *h);
 
 struct dpool_buf *dpool_get_buf(struct dpool *h);

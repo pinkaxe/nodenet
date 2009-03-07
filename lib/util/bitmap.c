@@ -5,15 +5,15 @@
 #include<stdbool.h>
 
 struct bitmap {
-    int bytes_no;
-    uint8_t *map;
+    size_t bytes_no;
+    unsigned int *map;
 };
 
 
-struct bitmap *bitmap_create(int bits)
+struct bitmap *bitmap_create(size_t bits)
 {
     struct bitmap *h;
-    int bytes_no;   
+    size_t bytes_no;   
 
     h = malloc(sizeof(struct bitmap));
     if(!h){
@@ -22,7 +22,7 @@ struct bitmap *bitmap_create(int bits)
     
     h->bytes_no = bits / 8;
 
-    h->map = calloc(bytes_no, sizeof(uint8_t));
+    h->map = calloc(bytes_no, sizeof(unsigned int));
     if(!h->map){
         goto err;  
     }
@@ -120,7 +120,7 @@ void bitmap_print(struct bitmap *h)
 {
     int i;
 
-    for(i=0; i < h->bytes_no; i++){
+    for(i=0; i < (int) h->bytes_no; i++){
         printf("byte no %d: %x\n", i, h->map[i]);
     }
 
