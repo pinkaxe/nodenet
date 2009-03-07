@@ -13,4 +13,6 @@ libutil_la_SOURCES = \
 	ll.c \
 	ll.h \
 	bitmap.c \
-	bitmap.h 
+	bitmap.h \
+	dpool.c \
+	dpool.h 

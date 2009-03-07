@@ -45,7 +45,8 @@ void bitmap_free(struct bitmap *h)
 
 int bitmap_get_bit(struct bitmap *h, int start, int offset)
 {
-    int i, byte_no, bit_offset;
+    int r, i, byte_no, bit_offset;
+    bool found = false;
 
     byte_no = start / 8;
     bit_offset = start % 8;
@@ -55,6 +56,7 @@ int bitmap_get_bit(struct bitmap *h, int start, int offset)
         if((h->map[byte_no] & (1 << i)) == 0){
             /* set to one */
            h->map[byte_no] |= (1 << i);
+           found = true;
            break;
         }
 
@@ -65,7 +67,13 @@ int bitmap_get_bit(struct bitmap *h, int start, int offset)
         }
     }
 
-    return i;
+    if(!found){
+        r = -1;
+    }else{
+        r = (byte_no * 8) + i;
+    }
+
+    return r;
 }
 
 
