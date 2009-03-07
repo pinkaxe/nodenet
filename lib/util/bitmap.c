@@ -13,7 +13,6 @@ struct bitmap {
 struct bitmap *bitmap_create(size_t bits)
 {
     struct bitmap *h;
-    size_t bytes_no;   
 
     h = malloc(sizeof(struct bitmap));
     if(!h){
@@ -22,7 +21,7 @@ struct bitmap *bitmap_create(size_t bits)
     
     h->bytes_no = bits / 8;
 
-    h->map = calloc(bytes_no, sizeof(unsigned int));
+    h->map = calloc(h->bytes_no, sizeof(unsigned int));
     if(!h->map){
         goto err;  
     }
