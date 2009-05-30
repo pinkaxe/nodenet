@@ -13,6 +13,7 @@ AC_CONFIG_FILES([Makefile
 		lib/arch/Makefile
 		lib/wrap/Makefile
 		lib/util/Makefile
+		lib/db/Makefile
 		tests/Makefile
             ])
 

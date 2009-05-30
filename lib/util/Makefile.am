@@ -1,5 +1,6 @@
 
 lib_LTLIBRARIES = libutil.la
+
 libutil_la_SOURCES = \
 	debug.h \
 	log.c \
@@ -16,3 +17,5 @@ libutil_la_SOURCES = \
 	bitmap.h \
 	dpool.c \
 	dpool.h 
+
+libutil_la_LIBADD =

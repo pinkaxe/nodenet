@@ -1,3 +1,3 @@
 
 
-SUBDIRS = arch wrap util
+SUBDIRS = arch wrap util db
