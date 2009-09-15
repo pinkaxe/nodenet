@@ -105,6 +105,24 @@ struct dpool_buf *dpool_get_buf(struct dpool *h)
 
 }
 
+struct dpool_buf *dpool_get_filled_buf(struct dpool *h)
+{
+    void *buf = NULL;
+    int n;
+    
+    /* get the number of a free buf */
+    n = bitmap_get_bit(h->bitmap, 0, 4);
+    if(n == -1){
+        errno = -ENONEAVAIL;
+    }else{
+        /* return the free buf */
+        buf = h->bufs[n];
+    }
+
+    return buf;
+
+}
+
 int dpool_ret_buf(struct dpool *h, struct dpool_buf *buf)
 {
     return bitmap_ret_bit(h->bitmap, buf->id);

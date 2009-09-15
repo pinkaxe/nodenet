@@ -2,12 +2,16 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <stdint.h>
 
 #include "arch/thread.h"
 #include "util/dpool.h"
 #include "util/log.h"
 
 #include "code_net/code.h"
+
+#define MAX_LINKS   4
 
 /*
 void *code_t_thread_thread(void *arg)
@@ -22,21 +26,29 @@ typedef struct code_elem {
     code_t type;
     void *code;
 
+    mutex_t mutex;
+    cond_t cond;
+
     /*
     unsigned int in_buf_size;
     void *in_buf;
 
     unsigned int out_buf_size;
     void *out_buf;
+    */
 
     unsigned int out_code_no;
-    struct code *next[4];
-    */
+    struct code_elem *links[MAX_LINKS];
+
+    int signals_in;
+    
+    int in_buf_no;
+    int out_buf_no;
 
 } code_elem_t;
 
 typedef struct code_net {
-    struct code *root;
+    struct code_elem *root;
 } code_net_t;
 
 
@@ -52,16 +64,82 @@ code_elem_t *code_create(code_t type, void *code)
 
     h->type = type;
     h->code = code;
+    memset(h->links, 0x00, sizeof(h->links));
+
+    h->signals_in = 0;
+    mutex_init(&h->mutex, NULL);
+    cond_init(&h->cond, NULL);
 
 err:
     return h;
 }
 
-void *start_thread(void *arg)
+int code_link(struct code_elem *e0, struct code_elem *e1)
+{
+    int i;
+
+    for(i=0; i < MAX_LINKS; i++){
+        if(!e0->links[i]){
+            e0->links[i] = e1;
+            break;
+        }
+    }
+    if(i == MAX_LINKS){
+    }
+
+    for(i=0; i < MAX_LINKS; i++){
+        if(!e1->links[i]){
+            e1->links[i] = e0;
+            break;
+        }
+    }
+    if(i == MAX_LINKS){
+    }
+
+    return 0;
+}
+
+int code_unlink(struct code_elem *e0, struct code_elem *e1)
+{
+}
+
+int code_out_avail(struct code_elem *e, int type, unsigned char *buf, int len) // TYPE = all, one, specific ones
+{
+    int i;
+    struct code_elem *signal;
+
+    for(i=0; i < MAX_LINKS; i++){
+        /* signal all */
+        printf("loop %p\n", e->links[i]);
+
+        if((signal=e->links[i])){
+            signal->signals_in++;
+            printf("send sig\n");
+            // threads
+            cond_signal(&signal->cond);
+            // process
+            // send signal on control channel
+        }
+    }
+}
+
+int code_wait(struct code_elem *e)
+{
+    while(e->signals_in < 1){
+        cond_wait(&e->cond, &e->mutex);
+    }
+    e->signals_in--;
+    printf("Got sig\n");
+}
+
+void *run_thread(void *arg)
 {
     code_elem_t *h = arg;
-    void (*func)() = h->code;
-    func();
+    void (*func)(code_elem_t *h) = h->code;
+
+    for(;;){
+        func(h);
+    }
     return NULL;
 }
 
@@ -69,8 +147,7 @@ int code_run(code_elem_t *h)
 {
     //if(h->type == code_t_thread){
         thread_t tid;
-        //void *(*thread_func)() = h->code;
-        thread_create(&tid, NULL, start_thread, h);
+        thread_create(&tid, NULL, run_thread, h);
    // }
 }
 

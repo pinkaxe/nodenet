@@ -18,6 +18,7 @@ struct dpool *dpool_create(size_t bufsize, size_t max_no, int opt);
 void dpool_free(struct dpool *h);
 
 struct dpool_buf *dpool_get_buf(struct dpool *h);
+struct dpool_buf *dpool_get_filled_buf(struct dpool *h);
 int dpool_ret_buf(struct dpool *h, struct dpool_buf *buf);
 
 #endif

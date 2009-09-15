@@ -16,6 +16,6 @@ libutil_la_SOURCES = \
 	bitmap.c \
 	bitmap.h \
 	dpool.c \
-	dpool.h 
+	dpool.h
 
 libutil_la_LIBADD =
