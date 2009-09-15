@@ -1,11 +1,11 @@
 
 AC_INIT([myproj], [0.0.0], [])
-AC_PREREQ([2.61])
+#AC_PREREQ([2.61])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CC
 AC_PROG_LD
-#AC_PROG_RANLIB
 AC_PROG_LIBTOOL
+#AC_PROG_RANLIB
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile
@@ -14,6 +14,7 @@ AC_CONFIG_FILES([Makefile
 		lib/wrap/Makefile
 		lib/util/Makefile
 		lib/db/Makefile
+		lib/code_net/Makefile
 		tests/Makefile
             ])
 

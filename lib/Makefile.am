@@ -1,3 +1,3 @@
 
 
-SUBDIRS = arch wrap util db
+SUBDIRS = arch wrap util db code_net
