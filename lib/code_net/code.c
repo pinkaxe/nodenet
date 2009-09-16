@@ -14,36 +14,16 @@
 
 #define MAX_LINKS   4
 
-/*
-void *code_t_thread_thread(void *arg)
+struct code_elem
 {
-    // Get stuff from arg
-    func(in_buf, in_buf_len, out_buf, out_buf_len);
-}
-*/
-
-typedef struct code_elem {
-
     code_t type;
-    void *code;
-    void *pdata;
+    void *code;  /* pointer to object depending on type */
 
-    mutex_t mutex;
-    cond_t cond;
+    code_elem_t *links[MAX_LINKS]; /* links to other code_elem's */
+    struct cybuf *in_bufs;         /* place to add and get bufs */
 
-    unsigned int out_code_no;
-    struct code_elem *links[MAX_LINKS];
-
-    int signals_in;
-
-    struct cybuf *in_bufs;
-
-} code_elem_t;
-
-typedef struct code_net {
-    struct code_elem *root;
-} code_net_t;
-
+    void *pdata; /* private data*/
+};
 
 
 code_elem_t *code_create(code_t type, void *code, void *pdata)
@@ -62,24 +42,25 @@ code_elem_t *code_create(code_t type, void *code, void *pdata)
 
     memset(h->links, 0x00, sizeof(h->links));
 
-    h->signals_in = 0;
     h->in_bufs = cybuf_init(8);
-    //if(!h->in_bufs){
-
-    mutex_init(&h->mutex, NULL);
-    cond_init(&h->cond, NULL);
+    if(!h->in_bufs){
+        printf("goto err\n");
+        goto err;
+    }
 
 err:
     return h;
 }
 
-int code_link(struct code_elem *e0, struct code_elem *e1)
+//code_free();
+
+int code_link(code_elem_t *from, code_elem_t *to)
 {
     int i;
 
     for(i=0; i < MAX_LINKS; i++){
-        if(!e0->links[i]){
-            e0->links[i] = e1;
+        if(!from->links[i]){
+            from->links[i] = to;
             break;
         }
     }
@@ -89,41 +70,27 @@ int code_link(struct code_elem *e0, struct code_elem *e1)
     return 0;
 }
 
-int code_unlink(struct code_elem *e0, struct code_elem *e1)
+int code_unlink(code_elem_t *from, code_elem_t *to)
 {
 }
 
-int code_out_avail(struct code_elem *e, int type, void *buf, int len) // TYPE = all, one, specific ones
+int code_out_avail(code_elem_t *e, int type, void *buf, int len) // TYPE = all, one, specific ones
 {
     int i;
-    struct code_elem *signal;
+    code_elem_t *to;
 
     for(i=0; i < MAX_LINKS; i++){
         /* signal all */
         printf("loop %p\n", e->links[i]);
 
-        if((signal=e->links[i])){
-            signal->signals_in++;
-            cybuf_add(signal->in_bufs, buf);
+        if((to=e->links[i])){
+            cybuf_add(to->in_bufs, buf);
             printf("send sig\n");
-            // threads
-            cond_signal(&signal->cond);
-            // process
-            // send signal on control channel
         }
     }
 }
 
-int code_wait(struct code_elem *e)
-{
-    while(e->signals_in < 1){
-        cond_wait(&e->cond, &e->mutex);
-    }
-    e->signals_in--;
-    printf("Got sig\n");
-}
-
-void *run_thread(void *arg)
+void *code_run_thread(void *arg)
 {
     void *buf = NULL;
     code_elem_t *h = arg;
@@ -131,31 +98,30 @@ void *run_thread(void *arg)
 
     for(;;){
         if(!(h->type & CODE_NO_INPUT)){
-            code_wait(h);
-            buf = cybuf_get(h->in_bufs);
+            buf = cybuf_get(h->in_bufs, 0);
         }
 
-        // pass buffer
+        /* call user function */
         func(h, buf, 1, h->pdata);
     }
 
     return NULL;
 }
 
-void *run_bin(void *arg)
+void *code_run_bin(void *arg)
 {
     code_elem_t *h = arg;
     char *filename = h->code;
 
     for(;;){
-        code_wait(h);
+        //code_wait(h);
         // exe filename giving input buffer as input
     }
 
     return NULL;
 }
 
-void *run_net(void *arg)
+void *code_run_net(void *arg)
 {
     // setup control channel
     //
@@ -169,19 +135,15 @@ int code_run(code_elem_t *h)
 {
     if(h->type & code_t_thread){
         thread_t tid;
-        thread_create(&tid, NULL, run_thread, h);
+        thread_create(&tid, NULL, code_run_thread, h);
     }else if(h->type & code_t_bin){
         thread_t tid;
-        thread_create(&tid, NULL, run_bin, h);
+        thread_create(&tid, NULL, code_run_bin, h);
     }
 }
 
 
 /*
-code_free();
-code_link(net, in, out, int out_buf_size, )
-code_unlink(net, in, out, int out_buf_size, )
-
 
 int code_net_set_ev_cb()
 {

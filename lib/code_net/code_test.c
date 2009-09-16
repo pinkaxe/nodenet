@@ -23,6 +23,9 @@ int in_code(struct code_elem *h, void *buf, int len, void *pdata)
     char *str = b->data;
     str[0] = c;
     code_out_avail(h, 0, b, 1);
+   // code_sendto_all()
+   // code_sendto_all_but_in()
+   // code_sendto_no(int no, ids..)
 }
 
 int in_code2(struct code_elem *h, void *buf, int len, void *pdata)
