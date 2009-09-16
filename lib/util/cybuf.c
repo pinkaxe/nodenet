@@ -73,6 +73,7 @@ void *cybuf_set_get_cb(struct cybuf *h, void (*get_cb)(void *p))
     h->get_cb = get_cb;
 }
 
+/*
 int main(int argc, char **argv)
 {
     int i;
@@ -101,4 +102,5 @@ int main(int argc, char **argv)
 
     return 0;
 }
+*/
 
