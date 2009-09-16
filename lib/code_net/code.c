@@ -8,6 +8,7 @@
 #include "arch/thread.h"
 #include "util/dpool.h"
 #include "util/log.h"
+#include "util/cybuf.h"
 
 #include "code_net/code.h"
 
@@ -25,25 +26,17 @@ typedef struct code_elem {
 
     code_t type;
     void *code;
+    void *pdata;
 
     mutex_t mutex;
     cond_t cond;
-
-    /*
-    unsigned int in_buf_size;
-    void *in_buf;
-
-    unsigned int out_buf_size;
-    void *out_buf;
-    */
 
     unsigned int out_code_no;
     struct code_elem *links[MAX_LINKS];
 
     int signals_in;
-    
-    int in_buf_no;
-    int out_buf_no;
+
+    struct cybuf *in_bufs;
 
 } code_elem_t;
 
@@ -53,8 +46,9 @@ typedef struct code_net {
 
 
 
-code_elem_t *code_create(code_t type, void *code)
+code_elem_t *code_create(code_t type, void *code, void *pdata)
 {
+    printf("crete\n");
     code_elem_t *h;
 
     h = malloc(sizeof(*h));
@@ -64,9 +58,14 @@ code_elem_t *code_create(code_t type, void *code)
 
     h->type = type;
     h->code = code;
+    h->pdata = pdata;
+
     memset(h->links, 0x00, sizeof(h->links));
 
     h->signals_in = 0;
+    h->in_bufs = cybuf_init(8);
+    //if(!h->in_bufs){
+
     mutex_init(&h->mutex, NULL);
     cond_init(&h->cond, NULL);
 
@@ -94,7 +93,7 @@ int code_unlink(struct code_elem *e0, struct code_elem *e1)
 {
 }
 
-int code_out_avail(struct code_elem *e, int type, unsigned char *buf, int len) // TYPE = all, one, specific ones
+int code_out_avail(struct code_elem *e, int type, void *buf, int len) // TYPE = all, one, specific ones
 {
     int i;
     struct code_elem *signal;
@@ -105,6 +104,7 @@ int code_out_avail(struct code_elem *e, int type, unsigned char *buf, int len) /
 
         if((signal=e->links[i])){
             signal->signals_in++;
+            cybuf_add(signal->in_bufs, buf);
             printf("send sig\n");
             // threads
             cond_signal(&signal->cond);
@@ -125,13 +125,18 @@ int code_wait(struct code_elem *e)
 
 void *run_thread(void *arg)
 {
+    void *buf = NULL;
     code_elem_t *h = arg;
-    void (*func)(code_elem_t *h) = h->code;
+    void (*func)(code_elem_t *h, void *buf, int len, void *pdata) = h->code;
 
     for(;;){
-        //code_wait(h);
-        //!! pass the buffer to func
-        func(h);
+        if(!(h->type & CODE_NO_INPUT)){
+            code_wait(h);
+            buf = cybuf_get(h->in_bufs);
+        }
+
+        // pass buffer
+        func(h, buf, 1, h->pdata);
     }
 
     return NULL;
@@ -162,10 +167,10 @@ void *run_net(void *arg)
 
 int code_run(code_elem_t *h)
 {
-    if(h->type == code_t_thread){
+    if(h->type & code_t_thread){
         thread_t tid;
         thread_create(&tid, NULL, run_thread, h);
-    }else if(h->type == code_t_bin){
+    }else if(h->type & code_t_bin){
         thread_t tid;
         thread_create(&tid, NULL, run_bin, h);
     }
