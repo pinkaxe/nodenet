@@ -5,8 +5,7 @@
 
 typedef enum {
    code_t_thread,
-   code_t_process,
-   code_t_shell,
+   code_t_bin,
 } code_t;
 
 struct code_elem;

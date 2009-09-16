@@ -87,15 +87,6 @@ int code_link(struct code_elem *e0, struct code_elem *e1)
     if(i == MAX_LINKS){
     }
 
-    for(i=0; i < MAX_LINKS; i++){
-        if(!e1->links[i]){
-            e1->links[i] = e0;
-            break;
-        }
-    }
-    if(i == MAX_LINKS){
-    }
-
     return 0;
 }
 
@@ -138,17 +129,46 @@ void *run_thread(void *arg)
     void (*func)(code_elem_t *h) = h->code;
 
     for(;;){
+        //code_wait(h);
+        //!! pass the buffer to func
         func(h);
     }
+
     return NULL;
+}
+
+void *run_bin(void *arg)
+{
+    code_elem_t *h = arg;
+    char *filename = h->code;
+
+    for(;;){
+        code_wait(h);
+        // exe filename giving input buffer as input
+    }
+
+    return NULL;
+}
+
+void *run_net(void *arg)
+{
+    // setup control channel
+    //
+    for(;;){
+        //code_wait(h);
+        // serialize buffer and send
+    }
 }
 
 int code_run(code_elem_t *h)
 {
-    //if(h->type == code_t_thread){
+    if(h->type == code_t_thread){
         thread_t tid;
         thread_create(&tid, NULL, run_thread, h);
-   // }
+    }else if(h->type == code_t_bin){
+        thread_t tid;
+        thread_create(&tid, NULL, run_bin, h);
+    }
 }
 
 
