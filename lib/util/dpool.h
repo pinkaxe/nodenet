@@ -4,6 +4,7 @@
 struct dpool_buf {
     int id;
     void *data;
+    int ref_cnt;
 };
 
 enum dpool_opt {

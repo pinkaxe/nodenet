@@ -14,14 +14,21 @@
 
 #define MAX_LINKS   4
 
+struct comm_buf {
+    void *buf;
+    int len;
+    int ref_count;
+};
+
 struct code_elem
 {
-    code_type_t type;
+    code_type_t type; /* thread, process etc. */
     code_attr_t attr;
     void *code;  /* pointer to object depending on type */
 
     code_elem_t *links[MAX_LINKS]; /* links to other code_elem's */
     struct que *in_bufs;         /* place to add and get bufs */
+    struct que *cmd_bufs;        /* place to add and get cmds */
 
     void *pdata; /* private passthru data*/
 };
@@ -49,7 +56,7 @@ code_elem_t *code_create(code_type_t type, code_attr_t attr, void *code,
         goto err;
     }
 
-    memset(h->links, 0x00, sizeof(h->links)); 
+    memset(h->links, 0x00, sizeof(h->links));
 
 err:
     return h;
@@ -77,35 +84,60 @@ int code_unlink(code_elem_t *from, code_elem_t *to)
 {
 }
 
-int code_out_avail(code_elem_t *e, int type, void *buf, int len)
+int code_out_avail(code_elem_t *e, buf_attr_t attr, void *buf, int len, void
+        (*sending_to_no_cb)(void *buf, int no))
 {
-    int i;
+    int i, c;
     code_elem_t *to;
 
-    for(i=0; i < MAX_LINKS; i++){
-        /* signal all */
-        printf("loop %p\n", e->links[i]);
+    // count first
+    for(c=0,i=0; i < MAX_LINKS; i++){
+        if((e->links[i])){
+            c++;
+        }
+    }
 
-        if((to=e->links[i])){
-            que_add(to->in_bufs, buf);
-            printf("send sig\n");
+    if(c > 0){
+        /* notify upstairs */
+        sending_to_no_cb(buf, c);
+        for(i=0; i < MAX_LINKS; i++){
+            /* signal all */
+            printf("loop %p\n", e->links[i]);
+
+            if((to=e->links[i])){
+                que_add(to->in_bufs, buf);
+                printf("send sig\n");
+            }
         }
     }
 }
 
+
 void *code_run_thread(void *arg)
 {
     void *buf = NULL;
+    void *cmd_buf = NULL;
     code_elem_t *h = arg;
     void (*func)(code_elem_t *h, void *buf, int len, void *pdata) = h->code;
 
     for(;;){
-        if(!(h->attr & CODE_ATTR_NO_INPUT)){
-            buf = que_get(h->in_bufs, 0);
+
+        if((h->attr & CODE_ATTR_NO_INPUT)){
+            /* call user function */
+            func(h, NULL, 0, h->pdata);
+
+        }else{
+            buf = que_get(h->in_bufs, 100);
+            if(buf){
+                /* call user function */
+                func(h, buf, 1, h->pdata);
+            }
         }
 
-        /* call user function */
-        func(h, buf, 1, h->pdata);
+        //cmd_buf = que_get(h->cmd_bufs, 100);
+        //if(cmd_buf){
+        //}
+
     }
 
     return NULL;
@@ -145,6 +177,9 @@ int code_run(code_elem_t *h)
     }
 }
 
+int code_end(code_elem_t *h)
+{
+}
 
 /*
 
@@ -161,73 +196,6 @@ code_net_walk(struct code_net *root)
         code_run();
     }
 }
-
-
-// app 
-
-void *in_code(void *in_buf, int in_buf_size, void *out_buf, int out_code_no)
-{
-    int c;
-
-    for(;;){
-        c = getc(stdin);
-
-        b = get_free_out_buf();
-        b[0] = c;
-        signal;
-    }
-
-}
-
-void *code_upper(void *in_buf, int in_buf_size, void *out_buf, int out_code_no)
-{
-    for(;;){
-        wait_for_input();
-
-        b = get_free_out_buf();
-
-        b[0] = toupper(in_buf[0]);
-        get_free_ret_buf();
-        fill;
-        signal;
-
-    }
-
-}
-
-void *out_code(void *in_buf, int in_buf_size, void *out_buf, int out_code_no)
-{
-    for(;;){
-        wait_for_input();
-        printf;
-    }
-}
-
-
-int main(int argc, char const* argv[])
-{
-    struct code_net;
-    struct code *e0, *e1, *e2;
-
-    e0 = code_create(0, 128, code_t_thread, in_code);
-
-    //e1 = code_create(128, 128, code_t_shell, "test.sh");
-    //code_conn(code_net, e0, e1);
-    e1 = code_create(128, 128, code_t_thread, code_upper);
-    code_link(code_net, e0, e1, buf0, link0_cb);
-
-    e2 = code_create(128, 0, code_t_thread, out_code);
-    cl1 = code_link(code_net, e1, e2, buf1, link1_cb);
-
-    link_snoop(cl1)
-
-    code_net_set_ev_cb();
-
-    code_net_run();
-
-    return 0;
-}
-
 
 */
 

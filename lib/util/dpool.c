@@ -52,6 +52,8 @@ struct dpool *dpool_create(size_t bufsize, size_t max_no, int opt)
 
             h->bufs[i]->id = i;
             h->bufs[i]->data = malloc(h->bufsize);
+            h->bufs[i]->ref_cnt = 1;
+
             if(!h->bufs[i]->data){
                 dpool_free(h);
                 goto err;
@@ -115,6 +117,7 @@ struct dpool_buf *dpool_get_filled_buf(struct dpool *h)
     if(n == -1){
         errno = -ENONEAVAIL;
     }else{
+        h->bufs[n]->ref_cnt = 1;
         /* return the free buf */
         buf = h->bufs[n];
     }
@@ -125,6 +128,10 @@ struct dpool_buf *dpool_get_filled_buf(struct dpool *h)
 
 int dpool_ret_buf(struct dpool *h, struct dpool_buf *buf)
 {
-    return bitmap_ret_bit(h->bitmap, buf->id);
+    if(buf->ref_cnt <= 1){
+        return bitmap_ret_bit(h->bitmap, buf->id);
+    }else{
+        buf->ref_cnt--;
+    }
 }
 
