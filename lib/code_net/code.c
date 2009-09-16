@@ -16,17 +16,19 @@
 
 struct code_elem
 {
-    code_t type;
+    code_type_t type;
+    code_attr_t attr;
     void *code;  /* pointer to object depending on type */
 
     code_elem_t *links[MAX_LINKS]; /* links to other code_elem's */
     struct que *in_bufs;         /* place to add and get bufs */
 
-    void *pdata; /* private data*/
+    void *pdata; /* private passthru data*/
 };
 
 
-code_elem_t *code_create(code_t type, void *code, void *pdata)
+code_elem_t *code_create(code_type_t type, code_attr_t attr, void *code,
+        void *pdata)
 {
     printf("crete\n");
     code_elem_t *h;
@@ -37,15 +39,17 @@ code_elem_t *code_create(code_t type, void *code, void *pdata)
     }
 
     h->type = type;
+    h->attr = attr;
     h->code = code;
     h->pdata = pdata;
 
-    memset(h->links, 0x00, sizeof(h->links)); 
     h->in_bufs = que_init(8);
     if(!h->in_bufs){
         printf("goto err\n");
         goto err;
     }
+
+    memset(h->links, 0x00, sizeof(h->links)); 
 
 err:
     return h;
@@ -96,7 +100,7 @@ void *code_run_thread(void *arg)
     void (*func)(code_elem_t *h, void *buf, int len, void *pdata) = h->code;
 
     for(;;){
-        if(!(h->type & CODE_NO_INPUT)){
+        if(!(h->attr & CODE_ATTR_NO_INPUT)){
             buf = que_get(h->in_bufs, 0);
         }
 
@@ -132,10 +136,10 @@ void *code_run_net(void *arg)
 
 int code_run(code_elem_t *h)
 {
-    if(h->type & code_t_thread){
+    if(h->type == CODE_TYPE_THREAD){
         thread_t tid;
         thread_create(&tid, NULL, code_run_thread, h);
-    }else if(h->type & code_t_bin){
+    }else if(h->type == CODE_TYPE_BIN){
         thread_t tid;
         thread_create(&tid, NULL, code_run_bin, h);
     }

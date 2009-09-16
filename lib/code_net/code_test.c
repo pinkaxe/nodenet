@@ -47,13 +47,13 @@ int main(int argc, char **argv)
 
     dpool = dpool_create(128, 8, 0);
 
-    e0 = code_create(code_t_thread | CODE_NO_INPUT, in_code, dpool);
+    e0 = code_create(CODE_TYPE_THREAD, CODE_ATTR_NO_INPUT, in_code, dpool);
     code_run(e0);
 
-    e1 = code_create(code_t_thread, in_code2, dpool);
+    e1 = code_create(CODE_TYPE_THREAD, 0, in_code2, dpool);
     code_run(e1);
 
-    e2 = code_create(code_t_thread, in_code2, dpool);
+    e2 = code_create(CODE_TYPE_THREAD, 0, in_code2, dpool);
     code_run(e2);
 
     code_link(e0, e1);
