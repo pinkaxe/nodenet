@@ -1,11 +1,17 @@
 
 #include<stdlib.h>
+#include <stdio.h>
 #include<assert.h>
+
+#include "util/log.h"
+#include "arch/thread.h"
 
 struct cybuf {
     int head, tail, len;
     void **pp;
     void (*get_cb)(void *p);
+    mutex_t mutex;
+    cond_t cond;
 };
 
 struct cybuf *cybuf_init(int len)
@@ -25,6 +31,9 @@ struct cybuf *cybuf_init(int len)
         goto end;
     }
 
+    mutex_init(&h->mutex, NULL);
+    cond_init(&h->cond, NULL);
+
 end:
     return h;
 }
@@ -35,6 +44,9 @@ int cybuf_free(struct cybuf *h)
         free(h->pp);
     }
 
+    //mutex_free(&h->mutex);
+    //cond_free(&h->cond);
+
     if(h){
         free(h);
     }
@@ -44,26 +56,48 @@ int cybuf_free(struct cybuf *h)
 
 int cybuf_add(struct cybuf *h, void *item) 
 {
-    assert(h);  
-    
+    int r = 0;
+    assert(h);
+
+    mutex_lock(&h->mutex);
+
+    if((h->head == h->len && h->tail == 0) || 
+            h->head == h->tail - 1){
+        r = 1;
+        goto err;
+    }
+
     h->pp[h->head] = item;
 
     if(++h->head >= h->len){
         h->head = 0;
     }
 
-    return 0;
+    cond_signal(&h->cond);
+
+err:
+    mutex_unlock(&h->mutex);
+
+    return r;
 }
 
-void *cybuf_get(struct cybuf *h) 
+void *cybuf_get(struct cybuf *h, int msec_timeout)
 {
     void *r = NULL;
+
+    mutex_lock(&h->mutex);
+
+    while(h->tail == h->head){
+        cond_wait(&h->cond, &h->mutex);
+    }
 
     r = h->pp[h->tail];
 
     if(++h->tail >= h->len){
         h->tail = 0;
     }
+
+    mutex_unlock(&h->mutex);
 
     return r;
 }

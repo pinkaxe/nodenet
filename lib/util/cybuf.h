@@ -6,7 +6,7 @@ struct cybuf;
 struct cybuf *cybuf_init(int len);
 int cybuf_free(struct cybuf *h);
 int cybuf_add(struct cybuf *h, void *item);
-void *cybuf_get(struct cybuf *h);
+void *cybuf_get(struct cybuf *h, int msec_timeout);
 void *cybuf_set_get_cb(struct cybuf *h, void (*get_cb)(void *p));
 
 #endif
