@@ -8,7 +8,7 @@
 #include "arch/thread.h"
 #include "util/dpool.h"
 #include "util/log.h"
-#include "util/cybuf.h"
+#include "util/que.h"
 
 #include "code_net/code.h"
 
@@ -20,7 +20,7 @@ struct code_elem
     void *code;  /* pointer to object depending on type */
 
     code_elem_t *links[MAX_LINKS]; /* links to other code_elem's */
-    struct cybuf *in_bufs;         /* place to add and get bufs */
+    struct que *in_bufs;         /* place to add and get bufs */
 
     void *pdata; /* private data*/
 };
@@ -40,9 +40,8 @@ code_elem_t *code_create(code_t type, void *code, void *pdata)
     h->code = code;
     h->pdata = pdata;
 
-    memset(h->links, 0x00, sizeof(h->links));
-
-    h->in_bufs = cybuf_init(8);
+    memset(h->links, 0x00, sizeof(h->links)); 
+    h->in_bufs = que_init(8);
     if(!h->in_bufs){
         printf("goto err\n");
         goto err;
@@ -74,7 +73,7 @@ int code_unlink(code_elem_t *from, code_elem_t *to)
 {
 }
 
-int code_out_avail(code_elem_t *e, int type, void *buf, int len) // TYPE = all, one, specific ones
+int code_out_avail(code_elem_t *e, int type, void *buf, int len)
 {
     int i;
     code_elem_t *to;
@@ -84,7 +83,7 @@ int code_out_avail(code_elem_t *e, int type, void *buf, int len) // TYPE = all, 
         printf("loop %p\n", e->links[i]);
 
         if((to=e->links[i])){
-            cybuf_add(to->in_bufs, buf);
+            que_add(to->in_bufs, buf);
             printf("send sig\n");
         }
     }
@@ -98,7 +97,7 @@ void *code_run_thread(void *arg)
 
     for(;;){
         if(!(h->type & CODE_NO_INPUT)){
-            buf = cybuf_get(h->in_bufs, 0);
+            buf = que_get(h->in_bufs, 0);
         }
 
         /* call user function */

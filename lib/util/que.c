@@ -6,7 +6,7 @@
 #include "util/log.h"
 #include "arch/thread.h"
 
-struct cybuf {
+struct que {
     int head, tail, len;
     void **pp;
     void (*get_cb)(void *p);
@@ -14,11 +14,11 @@ struct cybuf {
     cond_t cond;
 };
 
-struct cybuf *cybuf_init(int len)
+struct que *que_init(int len)
 {
-    struct cybuf *h;
+    struct que *h;
 
-    h = calloc(1, sizeof(struct cybuf));
+    h = calloc(1, sizeof(struct que));
     if(!h){
         goto end;
     }
@@ -26,7 +26,7 @@ struct cybuf *cybuf_init(int len)
     h->len = len;
     h->pp = calloc(len, sizeof(void *));
     if(!h->pp){
-        cybuf_free(h);
+        que_free(h);
         h = NULL;
         goto end;
     }
@@ -38,7 +38,7 @@ end:
     return h;
 }
 
-int cybuf_free(struct cybuf *h)
+int que_free(struct que *h)
 {
     if(h->pp){
         free(h->pp);
@@ -54,7 +54,7 @@ int cybuf_free(struct cybuf *h)
     return 1;
 }
 
-int cybuf_add(struct cybuf *h, void *item) 
+int que_add(struct que *h, void *item) 
 {
     int r = 0;
     assert(h);
@@ -81,7 +81,7 @@ err:
     return r;
 }
 
-void *cybuf_get(struct cybuf *h, int msec_timeout)
+void *que_get(struct que *h, int msec_timeout)
 {
     void *r = NULL;
 
@@ -102,7 +102,7 @@ void *cybuf_get(struct cybuf *h, int msec_timeout)
     return r;
 }
 
-void *cybuf_set_get_cb(struct cybuf *h, void (*get_cb)(void *p)) 
+void *que_set_get_cb(struct que *h, void (*get_cb)(void *p)) 
 {
     h->get_cb = get_cb;
 }
@@ -111,27 +111,27 @@ void *cybuf_set_get_cb(struct cybuf *h, void (*get_cb)(void *p))
 int main(int argc, char **argv)
 {
     int i;
-    struct cybuf *h;
+    struct que *h;
     char *str0 = "abc";
     char *str1 = "---";
 
     while(1){
-        h = cybuf_init(6);
+        h = que_init(6);
         for(i=0; i < 2; i++){
-            cybuf_add(h, str0);     
-            cybuf_add(h, str1);     
-            cybuf_add(h, str0);     
-            cybuf_add(h, str1);     
-            cybuf_add(h, str0);     
-            cybuf_add(h, str1);     
-            printf("** %s\n", (char *)cybuf_get(h));
-            printf("** %s\n", (char *)cybuf_get(h));
-            printf("** %s\n", (char *)cybuf_get(h));
-            printf("** %s\n", (char *)cybuf_get(h));
-            printf("** %s\n", (char *)cybuf_get(h));
-            printf("** %s\n", (char *)cybuf_get(h));
+            que_add(h, str0);     
+            que_add(h, str1);     
+            que_add(h, str0);     
+            que_add(h, str1);     
+            que_add(h, str0);     
+            que_add(h, str1);     
+            printf("** %s\n", (char *)que_get(h));
+            printf("** %s\n", (char *)que_get(h));
+            printf("** %s\n", (char *)que_get(h));
+            printf("** %s\n", (char *)que_get(h));
+            printf("** %s\n", (char *)que_get(h));
+            printf("** %s\n", (char *)que_get(h));
         }
-        cybuf_free(h);
+        que_free(h);
     }
 
     return 0;

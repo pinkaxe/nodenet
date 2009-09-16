@@ -17,7 +17,7 @@ libutil_la_SOURCES = \
 	bitmap.h \
 	dpool.c \
 	dpool.h \
-	cybuf.c \
-	cybuf.h
+	que.c \
+	que.h
 
 libutil_la_LIBADD =
