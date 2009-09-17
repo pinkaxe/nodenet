@@ -102,6 +102,25 @@ int ll_add_end(struct ll *h, void *new)
     return 0;
 }
 
+void *ll_rem(struct ll *h, void *item)
+{
+	struct link *item_link = item;
+	struct link *prev = item_link->prev;
+	struct link *next = item_link->next;
+
+	if(prev)
+		prev->next = NULL;
+	if(next)
+		next->prev = NULL;
+
+	if(prev && next){
+		prev->next = next;
+		next->prev = prev;
+	}
+
+    return item;
+}
+
 #if 0
 
 int ll_rem_front(struct ll *h, void **item) 

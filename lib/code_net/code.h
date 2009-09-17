@@ -23,11 +23,12 @@ typedef struct code_elem code_elem_t;
 
 code_elem_t *code_create(code_type_t type, code_attr_t attr, void *code,
         void *pdata);
-int code_out_avail(code_elem_t *e, buf_attr_t attr, void *buf, int len, void
-        (*sending_to_no_cb)(void *buf, int no));
 
 int code_link(code_elem_t *from, code_elem_t *to);
 int code_unlink(code_elem_t *from, code_elem_t *to);
+
+int code_out_avail(code_elem_t *e, buf_attr_t attr, void *buf, int len, void
+        (*sending_to_no_cb)(void *buf, int no));
 
 //int code_sendto_all(code_elem_t *e, void *buf, int len);
 //int code_sendto_nr(code_elem_t *e, int no, code_elem_t **to, void *buf, int

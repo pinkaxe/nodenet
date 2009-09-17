@@ -1,4 +1,3 @@
-
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,12 +12,6 @@
 #include "code_net/code.h"
 
 #define MAX_LINKS   4
-
-struct comm_buf {
-    void *buf;
-    int len;
-    int ref_count;
-};
 
 struct code_elem
 {
@@ -113,7 +106,7 @@ int code_out_avail(code_elem_t *e, buf_attr_t attr, void *buf, int len, void
 }
 
 
-void *code_run_thread(void *arg)
+static void *code_run_thread(void *arg)
 {
     void *buf = NULL;
     void *cmd_buf = NULL;
@@ -143,7 +136,7 @@ void *code_run_thread(void *arg)
     return NULL;
 }
 
-void *code_run_bin(void *arg)
+static void *code_run_bin(void *arg)
 {
     code_elem_t *h = arg;
     char *filename = h->code;
@@ -156,7 +149,7 @@ void *code_run_bin(void *arg)
     return NULL;
 }
 
-void *code_run_net(void *arg)
+static void *code_run_net(void *arg)
 {
     // setup control channel
     //

@@ -14,6 +14,11 @@ struct link{
 
 struct ll *__ll_init(int offset, int *err);
 void ll_free(struct ll *h);
+
+int ll_add(struct ll *h, void *elem, void *new);
+void *ll_rem(struct ll *h, void *elem);
+//bool ll_find(struct ll *h, void *elem);
+
 int ll_add_front(struct ll *h, void *new);
 int ll_add_end(struct ll *h, void *new);
 void *ll_rem_end(struct ll *h);
