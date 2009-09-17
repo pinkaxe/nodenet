@@ -1,6 +1,8 @@
 
 #include<stdlib.h>
 #include <stdio.h>
+#include <time.h>
+#include <errno.h>
 #include<assert.h>
 
 #include "util/log.h"
@@ -81,14 +83,32 @@ err:
     return r;
 }
 
-void *que_get(struct que *h, int msec_timeout)
+void *que_get(struct que *h, struct timespec *ts)
 {
+    int waitr;
+    int e = 0;
     void *r = NULL;
+    struct timespec timeout;
+    long long nsec;
 
     mutex_lock(&h->mutex);
 
     while(h->tail == h->head){
-        cond_wait(&h->cond, &h->mutex);
+        clock_gettime(CLOCK_REALTIME, &timeout);
+        timeout.tv_sec += ts->tv_sec;
+        nsec = timeout.tv_nsec + ts->tv_nsec;
+        //printf("-- %ld, %ld\n", nsec, nsec / 1000000);
+        timeout.tv_sec += (nsec / 1000000000);
+        timeout.tv_nsec = (nsec % 1000000000);
+
+        printf("--start wait: %ld, %ld\n", timeout.tv_sec, timeout.tv_nsec);
+        waitr = cond_timedwait(&h->cond, &h->mutex, &timeout);
+        printf("--end wait: %d\n", waitr);
+        if(waitr == ETIMEDOUT){
+        printf("--timeout\n");
+            e = ETIMEDOUT;
+            goto timeout;
+        }
     }
 
     r = h->pp[h->tail];
@@ -97,8 +117,10 @@ void *que_get(struct que *h, int msec_timeout)
         h->tail = 0;
     }
 
+timeout:
     mutex_unlock(&h->mutex);
 
+    if(e) errno = e;
     return r;
 }
 
