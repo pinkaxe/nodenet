@@ -56,6 +56,9 @@ typedef	pthread_cond_t cond_t;
 #define cond_wait(cond, mutex) \
 	dbg_thread(pthread_cond_wait(cond, mutex))
 
+#define cond_timedwait(tid, data, timespec) \
+	pthread_cond_timedwait(tid, data, timespec)
+
 #define cond_signal(cond) \
 	dbg_thread(pthread_cond_signal(cond))	
 

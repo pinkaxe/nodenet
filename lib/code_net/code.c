@@ -1,8 +1,10 @@
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <time.h>
 
 #include "arch/thread.h"
 #include "util/dpool.h"
@@ -49,6 +51,12 @@ code_elem_t *code_create(code_type_t type, code_attr_t attr, void *code,
         goto err;
     }
 
+    h->cmd_bufs = que_init(8);
+    if(!h->cmd_bufs){
+        printf("goto err\n");
+        goto err;
+    }
+
     memset(h->links, 0x00, sizeof(h->links));
 
 err:
@@ -77,6 +85,25 @@ int code_unlink(code_elem_t *from, code_elem_t *to)
 {
 }
 
+struct code_cmd {
+    int id;
+    void *data;
+};
+
+int code_tx_cmd(code_elem_t *to, int id, void *data)
+{
+    struct code_cmd *cmd = malloc(sizeof(*cmd));
+    cmd->id = id;
+    cmd->data = data;
+
+    return que_add(to->cmd_bufs, cmd);
+}
+
+int code_tx_data(code_elem_t *to, void *buf, int len)
+{
+    return que_add(to->in_bufs, buf);
+}
+
 int code_out_avail(code_elem_t *e, buf_attr_t attr, void *buf, int len, void
         (*sending_to_no_cb)(void *buf, int no))
 {
@@ -98,8 +125,7 @@ int code_out_avail(code_elem_t *e, buf_attr_t attr, void *buf, int len, void
             printf("loop %p\n", e->links[i]);
 
             if((to=e->links[i])){
-                que_add(to->in_bufs, buf);
-                printf("send sig\n");
+                code_tx_data(to, buf, 1);
             }
         }
     }
@@ -112,24 +138,45 @@ static void *code_run_thread(void *arg)
     void *cmd_buf = NULL;
     code_elem_t *h = arg;
     void (*func)(code_elem_t *h, void *buf, int len, void *pdata) = h->code;
+    struct timespec buf_check_timespec = {0, 100000000}; /* relative to now */
+    struct timespec cmd_check_timespec = {0, 100000000};
 
     for(;;){
+
+        buf_check_timespec.tv_sec = 0;
+        buf_check_timespec.tv_nsec = 10000000;
+        cmd_check_timespec.tv_sec = 0;
+        cmd_check_timespec.tv_nsec = 10000000;
 
         if((h->attr & CODE_ATTR_NO_INPUT)){
             /* call user function */
             func(h, NULL, 0, h->pdata);
 
         }else{
-            buf = que_get(h->in_bufs, 100);
+            /* incoming data */
+            buf = que_get(h->in_bufs, &buf_check_timespec);
             if(buf){
                 /* call user function */
                 func(h, buf, 1, h->pdata);
+            }else{
+                if(errno == ETIMEDOUT){
+                    printf("!! timedout xx\n");
+                }
             }
+            //sleep(1);
         }
 
-        //cmd_buf = que_get(h->cmd_bufs, 100);
-        //if(cmd_buf){
-        //}
+        /* incoming commands */
+        cmd_buf = que_get(h->cmd_bufs, &cmd_check_timespec);
+        if(cmd_buf){
+            printf("!!! Got a cmd_buf\n ");
+            free(cmd_buf);
+            // process and free
+        }else{
+            if(errno == ETIMEDOUT){
+                printf("!! timedout xx\n");
+            }
+        }
 
     }
 

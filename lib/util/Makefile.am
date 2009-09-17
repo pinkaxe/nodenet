@@ -20,4 +20,4 @@ libutil_la_SOURCES = \
 	que.c \
 	que.h
 
-libutil_la_LIBADD =
+libutil_la_LIBADD = -lrt -lpthread

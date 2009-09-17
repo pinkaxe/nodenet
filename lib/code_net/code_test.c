@@ -1,5 +1,7 @@
 
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/select.h>
 
 #include "code_net/code.h"
 #include "util/dpool.h"
@@ -13,29 +15,55 @@ void sending_to_no_cb(void *buf, int no)
 
 int in_code(struct code_elem *h, void *buf, int len, void *pdata)
 {
+    int r;
     int c;
     struct dpool_buf *b;
     struct dpool *dpool = pdata;
+    struct timeval tv; 
 
     printf("!! in\n");
+    //c = getc(stdin);
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds);
 
-    c = getc(stdin);
+    //for(;;){
+        tv.tv_sec = 0;
+        tv.tv_usec = 0;
+        r = select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+        if(r == -1){
+            perror("select()");
+            goto end;
+        }else if(r){
+            printf("Data is available now.\n");
+            /* FD_ISSET(0, &rfds) will be true. */
+            if(FD_ISSET(STDIN_FILENO, &fds)){
+                c = getc(stdin);
+            }
+        }else{
+            printf("No data...\n");
+            goto end;
+        }
 
-    b = dpool_get_buf(dpool);
-    if(!b){
-        printf("!! couldn't get buff\n");
-        return 1;
-    }
+        //read
+        b = dpool_get_buf(dpool);
+        if(!b){
+            printf("!! couldn't get buff\n");
+            return 1;
+        }
 
-    char *str = b->data;
-    str[0] = c;
+        char *str = b->data;
+        str[0] = c;
 
-    code_out_avail(h, 0, b, 1, sending_to_no_cb);
+        code_out_avail(h, 0, b, 1, sending_to_no_cb);
 
-    //out->sendto = CODE_SENDTO_ALL;
-   // code_sendto_all()
-   // code_sendto_all_but_in()
-   // code_sendto_no(int no, ids..)
+end:
+        c = 9;
+        //out->sendto = CODE_SENDTO_ALL;
+       // code_sendto_all()
+       // code_sendto_all_but_in()
+       // code_sendto_no(int no, ids..)
+    //}
 }
 
 int in_code2(struct code_elem *h, void *buf, int len, void *pdata)
@@ -68,6 +96,8 @@ int main(int argc, char **argv)
     code_run(e2);
 
     for(;;){
+        sleep(3);
+        code_tx_cmd(e1, 9, NULL);
     }
 }
 
