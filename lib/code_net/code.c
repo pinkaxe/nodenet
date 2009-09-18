@@ -7,9 +7,10 @@
 #include <time.h>
 
 #include "arch/thread.h"
-#include "util/dpool.h"
 #include "util/log.h"
+#include "util/dpool.h"
 #include "util/que.h"
+#include "util/ll.h"
 
 #include "code_net/code.h"
 
@@ -22,10 +23,14 @@ struct code_elem
     void *code;  /* pointer to object depending on type */
 
     code_elem_t *links[MAX_LINKS]; /* links to other code_elem's */
-    struct que *in_bufs;         /* place to add and get bufs */
-    struct que *cmd_bufs;        /* place to add and get cmds */
+    struct que *in_bufs;         /* input for code elem */
+    //struct ll *in_bufs_cbs;         /* action on in_bufs callbacks */
+    struct que *cmd_bufs;        /* input cmds for code elem */
+    //struct ll *cmd_bufs_cbs;     /* action on cmd_bufs callbacks */
 
-    void *pdata; /* private passthru data*/
+    struct ll *out_bufs_cb;        /* action on out_bufs callbacks */
+
+    void *pdata; /* private passthru data */
 };
 
 
@@ -138,14 +143,14 @@ static void *code_run_thread(void *arg)
     void *cmd_buf = NULL;
     code_elem_t *h = arg;
     void (*func)(code_elem_t *h, void *buf, int len, void *pdata) = h->code;
-    struct timespec buf_check_timespec = {0, 100000000}; /* relative to now */
-    struct timespec cmd_check_timespec = {0, 100000000};
+    struct timespec buf_check_timespec;
+    struct timespec cmd_check_timespec;
 
     for(;;){
 
-        buf_check_timespec.tv_sec = 0;
+        buf_check_timespec.tv_sec = 2;
         buf_check_timespec.tv_nsec = 10000000;
-        cmd_check_timespec.tv_sec = 0;
+        cmd_check_timespec.tv_sec = 2;
         cmd_check_timespec.tv_nsec = 10000000;
 
         if((h->attr & CODE_ATTR_NO_INPUT)){
@@ -160,7 +165,7 @@ static void *code_run_thread(void *arg)
                 func(h, buf, 1, h->pdata);
             }else{
                 if(errno == ETIMEDOUT){
-                    printf("!! timedout xx\n");
+                    //printf("!! timedout xx\n");
                 }
             }
             //sleep(1);
@@ -171,15 +176,17 @@ static void *code_run_thread(void *arg)
         if(cmd_buf){
             printf("!!! Got a cmd_buf\n ");
             free(cmd_buf);
+            break;
             // process and free
         }else{
             if(errno == ETIMEDOUT){
-                printf("!! timedout xx\n");
+                //printf("!! timedout xx\n");
             }
         }
 
     }
 
+    printf("... thread exit\n");
     return NULL;
 }
 

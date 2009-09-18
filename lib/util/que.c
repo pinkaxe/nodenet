@@ -101,11 +101,11 @@ void *que_get(struct que *h, struct timespec *ts)
         timeout.tv_sec += (nsec / 1000000000);
         timeout.tv_nsec = (nsec % 1000000000);
 
-        printf("--start wait: %ld, %ld\n", timeout.tv_sec, timeout.tv_nsec);
+        //printf("--start wait: %ld, %ld\n", timeout.tv_sec, timeout.tv_nsec);
         waitr = cond_timedwait(&h->cond, &h->mutex, &timeout);
-        printf("--end wait: %d\n", waitr);
+        //printf("--end wait: %d\n", waitr);
         if(waitr == ETIMEDOUT){
-        printf("--timeout\n");
+        //printf("--timeout\n");
             e = ETIMEDOUT;
             goto timeout;
         }

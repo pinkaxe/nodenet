@@ -97,8 +97,14 @@ int main(int argc, char **argv)
 
     for(;;){
         sleep(3);
+        code_tx_cmd(e0, 9, NULL);
         code_tx_cmd(e1, 9, NULL);
+        code_tx_cmd(e2, 9, NULL);
+        break;
     }
+
+    return 0;
+
 }
 
 

@@ -3,8 +3,8 @@
 #define __CODE_NET_H__
 
 typedef enum {
-   CODE_TYPE_THREAD,
-   CODE_TYPE_BIN
+    CODE_TYPE_THREAD,
+    CODE_TYPE_BIN
 } code_type_t;
 
 typedef enum {
@@ -12,17 +12,24 @@ typedef enum {
 } code_attr_t;
 
 typedef enum {
+    CODE_CMD_PAUSE,
+    CODE_CMD_CONTINUE,
+    CODE_CMD_STOP,
+} code_cmd_t;
+
+typedef enum {
     BUF_ATTR_RO = 0x01,
     BUF_ATTR_RW = 0x02,
     BUF_ATTR_SEND_ALL = 0x04,
     BUF_ATTR_SEND_ONE = 0x08,
     BUF_ATTR_CLEANUP = 0x04
-} buf_attr_t;
+} buf_attr_t; // send_type_t
 
 typedef struct code_elem code_elem_t;
 
 code_elem_t *code_create(code_type_t type, code_attr_t attr, void *code,
         void *pdata);
+// code_clone
 
 int code_link(code_elem_t *from, code_elem_t *to);
 int code_unlink(code_elem_t *from, code_elem_t *to);
