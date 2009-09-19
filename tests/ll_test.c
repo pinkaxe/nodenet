@@ -17,6 +17,7 @@ int main()
     int err;
     struct ll *h;
 	struct elem *new, *curr; 
+	struct elem *start, *track;
 	int j;
 	int i;
 
@@ -37,6 +38,25 @@ int main()
             }
 		}
 
+        track = NULL;
+        start = new;
+        ll_foreach(start, curr, track) {
+            printf("*%d\n", curr->x);
+            if(curr->x < 6){
+                ll_rem(h, curr);
+                free(curr);
+            }
+        }
+
+
+        track = NULL;
+        start = new;
+        ll_foreach(start, curr, track) {
+            printf("**%d\n", curr->x);
+        }
+        sleep(2);
+
+#if 0
 		for(i=0; i < 10; i++){
 			curr = ll_rem_end(h);
             if(curr){
@@ -63,6 +83,7 @@ int main()
             }
             //free(curr);
         }
+#endif
         ll_free(h);
 	}
 

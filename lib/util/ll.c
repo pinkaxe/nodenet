@@ -104,18 +104,20 @@ int ll_add_end(struct ll *h, void *new)
 
 void *ll_rem(struct ll *h, void *item)
 {
-	struct link *item_link = item;
-	struct link *prev = item_link->prev;
-	struct link *next = item_link->next;
+	struct link *item_link = item + h->offset;
+    void *prev = item_link->prev;
+	struct link *prev_link = prev + h->offset;
+    void *next = item_link->next;
+	struct link *next_link = next + h->offset;
 
 	if(prev)
-		prev->next = NULL;
+		prev_link->next = NULL;
 	if(next)
-		next->prev = NULL;
+		next_link->prev = NULL;
 
 	if(prev && next){
-		prev->next = next;
-		next->prev = prev;
+		prev_link->next = next;
+		next_link->prev = prev;
 	}
 
     return item;
@@ -179,6 +181,12 @@ void *ll_rem_end(struct ll *h)
     return item;
 }
 
+void *ll_next(struct ll *h, void *curr)
+{
+	struct link *curr_link = curr + h->offset;;
+	return curr_link->next;
+}
+
 
 /*
 int ll_get_end(struct ll *h, void **item) 
@@ -205,12 +213,6 @@ void ll_del(struct ll *h, void *item)
 		prev->next = next;
 		next->prev = prev;
 	}
-}
-
-void *ll_next(struct ll *h, void *curr)
-{
-	struct link *link = curr;
-	return link->next;
 }
 
 */
