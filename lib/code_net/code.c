@@ -16,13 +16,20 @@
 
 #define MAX_LINKS   4
 
+struct code_link {
+    struct code_elem *link;
+    struct link ll_link;
+};
+
 struct code_elem
 {
     code_type_t type; /* thread, process etc. */
     code_attr_t attr;
     void *code;  /* pointer to object depending on type */
 
-    code_elem_t *links[MAX_LINKS]; /* links to other code_elem's */
+    //code_elem_t *links[MAX_LINKS]; /* links to other code_elem's */
+    
+    struct ll *linksh;
     struct que *in_bufs;         /* input for code elem */
     //struct ll *in_bufs_cbs;         /* action on in_bufs callbacks */
     struct que *cmd_bufs;        /* input cmds for code elem */
@@ -32,6 +39,7 @@ struct code_elem
 
     void *pdata; /* private passthru data */
 };
+
 
 
 code_elem_t *code_create(code_type_t type, code_attr_t attr, void *code,
@@ -62,7 +70,12 @@ code_elem_t *code_create(code_type_t type, code_attr_t attr, void *code,
         goto err;
     }
 
-    memset(h->links, 0x00, sizeof(h->links));
+    int err;
+    h->linksh = ll_init(struct code_link, ll_link, &err);
+    if(!h->linksh){
+        printf("goto err\n");
+        goto err;
+    }
 
 err:
     return h;
@@ -73,15 +86,33 @@ err:
 int code_link(code_elem_t *from, code_elem_t *to)
 {
     int i;
+    struct code_link *start, *curr, *track;
 
-    for(i=0; i < MAX_LINKS; i++){
-        if(!from->links[i]){
-            from->links[i] = to;
-            break;
-        }
+    struct code_link *link;
+
+    link = malloc(sizeof(*link));
+    if(!link){
+        printf("cunt\n");
+        exit(-1);
+        //LOG1(
     }
-    if(i == MAX_LINKS){
-    }
+
+    link->link = to;
+    ll_add_front(from->linksh, link);
+
+   // start = ll_get_start(from->linksh);
+   // ll_foreach(start, curr, track){
+   //     if(curr-> 
+   // }
+   // //ll_foreach(start, curr, track){
+   // for(i=0; i < MAX_LINKS; i++){
+   //     if(!from->links[i]){
+   //         from->links[i] = to;
+   //         break;
+   //     }
+   // }
+   // if(i == MAX_LINKS){
+   // }
 
     return 0;
 }
@@ -116,24 +147,33 @@ int code_out_avail(code_elem_t *e, buf_attr_t attr, void *buf, int len, void
     code_elem_t *to;
 
     // count first
-    for(c=0,i=0; i < MAX_LINKS; i++){
-        if((e->links[i])){
-            c++;
-        }
+   // for(c=0,i=0; i < MAX_LINKS; i++){
+   //     if((e->links[i])){
+   //         c++;
+   //     }
+   // }
+    struct code_link *curr; 
+    struct code_link *track = NULL;
+    struct code_link *start = ll_get_start(e->linksh); 
+    printf("zz %p\n", start);
+
+    // add to datastructure
+    ll_foreach(e->linksh, start, curr, track){
+        code_tx_data(curr->link, buf, len);
     }
 
-    if(c > 0){
-        /* notify upstairs */
-        sending_to_no_cb(buf, c);
-        for(i=0; i < MAX_LINKS; i++){
-            /* signal all */
-            printf("loop %p\n", e->links[i]);
+    //if(c > 0){
+    //    /* notify upstairs */
+    //    sending_to_no_cb(buf, c);
+    //    for(i=0; i < MAX_LINKS; i++){
+    //        /* signal all */
+    //        printf("loop %p\n", e->links[i]);
 
-            if((to=e->links[i])){
-                code_tx_data(to, buf, 1);
-            }
-        }
-    }
+    //        if((to=e->links[i])){
+    //            code_tx_data(to, buf, 1);
+    //        }
+    //    }
+    //}
 }
 
 

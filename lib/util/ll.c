@@ -47,6 +47,10 @@ void ll_free(struct ll *h)
     free(h);
 }
 
+void *ll_get_start(struct ll *h)
+{
+    return h->start;
+}
 
 int ll_add_front(struct ll *h, void *new) 
 {

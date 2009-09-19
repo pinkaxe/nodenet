@@ -28,34 +28,32 @@ int in_code(struct code_elem *h, void *buf, int len, void *pdata)
     FD_SET(STDIN_FILENO, &fds);
 
     //for(;;){
-        tv.tv_sec = 0;
-        tv.tv_usec = 0;
-        r = select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
-        if(r == -1){
-            perror("select()");
-            goto end;
-        }else if(r){
-            printf("Data is available now.\n");
-            /* FD_ISSET(0, &rfds) will be true. */
-            if(FD_ISSET(STDIN_FILENO, &fds)){
-                c = getc(stdin);
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    r = select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+    if(r == -1){
+        perror("select()");
+        goto end;
+    }else if(r){
+        printf("Data is available now.\n");
+        /* FD_ISSET(0, &rfds) will be true. */
+        if(FD_ISSET(STDIN_FILENO, &fds)){
+            int n;
+            char buf[128];
+            b = dpool_get_buf(dpool);
+            if(!b){
+                printf("!! couldn't get buff\n");
+                return 1;
             }
-        }else{
-            printf("No data...\n");
-            goto end;
+            n = read(STDIN_FILENO, b->data, 128 - 1);
+
+            code_out_avail(h, 0, b, n, sending_to_no_cb);
         }
+    }else{
+        printf("No data...\n");
+        goto end;
+    }
 
-        //read
-        b = dpool_get_buf(dpool);
-        if(!b){
-            printf("!! couldn't get buff\n");
-            return 1;
-        }
-
-        char *str = b->data;
-        str[0] = c;
-
-        code_out_avail(h, 0, b, 1, sending_to_no_cb);
 
 end:
         c = 9;
@@ -72,7 +70,7 @@ int in_code2(struct code_elem *h, void *buf, int len, void *pdata)
     struct dpool *dpool = pdata;
     char *data = b->data;
 
-    printf("Got buf: %c\n", data[0]);
+    printf("Got buf: %s(%d)\n", data, len);
     dpool_ret_buf(dpool, b);
 
 }
@@ -97,10 +95,9 @@ int main(int argc, char **argv)
 
     for(;;){
         sleep(3);
-        code_tx_cmd(e0, 9, NULL);
-        code_tx_cmd(e1, 9, NULL);
-        code_tx_cmd(e2, 9, NULL);
-        break;
+     //   code_tx_cmd(e0, 9, NULL);
+     //   code_tx_cmd(e1, 9, NULL);
+     //   code_tx_cmd(e2, 9, NULL);
     }
 
     return 0;
