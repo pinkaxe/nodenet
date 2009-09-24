@@ -5,7 +5,9 @@ libcode_net_la_SOURCES = \
 			 net.c \
 			 elem.c \
 			 grp.c \
-			 cn.c
+			 cn.c \
+			 run.c
+
 
 
 libcode_net_la_LIBADD =
