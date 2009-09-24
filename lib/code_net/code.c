@@ -13,29 +13,58 @@
 #include "util/ll.h"
 
 #include "code_net/code.h"
+#include "code_net/code_grp.h"
 
 #define MAX_LINKS   4
+
+struct code_net_elem {
+    struct code_elem *elem;
+    struct link link;
+};
+
+struct code_net {
+    struct code_net_elem *elem;
+};
+
 
 struct code_link {
     struct code_elem *link;
     struct link ll_link;
+    // quality etc., specific for link
 };
 
-struct code_elem
-{
+struct code_data_req{
+    struct code_elem *from; /* from who? */
+    int type;  /* how to cleanup */
+    void *func; /* func to call to cleanup */
+    int id; /* eg. group id */
+    void *buf;
+};
+
+struct code_ctrl_req{
+    struct code_elem *from; /* from who? */
+    int type;  /* how to cleanup */
+    void *func; /* func to call to cleanup */
+    int id; /* eg. group id */
+};
+
+struct code_elem {
     code_type_t type; /* thread, process etc. */
     code_attr_t attr;
     void *code;  /* pointer to object depending on type */
 
-    //code_elem_t *links[MAX_LINKS]; /* links to other code_elem's */
-    
-    struct ll *linksh;
-    struct que *in_bufs;         /* input for code elem */
-    //struct ll *in_bufs_cbs;         /* action on in_bufs callbacks */
-    struct que *cmd_bufs;        /* input cmds for code elem */
-    //struct ll *cmd_bufs_cbs;     /* action on cmd_bufs callbacks */
+    /* pointers for relationships */
+    struct ll *out_links_llh;         /* links to other code_elem's */
+    struct ll *in_links_llh;          /* links coming in from other code_elem's */
+    struct ll *group_llh;             /* links to all groups this elem belongs to */
+    struct ll *net_llh;               /* links to all groups this elem belongs to */
 
-    struct ll *out_bufs_cb;        /* action on out_bufs callbacks */
+    /* bufs */
+    struct que *in_data_queh;         /* input for code elem */
+    struct que *in_cmd_queh;          /* input cmds for code elem */
+
+    struct que *out_data_queh;        /* output to other code elem's */
+    struct que *out_cmd_queh;         /* input cmds for code elem */
 
     void *pdata; /* private passthru data */
 };
@@ -45,11 +74,30 @@ struct code_elem
 code_elem_t *code_create(code_type_t type, code_attr_t attr, void *code,
         void *pdata)
 {
-    printf("crete\n");
+    int err;
     code_elem_t *h;
+    printf("crete\n");
 
     h = malloc(sizeof(*h));
     if(!h){
+        goto err;
+    }
+
+    h->in_data_queh = que_init(8);
+    if(!h->in_data_queh){
+        printf("goto err\n");
+        goto err;
+    }
+
+    h->in_cmd_queh = que_init(8);
+    if(!h->in_cmd_queh){
+        printf("goto err\n");
+        goto err;
+    }
+
+    h->linksh = ll_init(struct code_link, ll_link, &err);
+    if(!h->linksh){
+        printf("goto err\n");
         goto err;
     }
 
@@ -57,25 +105,6 @@ code_elem_t *code_create(code_type_t type, code_attr_t attr, void *code,
     h->attr = attr;
     h->code = code;
     h->pdata = pdata;
-
-    h->in_bufs = que_init(8);
-    if(!h->in_bufs){
-        printf("goto err\n");
-        goto err;
-    }
-
-    h->cmd_bufs = que_init(8);
-    if(!h->cmd_bufs){
-        printf("goto err\n");
-        goto err;
-    }
-
-    int err;
-    h->linksh = ll_init(struct code_link, ll_link, &err);
-    if(!h->linksh){
-        printf("goto err\n");
-        goto err;
-    }
 
 err:
     return h;
@@ -98,24 +127,39 @@ int code_link(code_elem_t *from, code_elem_t *to)
     }
 
     link->link = to;
-    ll_add_front(from->linksh, link);
+    ll_add_front(from->out_linksh, link);
 
-   // start = ll_get_start(from->linksh);
-   // ll_foreach(start, curr, track){
-   //     if(curr-> 
-   // }
-   // //ll_foreach(start, curr, track){
-   // for(i=0; i < MAX_LINKS; i++){
-   //     if(!from->links[i]){
-   //         from->links[i] = to;
-   //         break;
-   //     }
-   // }
-   // if(i == MAX_LINKS){
-   // }
+    // link back
+    link = malloc(sizeof(*link));
+    if(!link){
+        printf("cunt\n");
+        exit(-1);
+        //LOG1(
+    }
+
+    ll_add_front(to->in_linksh, link);
 
     return 0;
 }
+
+struct code_net *code_net_init()
+{
+    struct code_net *h;
+
+    return h;
+}
+
+void code_net_free(struct code_net *h)
+{
+}
+
+int code_net_add_memb(struct code_net *h, code_elem_t *to)
+{
+}
+
+int code_net_rem_memb(struct code_net *h, code_elem_t *to);
+
+int code_link(struct code_net *h, code_elem_t *from, code_elem_t *to);
 
 int code_unlink(code_elem_t *from, code_elem_t *to)
 {
@@ -132,35 +176,60 @@ int code_tx_cmd(code_elem_t *to, int id, void *data)
     cmd->id = id;
     cmd->data = data;
 
-    return que_add(to->cmd_bufs, cmd);
+    return que_add(to->in_cmd_queh, cmd);
 }
 
 int code_tx_data(code_elem_t *to, void *buf, int len)
 {
-    return que_add(to->in_bufs, buf);
+    return que_add(to->in_data_queh, buf);
 }
 
-int code_out_avail(code_elem_t *e, buf_attr_t attr, void *buf, int len, void
-        (*sending_to_no_cb)(void *buf, int no))
+int code_data_send_hook()
 {
-    int i, c;
-    code_elem_t *to;
-
-    // count first
-   // for(c=0,i=0; i < MAX_LINKS; i++){
-   //     if((e->links[i])){
-   //         c++;
-   //     }
-   // }
-    struct code_link *curr; 
-    struct code_link *track = NULL;
-    struct code_link *start = ll_get_start(e->linksh); 
-    printf("zz %p\n", start);
-
-    // add to datastructure
-    ll_foreach(e->linksh, start, curr, track){
-        code_tx_data(curr->link, buf, len);
+    for(;;){
+        // check link req's
+        // wait on cond for link req to occur
     }
+}
+
+/*
+ * buf_attr_t = (COPY)
+int code_tx_to_grp(int grp_id, buf_attr_t attr, void *buf, int len, void max)
+{
+}
+*/
+
+int code_out_avail(code_elem_t *e, buf_attr_t attr, void *buf, int len, void
+        (*cleanup_cb)(void *buf, void *pdata))
+{
+    struct code_data_req *req;
+
+    req = malloc(sizeof(*req));
+    if(!req){
+        goto err;
+    }
+
+    que_add(e->out_data_queh, req);
+
+err:
+  //  int i, c;
+  //  code_elem_t *to;
+
+  //  // count first
+  // // for(c=0,i=0; i < MAX_LINKS; i++){
+  // //     if((e->links[i])){
+  // //         c++;
+  // //     }
+  // // }
+  //  struct code_link *curr; 
+  //  void *track = NULL;
+  //  void *start = ll_get_start(e->linksh); 
+  //  printf("zz %p\n", start);
+
+  //  // add to datastructure
+  //  ll_foreach(e->linksh, curr, track){
+  //      code_tx_data(curr->link, buf, len);
+  //  }
 
     //if(c > 0){
     //    /* notify upstairs */
@@ -176,8 +245,12 @@ int code_out_avail(code_elem_t *e, buf_attr_t attr, void *buf, int len, void
     //}
 }
 
+static void *ctrl_thread(void *arg)
+{
+    que_get(e->out_data_queh, req);
+}
 
-static void *code_run_thread(void *arg)
+static void *code_thread(void *arg)
 {
     void *buf = NULL;
     void *cmd_buf = NULL;
@@ -199,7 +272,7 @@ static void *code_run_thread(void *arg)
 
         }else{
             /* incoming data */
-            buf = que_get(h->in_bufs, &buf_check_timespec);
+            buf = que_get(h->in_data_queh, &buf_check_timespec);
             if(buf){
                 /* call user function */
                 func(h, buf, 1, h->pdata);
@@ -212,7 +285,7 @@ static void *code_run_thread(void *arg)
         }
 
         /* incoming commands */
-        cmd_buf = que_get(h->cmd_bufs, &cmd_check_timespec);
+        cmd_buf = que_get(h->in_cmd_queh, &cmd_check_timespec);
         if(cmd_buf){
             printf("!!! Got a cmd_buf\n ");
             free(cmd_buf);
@@ -257,11 +330,16 @@ int code_run(code_elem_t *h)
 {
     if(h->type == CODE_TYPE_THREAD){
         thread_t tid;
-        thread_create(&tid, NULL, code_run_thread, h);
+        thread_create(&tid, NULL, code_thread, h);
     }else if(h->type == CODE_TYPE_BIN){
+        // fork here, with pipe to communicate back
         thread_t tid;
         thread_create(&tid, NULL, code_run_bin, h);
     }
+    //}else if(//network ){
+    //  make connection
+    //}else if(h->type == FORK_PROCESS){
+    //}else if(h->type == REMOTE_PROCESS){
 }
 
 int code_end(code_elem_t *h)

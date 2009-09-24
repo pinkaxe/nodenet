@@ -30,8 +30,8 @@ void *ll_rem_end(struct ll *h);
 //void ll_del(void *item);
 void *ll_next(struct ll *h, void *curr);
 
-#define ll_foreach(h, start, curr, track) \
-	for(curr=start,track=ll_next(h, curr); \
+#define ll_foreach(h, curr, track) \
+	for(curr=ll_get_start(h),track=ll_next(h, curr); \
 			curr && ((track=ll_next(h, curr)) || 1) ; \
             curr=track)
 
