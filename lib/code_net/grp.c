@@ -11,6 +11,7 @@
 #include "types.h"
 #include "grp.h"
 
+
 struct cn_grp_memb {
     struct cn_elem *memb;
     struct link *link;

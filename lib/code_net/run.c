@@ -29,9 +29,9 @@ static void *thread_loop(void *arg)
 
     for(;;){
 
-        buf_check_timespec.tv_sec = 2;
+        buf_check_timespec.tv_sec = 0;
         buf_check_timespec.tv_nsec = 10000000;
-        cmd_check_timespec.tv_sec = 2;
+        cmd_check_timespec.tv_sec = 0;
         cmd_check_timespec.tv_nsec = 10000000;
 
         if((attr & CN_ATTR_NO_INPUT)){
@@ -64,9 +64,10 @@ static void *thread_loop(void *arg)
                 //printf("!! timedout xx\n");
             }
         }
+        goto end;
 
     }
-
+end:
     printf("... thread exit\n");
     return NULL;
 }

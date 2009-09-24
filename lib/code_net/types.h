@@ -17,5 +17,6 @@ enum cn_elem_cmd {
 struct cn_net;
 struct cn_elem;
 struct cn_grp;
+struct cn_grp_memb;
 
 #endif
