@@ -40,7 +40,7 @@ static void *thread_loop(void *arg)
 
         }else{
             /* incoming data */
-            buf = elem_get_in_buf(h, &buf_check_timespec);
+            buf = elem_read_in_buf(h, &buf_check_timespec);
             if(buf){
                 /* call user function */
                 user_func(h, buf, 1, pdata);
@@ -53,7 +53,7 @@ static void *thread_loop(void *arg)
         }
 
         /* incoming commands */
-        cmd_buf = elem_get_in_buf(h, &cmd_check_timespec);
+        cmd_buf = elem_read_in_buf(h, &cmd_check_timespec);
         if(cmd_buf){
             printf("!!! Got a cmd_buf\n ");
             free(cmd_buf);
