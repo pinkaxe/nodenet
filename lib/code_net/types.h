@@ -10,6 +10,10 @@ enum cn_elem_attr {
     CN_ATTR_NO_INPUT = 0x01
 };
 
+enum cn_elem_cmd {
+    CN_ELEM_CMD_STOP
+};
+
 struct cn_net;
 struct cn_elem;
 struct cn_grp;

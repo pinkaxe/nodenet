@@ -27,6 +27,11 @@ int cn_elem_free(struct cn_elem *e)
     return elem_free(e);
 }
 
+int cn_elem_run(struct cn_elem *e)
+{
+    return elem_start(e);
+}
+
 struct cn_grp *cn_grp_init(int id)
 {
     return grp_init(id);

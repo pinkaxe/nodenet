@@ -1,5 +1,5 @@
-#ifndef __RUN_H__
-#define __RUN_H__
+#ifndef __CN_RUN_H__
+#define __CN_RUN_H__
 
 int run(struct cn_elem *e);
 

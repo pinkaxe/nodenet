@@ -8,7 +8,8 @@ int cn_net_free(struct cn_net *n);
 struct cn_elem *cn_elem_init(enum cn_elem_type type, enum cn_elem_attr attr,
         void *code, void *pdata);
 int cn_elem_free(struct cn_elem *e);
-//code_elem_run
+int cn_elem_run(struct cn_elem *e);
+int cn_elem_stop(struct cn_elem *e);
 
 struct cn_grp *cn_grp_init(int id);
 int cn_grp_free(struct cn_grp *g);
