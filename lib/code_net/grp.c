@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "util/ll.h"
+#include "util/ll2.h"
 
 #include "types.h"
 #include "grp.h"
@@ -14,11 +14,10 @@
 
 struct cn_grp_memb {
     struct cn_elem *memb;
-    struct link *link;
 };
 
 struct cn_grp {
-    struct ll *membh;
+    struct ll2 *membh;
     int id;
     int memb_no;
 };
@@ -32,7 +31,7 @@ struct cn_grp *grp_init(int id)
         goto err;
     }
 
-    g->membh = ll_init(struct cn_grp_memb, link, &err);
+    g->membh = ll2_init();
 
     if(!g->membh){
         printf("goto err: %d\n", err);
@@ -49,7 +48,7 @@ int grp_free(struct cn_grp *g)
 {
     if(g){
         if(g->membh){
-            ll_free(g->membh);
+            ll2_free(g->membh);
         }
         free(g);
     }
@@ -57,9 +56,6 @@ int grp_free(struct cn_grp *g)
     return 0;
 }
 
-int code_add_to_grp(struct cn_elem *h, struct cn_grp *grp)
-{
-}
 
 int grp_add_memb(struct cn_grp *h, struct cn_elem *memb)
 {
@@ -73,9 +69,7 @@ int grp_add_memb(struct cn_grp *h, struct cn_elem *memb)
     }
 
     m->memb = memb;
-    ll_add_front(h->membh, m);
-
-    code_add_to_grp(memb, h);
+    ll2_add_front(h->membh, (void *)&m);
 
     r = 0;
 
@@ -86,10 +80,11 @@ err:
 int grp_get_memb(struct cn_grp *h, void **memb, int max)
 {
     struct cn_grp_memb *m;
-    void *track;
     int i = 0;
+    void *iter;
 
-    ll_foreach(h->membh, m, track){
+    iter = NULL;
+    while(m=ll2_next(h->membh, &iter)){
         // randomize?
         memb[i++] = m;
     }
@@ -101,9 +96,10 @@ bool grp_is_memb(struct cn_grp *h, void *memb)
 {
     bool r = false;
     struct cn_grp_memb *m;
-    void *track;
+    void *iter;
 
-    ll_foreach(h->membh, m, track){
+    iter = NULL;
+    while(m=ll2_next(h->membh, &iter)){
         if(m->memb == memb){
             r = true;
             break;
@@ -117,11 +113,12 @@ int grp_rem_memb(struct cn_grp *h, void *memb)
 {
     int r = 1;
     struct cn_grp_memb *m;
-    void *track;
+    void *iter;
 
-    ll_foreach(h->membh, m, track){
+    iter = NULL;
+    while(m=ll2_next(h->membh, &iter)){
         if(m->memb == memb){
-            ll_rem(h->membh, m);
+            ll2_rem(h->membh, m);
             r = 0;
             break;
         }

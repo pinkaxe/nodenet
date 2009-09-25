@@ -46,7 +46,7 @@ int cn_add_elem_to_net(struct cn_elem *e, struct cn_net *n)
 {
     int r;
 
-    printf("add: %p\n", n);
+    printf("add **: %p\n", n);
     r = elem_add_to_net(e, n);
     if(r){
         goto err;

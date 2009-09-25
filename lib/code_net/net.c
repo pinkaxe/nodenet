@@ -7,18 +7,17 @@
 #include <assert.h>
 
 #include "util/log.h"
-#include "util/ll.h"
+#include "util/ll2.h"
 
 #include "types.h"
 #include "net.h"
 
 struct cn_net_memb {
     struct cn_elem *memb;
-    struct link link;
 };
 
 struct cn_net {
-    struct ll *memb;
+    struct ll2 *memb;
 };
 
 
@@ -37,7 +36,7 @@ struct cn_net *net_init()
         goto err;
     }
 
-    n->memb = ll_init(struct cn_net_memb, link, &err);
+    n->memb = ll2_init();
     if(!n->memb){
         printf("err!\n");
         net_free(n);
@@ -54,7 +53,7 @@ int net_free(struct cn_net *n)
     net_isvalid(n);
 
     if(n->memb){
-        ll_free(n->memb);
+        ll2_free(n->memb);
     }
 
     free(n);
@@ -63,30 +62,43 @@ int net_free(struct cn_net *n)
 
 int net_add_memb(struct cn_net *n, struct cn_elem *e)
 {
+    int r = 1;
+    struct cn_net_memb *nm;
     net_isvalid(n);
 
-    return ll_add_front(n->memb, e);
+    nm = malloc(sizeof(*nm));
+    if(!nm){
+        printf("err!!!\n");
+        goto err;
+    }
+
+    nm->memb = e;
+    r = ll2_add_front(n->memb, (void **)&nm);
+
+err:
+    return r;
 }
 
 int net_rem_memb(struct cn_net *n, struct cn_elem *e)
 {
     net_isvalid(n);
 
-    ll_rem(n->memb, e);
+    ll2_rem(n->memb, e);
     return 0;
 }
 
 int net_ismemb(struct cn_net *n, struct cn_elem *e)
 {
     int r = 1;
-    void *track;
-    struct cn_net_memb *curr;
+    struct cn_net_memb *nm;
+    void *iter;
 
     assert(n);
     printf("%p\n", n->memb);
 
-    ll_foreach(n->memb, curr, track){
-        if(curr->memb == e){
+    iter = NULL;
+    while((nm=ll2_next(n->memb, &iter))){
+        if(nm->memb == e){
             r = 0;
             break;
         }
@@ -98,16 +110,18 @@ int net_ismemb(struct cn_net *n, struct cn_elem *e)
 int net_print(struct cn_net *n)
 {
     void *track;
-    struct cn_net_memb *curr;
+    struct cn_net_memb *nm;
     int r = 0;
     int c;
+    void *iter;
 
     printf("\n-- net->elem --: %p\n\n", n);
     c = 0;
 
-    ll_foreach(n->memb, curr, track){
+    iter = NULL;
+    while((nm=ll2_next(n->memb, &iter))){
         printf("zee\n");
-        printf("p:%p\n", curr->memb);
+        printf("p:%p\n", nm->memb);
         c++;
     }
 
