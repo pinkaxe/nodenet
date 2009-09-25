@@ -6,8 +6,8 @@ libcode_net_la_SOURCES = \
 			 elem.c \
 			 grp.c \
 			 cn.c \
-			 run.c
-
+			 run.c \
+			 dispatchers/thread.c
 
 
 libcode_net_la_LIBADD =
