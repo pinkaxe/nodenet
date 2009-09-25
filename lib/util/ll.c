@@ -128,6 +128,17 @@ void *ll_rem(struct ll *h, void *item)
     return item;
 }
 
+/*
+void *ll_rem_match(struct ll *h, void *match, int (*cb)(void *match, void
+            *item))
+{
+    ll_foreach(){
+        cb(match, curr);
+    }
+
+}
+*/
+
 #if 0
 
 int ll_rem_front(struct ll *h, void **item) 

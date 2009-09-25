@@ -1,23 +1,41 @@
-#ifndef __LL_H__
-#define __LL_H__
+
+#ifndef __LL2_H__
+#define __LL2_H__
 
 #include<stddef.h> // offsetof
 
-struct ll;
+struct ll2;
+struct ll2_iter;
 
-struct link{
-	void *prev;
-	void *next;
-};
+struct ll2 *ll2_init();
+int ll2_free(struct ll2 *h);
 
-struct ll *__ll_init(int offset, int *err);
+int ll2_add_front(struct ll2 *h, void **data);
+int ll2_rem(struct ll2 *h, void *data);
 
-#define ll_init(type, link, err)\
-    __ll_init(offsetof(type, link), err)
+//void *ll2_first(struct ll2 *h, void **iter);
+void *ll2_next(struct ll2 *h, void **iter);
 
-void ll_free(struct ll *h);
+//void *ll2_get_end(struct ll2 *h);
+void *ll2_prev(void **iter);
 
-void *ll_get_start(struct ll *h);
+
+
+
+
+
+
+
+
+
+
+
+
+#if 0
+#define ll_foreach(h, curr, track) \
+	for(curr=ll_get_start(h),track=ll_next(h, curr); \
+			curr && ((track=ll_next(h, curr)) || 1) ; \
+            curr=track)
 
 int ll_add(struct ll *h, void *elem, void *new);
 void *ll_rem(struct ll *h, void *elem);
@@ -44,5 +62,6 @@ void *ll_next(struct ll *h, void *curr);
 //	for(curr=start,track=curr->link.next; \
 //			curr && ((track=curr->link.next) || 1) ; \
 //            curr=track)
+#endif
 
 #endif

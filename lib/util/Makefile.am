@@ -18,6 +18,8 @@ libutil_la_SOURCES = \
 	dpool.c \
 	dpool.h \
 	que.c \
-	que.h
+	que.h \
+	ll2.c \
+	ll2.h
 
 libutil_la_LIBADD = -lrt -lpthread
