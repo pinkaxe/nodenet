@@ -14,8 +14,8 @@ int cn_elem_stop(struct cn_elem *e);
 struct cn_grp *cn_grp_init(int id);
 int cn_grp_free(struct cn_grp *g);
 
-int cn_add_elem_to_net();
-int cn_rem_elem_from_net();
+int cn_add_elem_to_net(struct cn_elem *e, struct cn_net *n);
+int cn_rem_elem_from_net(struct cn_elem *e, struct cn_net *n);
 
 int cn_add_elem_to_grp();
 int cn_rem_elem_from_grp();

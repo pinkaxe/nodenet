@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include<errno.h>
+#include<assert.h>
 
 #include "util/log.h"
 #include "util/ll.h"
@@ -187,8 +188,19 @@ void *ll_rem_end(struct ll *h)
 
 void *ll_next(struct ll *h, void *curr)
 {
-	struct link *curr_link = curr + h->offset;;
-	return curr_link->next;
+	struct link *curr_link; 
+
+    if(!curr){
+        return NULL;
+    }
+
+    curr_link = curr + h->offset;;
+
+    if(curr_link){
+        return curr_link->next;
+    }else{
+        return NULL;
+    }
 }
 
 

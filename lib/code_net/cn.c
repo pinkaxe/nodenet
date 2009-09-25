@@ -42,18 +42,48 @@ int cn_grp_free(struct cn_grp *g)
     return grp_free(g);
 }
 
-/*
 int cn_add_elem_to_net(struct cn_elem *e, struct cn_net *n)
 {
-    cn_elem_add_to_net();
-    cn_net_add_memb();
+    int r;
+
+    printf("add: %p\n", n);
+    r = elem_add_to_net(e, n);
+    if(r){
+        goto err;
+    }
+
+    r = net_add_memb(n, e);
+    if(r){
+        int rr;
+        rr = elem_rem_from_net(e, n);
+        printf("fuck\n");
+        goto err;
+    }
+    printf("added\n");
+
+err:
+    return r;
 }
 
 int cn_rem_elem_from_net(struct cn_elem *e, struct cn_net *n)
 {
-    cn_net_rm_memb();
-    cn_elem_rem_from_net();
+    int r;
+
+    r = net_rem_memb(n, e);
+    if(r){
+        goto err;
+    }
+
+    r = elem_rem_from_net(e, n);
+    if(r){
+        goto err;
+    }
+
+err:
+    return r;
 }
+
+/*
 
 int cn_add_elem_to_grp(struct cn_elem *e, struct cn_grp *g)
 {

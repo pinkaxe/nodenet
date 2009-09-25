@@ -7,6 +7,7 @@
 #include "util/ll.h"
 
 struct elem {
+    int y;
 	int x;
 	struct link link;
 };
@@ -39,8 +40,8 @@ int main()
 		}
 
         track = NULL;
-        start = new;
-        ll_foreach(start, curr, track) {
+        //start = new;
+        ll_foreach(h, curr, track) {
             printf("*%d\n", curr->x);
             if(curr->x < 6){
                 ll_rem(h, curr);
@@ -50,8 +51,7 @@ int main()
 
 
         track = NULL;
-        start = new;
-        ll_foreach(start, curr, track) {
+        ll_foreach(h, curr, track) {
             printf("**%d\n", curr->x);
         }
         sleep(2);

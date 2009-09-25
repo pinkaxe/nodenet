@@ -33,6 +33,7 @@ struct cn_grp *grp_init(int id)
     }
 
     g->membh = ll_init(struct cn_grp_memb, link, &err);
+
     if(!g->membh){
         printf("goto err: %d\n", err);
         grp_free(g);
