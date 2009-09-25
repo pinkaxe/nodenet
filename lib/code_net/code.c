@@ -278,7 +278,7 @@ static void *code_thread(void *arg)
                 func(h, buf, 1, h->pdata);
             }else{
                 if(errno == ETIMEDOUT){
-                    //printf("!! timedout xx\n");
+                    /printf("!! timedout xx\n");
                 }
             }
             //sleep(1);
@@ -293,7 +293,7 @@ static void *code_thread(void *arg)
             // process and free
         }else{
             if(errno == ETIMEDOUT){
-                //printf("!! timedout xx\n");
+                printf("!! timedout xx\n");
             }
         }
 

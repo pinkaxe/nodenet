@@ -27,6 +27,8 @@ static void *thread_loop(void *arg)
     void *pdata = elem_get_pdatap(h);
     int attr = elem_get_attr(h);
 
+    thread_detach();
+
     for(;;){
 
         buf_check_timespec.tv_sec = 0;
@@ -64,7 +66,6 @@ static void *thread_loop(void *arg)
                 //printf("!! timedout xx\n");
             }
         }
-        goto end;
 
     }
 end:
@@ -76,5 +77,4 @@ int dispatcher_thread(struct cn_elem *e)
 {
     thread_t tid;
     thread_create(&tid, NULL, thread_loop, e);
-    //thread_detach(tid);
 }
