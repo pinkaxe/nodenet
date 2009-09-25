@@ -17,8 +17,8 @@ int cn_grp_free(struct cn_grp *g);
 int cn_add_elem_to_net(struct cn_elem *e, struct cn_net *n);
 int cn_rem_elem_from_net(struct cn_elem *e, struct cn_net *n);
 
-int cn_add_elem_to_grp();
-int cn_rem_elem_from_grp();
+int cn_add_elem_to_grp(struct cn_elem *e, struct cn_grp *g);
+int cn_rem_elem_from_grp(struct cn_elem *e, struct cn_grp *g);
 
 int cn_link_elem(struct cn_elem *from, struct cn_elem *to);
 int cn_unlink_elem(struct cn_elem *from, struct cn_elem *to);

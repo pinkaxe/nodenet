@@ -109,7 +109,6 @@ int net_ismemb(struct cn_net *n, struct cn_elem *e)
 
 int net_print(struct cn_net *n)
 {
-    void *track;
     struct cn_net_memb *nm;
     int r = 0;
     int c;

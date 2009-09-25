@@ -1,5 +1,6 @@
 
 #include <errno.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,10 +18,37 @@ struct cn_grp_memb {
 };
 
 struct cn_grp {
-    struct ll2 *membh;
+    struct ll2 *memb;
     int id;
     int memb_no;
 };
+
+int grp_isok(struct cn_grp *g)
+{
+    assert(g->memb_no >= 0);
+    assert(g->memb >= 0);
+}
+
+int grp_print(struct cn_grp *g)
+{
+    struct cn_grp_memb *gm;
+    int r = 0;
+    int c;
+    void *iter;
+
+    printf("\n-- grp->elem --: %p\n\n", g);
+    c = 0;
+
+    iter = NULL;
+    while((gm=ll2_next(g->memb, &iter))){
+        printf("p:%p\n", gm->memb);
+        c++;
+    }
+
+    printf("total: %d\n\n", c);
+
+    return 0;
+}
 
 struct cn_grp *grp_init(int id)
 {
@@ -31,9 +59,9 @@ struct cn_grp *grp_init(int id)
         goto err;
     }
 
-    g->membh = ll2_init();
+    g->memb = ll2_init();
 
-    if(!g->membh){
+    if(!g->memb){
         printf("goto err: %d\n", err);
         grp_free(g);
         goto err;
@@ -46,12 +74,15 @@ err:
 
 int grp_free(struct cn_grp *g)
 {
+    grp_isok(g);
+
     if(g){
-        if(g->membh){
-            ll2_free(g->membh);
+        if(g->memb){
+            ll2_free(g->memb);
         }
         free(g);
     }
+
 
     return 0;
 }
@@ -62,6 +93,9 @@ int grp_add_memb(struct cn_grp *h, struct cn_elem *memb)
     int r;
     struct cn_grp_memb *m;
 
+    grp_print(h);
+    grp_isok(h);
+
     m = malloc(sizeof(*m));
     if(!m){
         r = 1;
@@ -69,10 +103,12 @@ int grp_add_memb(struct cn_grp *h, struct cn_elem *memb)
     }
 
     m->memb = memb;
-    ll2_add_front(h->membh, (void *)&m);
+    ll2_add_front(h->memb, (void *)&m);
 
     r = 0;
 
+    grp_print(h);
+    grp_isok(h);
 err:
     return r;
 }
@@ -83,8 +119,10 @@ int grp_get_memb(struct cn_grp *h, void **memb, int max)
     int i = 0;
     void *iter;
 
+    grp_isok(h);
+
     iter = NULL;
-    while(m=ll2_next(h->membh, &iter)){
+    while(m=ll2_next(h->memb, &iter)){
         // randomize?
         memb[i++] = m;
     }
@@ -92,16 +130,18 @@ int grp_get_memb(struct cn_grp *h, void **memb, int max)
     return 0;
 }
 
-bool grp_is_memb(struct cn_grp *h, void *memb)
+int grp_ismemb(struct cn_grp *h, struct cn_elem *memb)
 {
-    bool r = false;
+    int r = 1;
     struct cn_grp_memb *m;
     void *iter;
 
+    grp_isok(h);
+
     iter = NULL;
-    while(m=ll2_next(h->membh, &iter)){
+    while(m=ll2_next(h->memb, &iter)){
         if(m->memb == memb){
-            r = true;
+            r = 0;
             break;
         }
     }
@@ -109,20 +149,25 @@ bool grp_is_memb(struct cn_grp *h, void *memb)
     return r;
 }
 
-int grp_rem_memb(struct cn_grp *h, void *memb)
+int grp_rem_memb(struct cn_grp *h, struct cn_elem *memb)
 {
     int r = 1;
     struct cn_grp_memb *m;
     void *iter;
 
+    grp_isok(h);
+
     iter = NULL;
-    while(m=ll2_next(h->membh, &iter)){
+    while(m=ll2_next(h->memb, &iter)){
         if(m->memb == memb){
-            ll2_rem(h->membh, m);
+            ll2_rem(h->memb, m);
             r = 0;
+            grp_isok(h);
+            grp_print(h);
             break;
         }
     }
+
 
     return r;
 }
