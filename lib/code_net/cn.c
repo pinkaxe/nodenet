@@ -10,6 +10,7 @@
 #include "net.h"
 #include "elem.h"
 #include "grp.h"
+#include "io.h"
 
 #include "cn.h"
 
@@ -150,6 +151,22 @@ int cn_rem_elem_from_grp(struct cn_elem *e, struct cn_grp *g)
 err:
     return r;
 
+}
+
+int cn_net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb)
+{
+    int r;
+
+    ICHK(LWARN, r, net_set_cmd_cb(n, cb));
+    return r;
+}
+
+int cn_net_add_cmd_req(struct cn_net *n, struct cn_io_cmd_req *req)
+{
+    int r;
+
+    ICHK(LWARN, r, net_add_cmd_req(n, req));
+    return r;
 }
 
 /*

@@ -7,11 +7,36 @@ struct cn_io_data_req {
     void *buf;
 };
 
+struct cn_io_cmd_req {
+    cmd_id;
+}
+
+/*
 struct cn_io *io_init()
 {
+    int r;
+    int err;
+    struct cn_io *io;
+
+    PCHK(LWARN, io, calloc(1, sizeof(*io)));
+    if(!io){
+    io    goto err;
+    }
+    DBG_STRUCT_INIT(io);
 }
 
 int io_free(struct cn_io *io)
+{
+}
+*/
+
+int io_add_data_req(struct code_net *net, struct code_elem *from, 
+        void *buf, struct code_buf_prop *prop, int len)
+{
+}
+
+int io_add_cmd_req(struct code_net *net, struct code_elem *from, 
+        void *buf, struct code_buf_prop *prop, int len)
 {
 }
 

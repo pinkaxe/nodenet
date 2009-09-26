@@ -18,5 +18,7 @@ struct cn_net;
 struct cn_elem;
 struct cn_grp;
 struct cn_grp_memb;
+struct cn_io_cmd_req;
+struct cn_io_data_req;
 
 #endif

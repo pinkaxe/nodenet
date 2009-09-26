@@ -15,12 +15,16 @@ int ll2_rem(struct ll2 *h, void *data);
 
 //void *ll2_first(struct ll2 *h, void **iter);
 void *ll2_next(struct ll2 *h, void **iter);
+int ll2_next2(struct ll2 *h, void **res, void **iter);
 
 //void *ll2_get_end(struct ll2 *h);
 void *ll2_prev(void **iter);
 
 
-
+#define ll2_each(r, h, nm, iter) \
+    for(iter=NULL,r = ll2_next2(h, (void **)(&nm), (void **)&iter); \
+        !r; \
+        r = ll2_next2(h, (void **)(&nm), (void **)(&iter))) \
 
 
 

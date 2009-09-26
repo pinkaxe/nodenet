@@ -23,4 +23,8 @@ int cn_rem_elem_from_grp(struct cn_elem *e, struct cn_grp *g);
 int cn_link_elem(struct cn_elem *from, struct cn_elem *to);
 int cn_unlink_elem(struct cn_elem *from, struct cn_elem *to);
 
+
+int cn_net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb);
+int cn_net_add_cmd_req(struct cn_net *n, struct cn_io_cmd_req *req);
+
 #endif

@@ -51,8 +51,13 @@ int main()
         while((e=ll2_next(h, &iter))){
             printf("**%d\n", e->x);
         }
-        sleep(2);
 
+        int r;
+        ll2_each(r, h, e, iter){
+            printf("xx **%d\n", e->x);
+        }
+
+        sleep(2);
 #if 0
 		for(i=0; i < 10; i++){
 			curr = ll_rem_end(h);

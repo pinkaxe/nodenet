@@ -6,6 +6,7 @@
 #include "util/log.h"
 
 #include "code_net/types.h"
+#include "code_net/io.h"
 #include "code_net/cn.h"
 
 #define ok(x){ \
@@ -33,6 +34,11 @@ int input_elem(struct cn_elem *e, void *buf, int len, void *pdata)
     //cn_io_write(e, 0, b, n, cleanup_cb);
     //L(LWARN, "loop\n");
     return 0;
+}
+
+int io_cmd_req_cb(struct cn_net *n, struct cn_io_cmd_req *req)
+{
+    printf("!!! got it\n");
 }
 
 int main(int argc, char *argv)
@@ -71,6 +77,7 @@ int main(int argc, char *argv)
         cn_elem_run(e0);
         //cn_elem_run(e1);
 
+        /*
         int i;
         for(i=0; i < 300; i++){
             e[i] = cn_elem_init(CN_TYPE_THREAD, CN_ATTR_NO_INPUT, input_elem, NULL);
@@ -82,6 +89,9 @@ int main(int argc, char *argv)
         for(i=0; i < 300; i++){
             //cn_elem_run(e[i]);
         }
+        */
+
+        cn_net_set_cmd_cb(n0, io_cmd_req_cb);
 
         while(1) sleep(5);
 

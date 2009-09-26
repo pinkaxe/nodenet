@@ -104,7 +104,7 @@ int ll2_rem(struct ll2 *h, void *data)
 
 
 
-void *ll2_next(struct ll2 *h, void **iter)
+void *ll2_next(struct ll2 *h,  void **iter)
 {
     void *r = NULL;
     struct ll2_elem *_iter;
@@ -123,6 +123,38 @@ void *ll2_next(struct ll2 *h, void **iter)
     if(_iter->next){
         /* got next */
         r = _iter->next->data;
+        *iter = _iter->next;
+    }
+
+end:
+    return r;
+}
+
+int ll2_next2(struct ll2 *h, void **res, void **iter)
+{
+    int r = 1;
+    struct ll2_elem *_iter;
+
+    if(!(*iter)){
+        /* first */
+        *iter = h->start;
+        _iter = *iter;
+        if(_iter){
+            *res = _iter->data;
+            if(*res){
+                r = 0;
+            }
+        }
+        goto end;
+    }
+
+    _iter = *iter;
+    if(_iter->next){
+        /* got next */
+        *res = _iter->next->data;
+        if(*res){
+            r = 0;
+        }
         *iter = _iter->next;
     }
 

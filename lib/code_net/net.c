@@ -10,6 +10,7 @@
 #include "util/ll2.h"
 
 #include "types.h"
+#include "io.h"
 #include "net.h"
 
 struct cn_net_memb {
@@ -18,6 +19,10 @@ struct cn_net_memb {
 
 struct cn_net {
     struct ll2 *memb;
+    struct ll2 *cmd_req;
+    io_cmd_req_cb_t io_cmd_req_cb;
+    struct ll2 *data_req;
+    io_data_req_cb_t io_data_req_cb;
 };
 
 
@@ -31,7 +36,7 @@ struct cn_net *net_init()
     int err;
     struct cn_net *n;
 
-    PCHK(LWARN, n, malloc(sizeof(*n)));
+    PCHK(LWARN, n, calloc(1, sizeof(*n)));
     if(!n){
         goto err;
     }
@@ -120,7 +125,8 @@ int net_print(struct cn_net *n)
     c = 0;
 
     iter = NULL;
-    while((nm=ll2_next(n->memb, &iter))){
+    ll2_each(n->memb, nm, iter){
+    //while((nm = ll2_next(n->memb, &iter))){
         printf("zee\n");
         printf("p:%p\n", nm->memb);
         c++;
@@ -129,4 +135,12 @@ int net_print(struct cn_net *n)
     printf("total: %d\n\n", c);
 
     return 0;
+}
+
+int net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb)
+{
+}
+
+int net_add_cmd_req(struct cn_net *n, struct cn_io_cmd_req *req)
+{
 }

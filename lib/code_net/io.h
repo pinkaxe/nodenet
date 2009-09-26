@@ -1,11 +1,11 @@
 #ifndef __CN_IO_H__
 #define __CN_IO_H__
 
-int cn_io_write_buf(struct cn_net *net, struct ce_elem *from,
-        void *buf, struct code_buf_prop *prop, int len);
-int cn_io_write_ctrl(struct cn_net *net, struct ce_elem *from,
-        void *buf, struct code_buf_prop *prop, int len);
+typedef int (*io_cmd_req_cb_t)(struct cn_net *n, struct cn_io_cmd_req *req);
+typedef int (*io_data_req_cb_t)(struct cn_net *n, struct cn_io_data_req *req);
 
-void *cn_io_thread(void *arg);
+int cn_io_set_cmd_cb(struct cn_net *n, int (*cn_io_req)(struct cn_io_cmd_req
+            *req));
+int cn_io_add_cmd_req(struct cn_io_cmd_req *req);
 
 #endif
