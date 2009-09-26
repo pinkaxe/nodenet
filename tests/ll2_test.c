@@ -31,7 +31,7 @@ int main()
 		for(i=0; i < 10; i++){
 			new = malloc(sizeof *new);
 			new->x = i;
-			r = ll2_add_front(h, &new);
+			r = ll2_add_front(h, (void **)&new);
             if(r){
                 goto err;
             }

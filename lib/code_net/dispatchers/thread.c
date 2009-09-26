@@ -27,7 +27,7 @@ static void *thread_loop(void *arg)
     void *pdata = elem_get_pdatap(h);
     int attr = elem_get_attr(h);
 
-    thread_detach();
+    thread_detach(thread_self());
 
     for(;;){
 

@@ -1,4 +1,5 @@
 
+#include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
 
@@ -9,6 +10,7 @@
     assert(x); \
 }
 
+#if 0
 struct cn_io_data_req {
     struct code_elem *from; /* from who? */
     int type;  /* how to cleanup */
@@ -21,6 +23,7 @@ int cn_io_write_cmd(struct cn_elem *e, enum cn_elem_cmd cmd, void *pdata);
 
 int cn_io_write_data(struct cn_elem *e, struct io_buf_attr *attr, void *buf,
         int len, void (*cleanup_cb)(void *buf, void *pdata));
+#endif
 
 
 int input_elem(struct cn_elem *e, void *buf, int len, void *pdata)

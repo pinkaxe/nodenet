@@ -44,8 +44,11 @@ typedef	pthread_cond_t cond_t;
 #define	cond_destroy(cond) \
 	dbg_thread(pthread_cond_destroy(cond))
 
-#define thread_detach() \
-	dbg_thread(pthread_detach(pthread_self()))
+#define thread_self() \
+    pthread_self()
+
+#define thread_detach(tid) \
+	dbg_thread(pthread_detach(tid))
 
 #define mutex_lock(mutex) \
 	dbg_thread(pthread_mutex_lock(mutex))

@@ -46,7 +46,7 @@ static void *worker(void *task)
 {
 	struct task *t = task;
 
-	thread_detach();
+	thread_detach(thread_self());
 	for(;;){
 		mutex_lock(&t->mutex);
 		while(!t->busy){
