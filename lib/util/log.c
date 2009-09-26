@@ -15,7 +15,7 @@ void dlog(int level, const char *filename, int line,
         va_list args;
 
         va_start(args, format);
-	/*setlogmask(LOG_UPTO(LOG_ERR));*/
+	    /*setlogmask(LOG_UPTO(LOG_ERR));*/
         syslog(level, "%s:%d:%s->", filename, line, funcname);
         vsyslog(level, format, args);
 

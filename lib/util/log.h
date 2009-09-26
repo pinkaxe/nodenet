@@ -1,6 +1,8 @@
 #ifndef __LOG_H__
 #define __LOG_H__
 
+#include<errno.h>
+
 void dlog(int level, const char *filename, int line,
                 const char *funcname, const char *format, ...);
 
@@ -27,6 +29,20 @@ void dlog(int level, const char *filename, int line,
 
 #define log4(level, mesg, arg1, arg2, arg3, arg4) \
 	dlog(level, __FILE__, __LINE__, __FUNCTION__, mesg, arg1, arg2, arg3, arg4) 
+
+#define L(level, mesg, ...) \
+	dlog(level, __FILE__, __LINE__, __FUNCTION__, mesg, __VA_ARGS__) 
+
+
+#define ICHK(level, lexp, rexp) \
+    if((lexp = rexp)){ \
+        L(level, "%s fail, r=%d(%s)", rexp, lexp, strerror(lexp)); \
+    }
+
+#define PCHK(level, lexp, rexp) \
+    if(!(lexp = rexp)){ \
+        L(level, "%s fail, err=%d(%s)", rexp, errno, strerror(errno)); \
+    }
 
 #endif
 
