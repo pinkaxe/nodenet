@@ -7,10 +7,10 @@
 #include "util/log.h"
 
 #include "types.h"
+#include "io.h"
 #include "net.h"
 #include "elem.h"
 #include "grp.h"
-#include "io.h"
 
 #include "cn.h"
 

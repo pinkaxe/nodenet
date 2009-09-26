@@ -125,8 +125,8 @@ int net_print(struct cn_net *n)
     c = 0;
 
     iter = NULL;
-    ll2_each(n->memb, nm, iter){
-    //while((nm = ll2_next(n->memb, &iter))){
+    //ll2_each(n->memb, nm, iter){
+    while((nm = ll2_next(n->memb, &iter))){
         printf("zee\n");
         printf("p:%p\n", nm->memb);
         c++;
