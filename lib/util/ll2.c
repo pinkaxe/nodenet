@@ -68,6 +68,31 @@ err:
 	return 0;
 }
 
+static int _ll2_rem(struct ll2 *h, struct ll2_elem *e)
+{
+    int r;
+
+    if(e->prev){
+        e->prev->next = e->next;
+    }else{
+        /* first */
+        h->start = e->next;
+    }
+
+    if(e->next){
+        e->next->prev = e->prev;
+    }else{
+        /* last */
+        h->end = e->prev;
+    }
+
+    h->c--;
+    free(e);
+    r = 0;
+
+    return r;
+}
+
 int ll2_rem(struct ll2 *h, void *data)
 {
     int r = 1;
@@ -77,24 +102,7 @@ int ll2_rem(struct ll2 *h, void *data)
     e = h->start;
     while(e){
         if(e->data == data){
-
-            if(e->prev){
-                e->prev->next = e->next;
-            }else{
-                /* first */
-                h->start = e->next;
-            }
-
-            if(e->next){
-                e->next->prev = e->prev;
-            }else{
-                /* last */
-                h->end = e->prev;
-            }
-
-            h->c--;
-            r = 0;
-            free(e);
+            r = _ll2_rem(h, e);
             break;
         }
         e = e->next;
