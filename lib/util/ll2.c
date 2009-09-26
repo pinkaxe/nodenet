@@ -24,8 +24,8 @@ struct ll2 *ll2_init()
 {
 	struct ll2 *h;
 
-	if(!(h = calloc(1, sizeof(*h)))){
-        //LOG1(LWARN, "%s\n", strerror(errno));
+	PCHK(LWARN, h, calloc(1, sizeof(*h)));
+    if(!h){
         goto err;
 	}
 
@@ -44,8 +44,8 @@ int ll2_add_front(struct ll2 *h, void **data)
 {
 	struct ll2_elem *e;
 
-	if(!(e = calloc(1, sizeof *e))){
-        //LOG1(LWARN, "%s\n", strerror(errno));
+	PCHK(LWARN, e, calloc(1, sizeof *e));
+    if(!e){
         goto err;
 	}
 
