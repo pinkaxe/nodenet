@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "util/ll2.h"
+#include "util/log.h"
 
 #include "types.h"
 #include "grp.h"
@@ -54,15 +55,15 @@ struct cn_grp *grp_init(int id)
 {
     int err;
     struct cn_grp *g;
-    g = calloc(1, sizeof(*g));
+
+    PCHK(LWARN, g, calloc(1, sizeof(*g)));
+
     if(!g){
         goto err;
     }
 
-    g->memb = ll2_init();
-
+    PCHK(LWARN, g->memb, ll2_init());
     if(!g->memb){
-        printf("goto err: %d\n", err);
         grp_free(g);
         goto err;
     }
@@ -74,11 +75,13 @@ err:
 
 int grp_free(struct cn_grp *g)
 {
+    int r;
+
     grp_isok(g);
 
     if(g){
         if(g->memb){
-            ll2_free(g->memb);
+            ICHK(LWARN, r, ll2_free(g->memb));
         }
         free(g);
     }
@@ -90,20 +93,20 @@ int grp_free(struct cn_grp *g)
 
 int grp_add_memb(struct cn_grp *h, struct cn_elem *memb)
 {
-    int r;
+    int r = 1;
     struct cn_grp_memb *m;
 
     grp_print(h);
     grp_isok(h);
 
-    m = malloc(sizeof(*m));
+    PCHK(LWARN, m, malloc(sizeof(*m)));
     if(!m){
         r = 1;
         goto err;
     }
 
     m->memb = memb;
-    ll2_add_front(h->memb, (void *)&m);
+    ICHK(LWARN, r, ll2_add_front(h->memb, (void *)&m));
 
     r = 0;
 
@@ -160,7 +163,7 @@ int grp_rem_memb(struct cn_grp *h, struct cn_elem *memb)
     iter = NULL;
     while(m=ll2_next(h->memb, &iter)){
         if(m->memb == memb){
-            ll2_rem(h->memb, m);
+            ICHK(LWARN, r, ll2_rem(h->memb, m));
             r = 0;
             grp_isok(h);
             grp_print(h);

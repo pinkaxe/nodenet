@@ -154,7 +154,6 @@ int elem_add_to_net(struct cn_elem *e, struct cn_net *n)
 {
     int r = 1;
     struct cn_elem_net *en;
-    elem_isok(e);
 
     en = malloc(sizeof(*en));
     if(!en){
@@ -181,8 +180,6 @@ int elem_add_to_grp(struct cn_elem *e, struct cn_grp *g)
 {
     int r = 1;
     struct cn_elem_grp *eg;
-
-    elem_isok(e);
 
     eg = malloc(sizeof(*eg));
     if(!eg){
