@@ -62,43 +62,43 @@ struct cn_elem_net {
 struct cn_elem *elem_init(enum cn_elem_type type, enum cn_elem_attr attr,
         void *code, void *pdata)
 {
+    int r;
     int err;
     struct cn_elem *e;
-    printf("crete\n");
 
-    e = calloc(1, sizeof(*e));
+    PCHK(LWARN, e, calloc(1, sizeof(*e)));
     if(!e){
         goto err;
     }
     DBG_STRUCT_INIT(e);
 
-    e->in_data_queh = que_init(8);
+    PCHK(LWARN, e->in_data_queh, que_init(8));
     if(!e->in_data_queh){
-        printf("goto err\n");
+        PCHK(LWARN, r, elem_free(e));
         goto err;
     }
 
-    e->in_cmd_queh = que_init(8);
+    PCHK(LWARN, e->in_cmd_queh, que_init(8));
     if(!e->in_cmd_queh){
-        printf("goto err\n");
+        PCHK(LWARN, r, elem_free(e));
         goto err;
     }
 
-    e->in_links_llh = ll2_init();
+    PCHK(LWARN, e->in_links_llh, ll2_init());
     if(!e->in_links_llh){
-        printf("goto err\n");
+        PCHK(LWARN, r, elem_free(e));
         goto err;
     }
 
-    e->grp_llh = ll2_init();
+    PCHK(LWARN, e->grp_llh, ll2_init());
     if(!e->grp_llh){
-        printf("goto err\n");
+        PCHK(LWARN, r, elem_free(e));
         goto err;
     }
 
-    e->net_llh = ll2_init();
+    PCHK(LWARN, e->net_llh, ll2_init());
     if(!e->net_llh){
-        printf("goto err\n");
+        PCHK(LWARN, r, elem_free(e));
         goto err;
     }
 
@@ -115,39 +115,50 @@ err:
  
 int elem_free(struct cn_elem *e)
 {
+    int fail = 0;
+    int r = 0;
+
     elem_isok(e);
 
     if(e->net_llh){
-        ll2_free(e->net_llh);
+        ICHK(LWARN, r, ll2_free(e->net_llh));
+        if(r) fail++;
     }
 
     if(e->grp_llh){
-        ll2_free(e->grp_llh);
+        ICHK(LWARN, r, ll2_free(e->grp_llh));
+        if(r) fail++;
     }
 
     if(e->in_links_llh){
-        ll2_free(e->in_links_llh);
+        ICHK(LWARN, r, ll2_free(e->in_links_llh));
+        if(r) fail++;
     }
 
     if(e->in_data_queh){
-        que_free(e->in_data_queh);
+        ICHK(LWARN, r, que_free(e->in_data_queh));
+        if(r) fail++;
     }
 
     if(e->in_cmd_queh){
-        que_free(e->in_cmd_queh);
+        ICHK(LWARN, r, que_free(e->in_cmd_queh));
+        if(r) fail++;
     }
 
     free(e);
 
-    return 0;
+    return fail;
 }
 
 
 int elem_start(struct cn_elem *e)
 {
+    int r;
     /* we call run in a different file so it is possible to replaced it with a
      * version not using threads */
-    run(e);
+    ICHK(LWARN, r, run(e));
+
+    return r;
 }
 
 int elem_add_to_net(struct cn_elem *e, struct cn_net *n)
@@ -155,14 +166,13 @@ int elem_add_to_net(struct cn_elem *e, struct cn_net *n)
     int r = 1;
     struct cn_elem_net *en;
 
-    en = malloc(sizeof(*en));
+    PCHK(LWARN, en, malloc(sizeof(*en)));
     if(!en){
-        printf("err!!!\n");
         goto err;
     }
-    printf("%s: %p\n", "added!!", en);
+
     en->net = n;
-    r = ll2_add_front(e->net_llh, (void **)&en);
+    ICHK(LWARN, r, ll2_add_front(e->net_llh, (void **)&en));
 
 err:
     return r;
@@ -170,8 +180,11 @@ err:
 
 int elem_rem_from_net(struct cn_elem *e, struct cn_net *n)
 {
+    int r;
+
     elem_isok(e);
-    ll2_rem(e->net_llh, n);
+
+    ICHK(LWARN, r, ll2_rem(e->net_llh, n));
     //TODO:
     return 0;
 }
@@ -181,15 +194,14 @@ int elem_add_to_grp(struct cn_elem *e, struct cn_grp *g)
     int r = 1;
     struct cn_elem_grp *eg;
 
-    eg = malloc(sizeof(*eg));
+    PCHK(LWARN, eg, malloc(sizeof(*eg)));
     if(!eg){
-        printf("err!!!\n");
         goto err;
     }
 
     printf("%s: %p\n", "added!!", eg);
     eg->grp = g;
-    r = ll2_add_front(e->grp_llh, (void **)&eg);
+    ICHK(LWARN, r, ll2_add_front(e->grp_llh, (void **)&eg));
 
 err:
     return r;
@@ -197,14 +209,19 @@ err:
 
 int elem_rem_from_grp(struct cn_elem *e, struct cn_grp *g)
 {
+    int r;
+
     elem_isok(e);
-    ll2_rem(e->grp_llh, g);
+
+    ICHK(LWARN, r, ll2_rem(e->grp_llh, g));
     return 0;
 }
 
+/*
 
 int elem_link(struct cn_elem *from, struct cn_elem *to)
 {
+    int r;
     int i;
     struct cn_elem *curr;
     struct cn_elem_link *link;
@@ -213,7 +230,7 @@ int elem_link(struct cn_elem *from, struct cn_elem *to)
     elem_isok(from);
     elem_isok(to);
 
-    link = malloc(sizeof(*link));
+    PCHK(LWARN, link, malloc(sizeof(*link)));
     if(!link){
         printf("cunt\n");
         exit(-1);
@@ -221,10 +238,10 @@ int elem_link(struct cn_elem *from, struct cn_elem *to)
     }
 
     link->elem = to;
-    ll2_add_front(from->out_links_llh, (void **)&link);
+    PCHK(LWARN, r, ll2_add_front(from->out_links_llh, (void **)&link));
 
     // link back
-    link = malloc(sizeof(*link));
+    PCHK(LWARN, link, malloc(sizeof(*link)));
     if(!link){
         printf("cunt\n");
         exit(-1);
@@ -237,6 +254,7 @@ int elem_link(struct cn_elem *from, struct cn_elem *to)
 int elem_unlink(struct cn_elem *from, struct cn_elem *to)
 {
 }
+*/
 
 int elem_get_type(struct cn_elem *e)
 {
@@ -365,7 +383,7 @@ int elem_isok(struct cn_elem *e)
 
     elem_net_isok(e);
     elem_grp_isok(e);
-    elem_print(e);
+    //elem_print(e);
 
     return 0;
 }

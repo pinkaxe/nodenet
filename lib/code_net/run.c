@@ -18,9 +18,11 @@
 
 int run(struct cn_elem *e)
 {
+    int r;
+
     switch(elem_get_type(e)){
         case CN_TYPE_THREAD:
-            dispatcher_thread(e);
+            r = dispatcher_thread(e);
             break;
        // case CN_TYPE_SOCK:
        //     dispatcher_sock(e);
@@ -36,4 +38,6 @@ int run(struct cn_elem *e)
     //  make connection
     //}else if(h->type == FORK_PROCESS){
     //}else if(h->type == REMOTE_PROCESS){
+ 
+    return r;
 }

@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <assert.h>
 
+#include "util/log.h"
+
 #include "code_net/types.h"
 #include "code_net/cn.h"
 
@@ -28,8 +30,8 @@ int cn_io_write_data(struct cn_elem *e, struct io_buf_attr *attr, void *buf,
 
 int input_elem(struct cn_elem *e, void *buf, int len, void *pdata)
 {
-    printf("xt!! \n");
     //cn_io_write(e, 0, b, n, cleanup_cb);
+    //L(LWARN, "loop\n");
     return 0;
 }
 
@@ -50,7 +52,6 @@ int main(int argc, char *argv)
         e0 = cn_elem_init(CN_TYPE_THREAD, CN_ATTR_NO_INPUT, input_elem, NULL);
         ok(e0);
 
-        printf("-- %p\n", n0);
         //while(1){
         //sleep(5);
         cn_add_elem_to_net(e0, n0);
@@ -61,14 +62,13 @@ int main(int argc, char *argv)
         e1 = cn_elem_init(CN_TYPE_THREAD, CN_ATTR_NO_INPUT, input_elem, NULL);
         ok(e1);
 
-        printf("-- %p\n", n0);
         //while(1){
         //sleep(5);
         cn_add_elem_to_net(e1, n0);
         cn_add_elem_to_grp(e1, g0);
         //cn_rem_elem_from_net(e1, n0);
 
-        //cn_elem_run(e0);
+        cn_elem_run(e0);
         //cn_elem_run(e1);
 
         int i;
@@ -88,7 +88,6 @@ int main(int argc, char *argv)
         cn_elem_free(e0);
         cn_grp_free(g0);
         cn_net_free(n0);
-        printf("trough\n");
     }
 
     return 0;

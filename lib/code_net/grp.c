@@ -96,7 +96,7 @@ int grp_add_memb(struct cn_grp *h, struct cn_elem *memb)
     int r = 1;
     struct cn_grp_memb *m;
 
-    grp_print(h);
+    //grp_print(h);
     grp_isok(h);
 
     PCHK(LWARN, m, malloc(sizeof(*m)));
@@ -110,7 +110,7 @@ int grp_add_memb(struct cn_grp *h, struct cn_elem *memb)
 
     r = 0;
 
-    grp_print(h);
+    //grp_print(h);
     grp_isok(h);
 err:
     return r;

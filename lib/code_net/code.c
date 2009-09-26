@@ -76,28 +76,24 @@ code_elem_t *code_create(code_type_t type, code_attr_t attr, void *code,
 {
     int err;
     code_elem_t *h;
-    printf("crete\n");
 
-    h = malloc(sizeof(*h));
+    PCHK(LWARN, h, malloc(sizeof(*h)));
     if(!h){
         goto err;
     }
 
-    h->in_data_queh = que_init(8);
+    PCHK(LWARN, h->in_data_queh = que_init(8));
     if(!h->in_data_queh){
-        printf("goto err\n");
         goto err;
     }
 
-    h->in_cmd_queh = que_init(8);
+    PCHK(LWARN, h->in_cmd_queh = que_init(8));
     if(!h->in_cmd_queh){
-        printf("goto err\n");
         goto err;
     }
 
-    h->linksh = ll_init(struct code_link, ll_link, &err);
+    PCHK(LWARN, h->linksh = ll_init(struct code_link, ll_link, &err));
     if(!h->linksh){
-        printf("goto err\n");
         goto err;
     }
 
