@@ -55,9 +55,11 @@ int main()
         int r;
         ll2_each(r, h, e, iter){
             printf("xx **%d\n", e->x);
+            ll2_rem(h, e);
+            free(e);
         }
 
-        sleep(2);
+        //sleep(2);
 #if 0
 		for(i=0; i < 10; i++){
 			curr = ll_rem_end(h);

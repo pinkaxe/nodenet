@@ -94,6 +94,7 @@ int ll2_rem(struct ll2 *h, void *data)
 
             h->c--;
             r = 0;
+            free(e);
             break;
         }
         e = e->next;
