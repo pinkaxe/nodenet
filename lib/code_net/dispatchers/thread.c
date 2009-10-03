@@ -14,6 +14,13 @@
 #include "code_net/types.h"
 #include "code_net/elem.h"
 
+static void *thread_watchdog(void *arg)
+{
+    // loop and check that loop comes back
+    // under a certain amount of time
+    // report error if not
+}
+
 static void *thread_loop(void *arg)
 {
     void *buf = NULL;

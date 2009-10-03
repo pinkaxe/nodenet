@@ -138,12 +138,12 @@ int cn_rem_elem_from_grp(struct cn_elem *e, struct cn_grp *g)
 {
     int r;
 
-    r = grp_rem_memb(g, e);
+    ICHK(LWARN, r, grp_rem_memb(g, e));
     if(r){
         goto err;
     }
 
-    r = elem_rem_from_grp(e, g);
+    ICHK(LWARN, r, elem_rem_from_grp(e, g));
     if(r){
         goto err;
     }

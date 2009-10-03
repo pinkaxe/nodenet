@@ -200,7 +200,6 @@ int elem_add_to_grp(struct cn_elem *e, struct cn_grp *g)
         goto err;
     }
 
-    printf("%s: %p\n", "added!!", eg);
     eg->grp = g;
     ICHK(LWARN, r, ll2_add_front(e->grp_llh, (void **)&eg));
 
