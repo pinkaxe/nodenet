@@ -10,6 +10,9 @@ struct cn_cmd {
     enum cn_elem_cmd id;
     void *pdata;
     int data_no;
+};
+
+struct cn_cmd_conf {
     int send_to_type; /* grp/elem */
     int send_to_id;  /* depend on send_to_type grp_id/elem_id */
     int send_to_no;  /* send to how many */
