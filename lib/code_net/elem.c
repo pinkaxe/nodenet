@@ -276,14 +276,10 @@ void *elem_get_codep(struct cn_elem *e)
     return e->code;
 }
 
-struct cmd {
-    enum cn_elem_cmd cmd;
-    void *pdata;
-};
 
 int elem_write_in_cmd(struct cn_elem *e, enum cn_elem_cmd cmd, void *pdata)
 {
-    struct cmd *c = malloc(sizeof(*c));
+    struct cn_cmd *c = malloc(sizeof(*c));
 
     c->cmd = cmd;
     c->pdata = pdata;
@@ -293,7 +289,7 @@ int elem_write_in_cmd(struct cn_elem *e, enum cn_elem_cmd cmd, void *pdata)
 
 void *elem_read_in_cmd(struct cn_elem *e, struct timespec *ts)
 {
-    struct cmd *c;
+    struct cn_cmd *c;
     void *pdata = NULL;
 
     c = que_get(e->in_cmd_queh, ts);

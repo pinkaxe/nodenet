@@ -94,20 +94,24 @@ void *que_get(struct que *h, struct timespec *ts)
     mutex_lock(&h->mutex);
 
     while(h->tail == h->head){
-        clock_gettime(CLOCK_REALTIME, &timeout);
-        timeout.tv_sec += ts->tv_sec;
-        nsec = timeout.tv_nsec + ts->tv_nsec;
-        //printf("-- %ld, %ld\n", nsec, nsec / 1000000);
-        timeout.tv_sec += (nsec / 1000000000);
-        timeout.tv_nsec = (nsec % 1000000000);
+        if(ts){
+            clock_gettime(CLOCK_REALTIME, &timeout);
+            timeout.tv_sec += ts->tv_sec;
+            nsec = timeout.tv_nsec + ts->tv_nsec;
+            //printf("-- %ld, %ld\n", nsec, nsec / 1000000);
+            timeout.tv_sec += (nsec / 1000000000);
+            timeout.tv_nsec = (nsec % 1000000000);
 
-        //printf("--start wait: %ld, %ld\n", timeout.tv_sec, timeout.tv_nsec);
-        waitr = cond_timedwait(&h->cond, &h->mutex, &timeout);
-        //printf("--end wait: %d\n", waitr);
-        if(waitr == ETIMEDOUT){
-        //printf("--timeout\n");
-            e = ETIMEDOUT;
-            goto timeout;
+            //printf("--start wait: %ld, %ld\n", timeout.tv_sec, timeout.tv_nsec);
+            waitr = cond_timedwait(&h->cond, &h->mutex, &timeout);
+            //printf("--end wait: %d\n", waitr);
+            if(waitr == ETIMEDOUT){
+            //printf("--timeout\n");
+                e = ETIMEDOUT;
+                goto timeout;
+            }
+        }else{
+            cond_wait(&h->cond, &h->mutex);
         }
     }
 

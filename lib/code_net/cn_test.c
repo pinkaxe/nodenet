@@ -13,6 +13,7 @@
     assert(x); \
 }
 
+#define GRP0 0
 #if 0
 struct cn_io_data_req {
     struct code_elem *from; /* from who? */
@@ -31,6 +32,7 @@ int cn_io_write_data(struct cn_elem *e, struct io_buf_attr *attr, void *buf,
 
 int input_elem(struct cn_elem *e, void *buf, int len, void *pdata)
 {
+    //j
     //cn_io_write(e, 0, b, n, cleanup_cb);
     //L(LWARN, "loop\n");
     return 0;
@@ -52,7 +54,7 @@ int main(int argc, char *argv)
         n0 = cn_net_init();
         ok(n0);
 
-        g0 = cn_grp_init(1);
+        g0 = cn_grp_init(GRP0);
         ok(g0);
 
         e0 = cn_elem_init(CN_TYPE_THREAD, CN_ATTR_NO_INPUT, input_elem, NULL);
@@ -75,6 +77,7 @@ int main(int argc, char *argv)
         //cn_rem_elem_from_net(e1, n0);
 
         cn_elem_run(e0);
+        cn_elem_run(e1);
         //cn_elem_run(e1);
 
         /*
@@ -92,8 +95,12 @@ int main(int argc, char *argv)
         */
 
         cn_net_set_cmd_cb(n0, io_cmd_req_cb);
+        cn_net_run(n0);
 
-        while(1) sleep(5);
+        while(1){
+            cn_net_add_cmd_req(n0, NULL);
+            sleep(1);
+        }
 
         cn_elem_free(e0);
         cn_grp_free(g0);

@@ -18,7 +18,7 @@
 
 int run(struct cn_elem *e)
 {
-    int r;
+    int r = 1;
 
     switch(elem_get_type(e)){
         case CN_TYPE_THREAD:

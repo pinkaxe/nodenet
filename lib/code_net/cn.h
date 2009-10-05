@@ -4,7 +4,7 @@
 /* net */
 struct cn_net *cn_net_init();
 int cn_net_free(struct cn_net *n);
-//cn_net_run
+int cn_net_run(struct cn_net *n);
 int cn_net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb);
 // cn_net_get_cmd_req(n, req, timeout)
 // cn_net_get_data_req(n, req, timeout)

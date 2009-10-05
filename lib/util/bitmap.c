@@ -62,7 +62,6 @@ int bitmap_get_bit(struct bitmap *h, int start, int offset)
         /* check if we should go to the next byte */
         if(i >= 8){
             byte_no++;
-            bit_offset = 0;
         }
     }
 

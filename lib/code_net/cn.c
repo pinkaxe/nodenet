@@ -31,6 +31,14 @@ int cn_net_free(struct cn_net *n)
     return r;
 }
 
+int cn_net_run(struct cn_net *n)
+{
+    int r;
+
+    ICHK(LWARN, r, net_run(n));
+    return r;
+}
+
 struct cn_elem *cn_elem_init(enum cn_elem_type type, enum cn_elem_attr attr,
         void *code, void *pdata)
 {

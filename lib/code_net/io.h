@@ -1,6 +1,11 @@
 #ifndef __CN_IO_H__
 #define __CN_IO_H__
 
+struct cn_cmd {
+    enum cn_elem_cmd cmd;
+    void *pdata;
+};
+
 typedef int (*io_cmd_req_cb_t)(struct cn_net *n, struct cn_io_cmd_req *req);
 typedef int (*io_data_req_cb_t)(struct cn_net *n, struct cn_io_data_req *req);
 

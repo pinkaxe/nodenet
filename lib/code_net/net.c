@@ -7,6 +7,7 @@
 #include <assert.h>
 
 #include "util/log.h"
+#include "util/que.h"
 #include "util/ll2.h"
 
 #include "types.h"
@@ -19,9 +20,9 @@ struct cn_net_memb {
 
 struct cn_net {
     struct ll2 *memb;
-    struct ll2 *cmd_req;
+    struct que *cmd_req;
     io_cmd_req_cb_t io_cmd_req_cb;
-    struct ll2 *data_req;
+    struct que *data_req;
     io_data_req_cb_t io_data_req_cb;
 };
 
@@ -48,6 +49,21 @@ struct cn_net *net_init()
         goto err;
     }
 
+    PCHK(LWARN, n->cmd_req, que_init(32));
+    if(!n->cmd_req){
+        net_free(n);
+        n = NULL;
+        goto err;
+    }
+
+
+    PCHK(LWARN, n->data_req, que_init(32));
+    if(!n->data_req){
+        net_free(n);
+        n = NULL;
+        goto err;
+    }
+
     net_isvalid(n);
 err:
     return n;
@@ -61,6 +77,15 @@ int net_free(struct cn_net *n)
     if(n->memb){
         ICHK(LWARN, r, ll2_free(n->memb));
     }
+
+    if(n->cmd_req){
+        ICHK(LWARN, r, que_free(n->cmd_req));
+    }
+
+    if(n->data_req){
+        ICHK(LWARN, r, que_free(n->data_req));
+    }
+
 
     free(n);
     return r;
@@ -76,6 +101,7 @@ int net_add_memb(struct cn_net *n, struct cn_elem *e)
     if(!nm){
         goto err;
     }
+
 
     nm->memb = e;
     ICHK(LWARN, r, ll2_add_front(n->memb, (void **)&nm));
@@ -139,8 +165,44 @@ int net_print(struct cn_net *n)
 
 int net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb)
 {
+    net_isvalid(n);
+    n->io_cmd_req_cb = cb;
+    return 0;
 }
 
 int net_add_cmd_req(struct cn_net *n, struct cn_io_cmd_req *req)
 {
+    struct cn_cmd *c = malloc(sizeof(*c));
+
+    c->cmd = 99;
+    c->pdata = NULL;
+
+    return que_add(n->cmd_req, c);
+}
+
+/* thread implementation */
+#include "arch/thread.h"
+
+void *cmd_req_thread(void *arg)
+{
+    struct timespec ts = {0, 0};
+    struct cn_net *n = arg;
+    struct cn_cmd *cmd;
+
+    thread_detach(thread_self());
+
+    for(;;){
+        cmd = que_get(n->cmd_req, NULL);
+        if(cmd){
+            printf("!! got cmd: %d\n", cmd->cmd);
+            free(cmd);
+        }
+
+    }
+}
+
+int net_run(struct cn_net *n)
+{
+    thread_t tid;
+    thread_create(&tid, NULL, cmd_req_thread, n);
 }

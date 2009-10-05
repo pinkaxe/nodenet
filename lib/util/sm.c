@@ -45,7 +45,7 @@ void sm_free(struct sm *h)
 
 int sm_run(struct sm *h, size_t c, void *pdata, sm_event_cb cb)
 {
-    int ret;
+    int ret = 0;
     int i;
 
     while(c--){
