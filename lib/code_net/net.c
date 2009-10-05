@@ -170,14 +170,9 @@ int net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb)
     return 0;
 }
 
-int net_add_cmd_req(struct cn_net *n, struct cn_io_cmd_req *req)
+int net_add_cmd_req(struct cn_net *n, struct cn_cmd *cmd)
 {
-    struct cn_cmd *c = malloc(sizeof(*c));
-
-    c->cmd = 99;
-    c->pdata = NULL;
-
-    return que_add(n->cmd_req, c);
+    return que_add(n->cmd_req, cmd);
 }
 
 /* thread implementation */
@@ -194,8 +189,7 @@ void *cmd_req_thread(void *arg)
     for(;;){
         cmd = que_get(n->cmd_req, NULL);
         if(cmd){
-            printf("!! got cmd: %d\n", cmd->cmd);
-            free(cmd);
+            n->io_cmd_req_cb(n, cmd);
         }
 
     }

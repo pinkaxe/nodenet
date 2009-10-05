@@ -38,9 +38,10 @@ int input_elem(struct cn_elem *e, void *buf, int len, void *pdata)
     return 0;
 }
 
-int io_cmd_req_cb(struct cn_net *n, struct cn_io_cmd_req *req)
+int io_cmd_req_cb(struct cn_net *n, struct cn_cmd *cmd)
 {
-    printf("!!! got it\n");
+    printf("!!! yeah got it: %d\n", cmd->id);
+    free(cmd);
 }
 
 int main(int argc, char *argv)
@@ -49,6 +50,7 @@ int main(int argc, char *argv)
     struct cn_elem *e0, *e1, *e2;
     struct cn_elem *e[1024];
     struct cn_grp *g0;
+    struct cn_cmd *cmd;
 
     while(1){
         n0 = cn_net_init();
@@ -98,8 +100,10 @@ int main(int argc, char *argv)
         cn_net_run(n0);
 
         while(1){
-            cn_net_add_cmd_req(n0, NULL);
-            sleep(1);
+            cmd = malloc(sizeof(*cmd));
+            cmd->id = 66;
+            cn_net_add_cmd_req(n0, cmd);
+            usleep(1000);
         }
 
         cn_elem_free(e0);

@@ -281,7 +281,7 @@ int elem_write_in_cmd(struct cn_elem *e, enum cn_elem_cmd cmd, void *pdata)
 {
     struct cn_cmd *c = malloc(sizeof(*c));
 
-    c->cmd = cmd;
+    c->id = cmd;
     c->pdata = pdata;
 
     return que_add(e->in_cmd_queh, c);
