@@ -62,11 +62,12 @@ static void *thread_loop(void *arg)
         }
 
         /* incoming commands */
-        cmd_buf = elem_read_in_buf(h, &cmd_check_timespec);
+        cmd_buf = elem_read_in_cmd(h, &cmd_check_timespec);
         if(cmd_buf){
             printf("!!! Got a cmd_buf\n ");
-            free(cmd_buf);
-            break;
+            //exit(1);
+            //free(cmd_buf);
+            //break;
             // process and free
         }else{
             if(errno == ETIMEDOUT){

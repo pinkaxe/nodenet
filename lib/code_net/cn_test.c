@@ -29,6 +29,7 @@ int cn_io_write_data(struct cn_elem *e, struct io_buf_attr *attr, void *buf,
         int len, void (*cleanup_cb)(void *buf, void *pdata));
 #endif
 
+static struct cn_elem *e0, *e1, *e2;
 
 int input_elem(struct cn_elem *e, void *buf, int len, void *pdata)
 {
@@ -38,16 +39,24 @@ int input_elem(struct cn_elem *e, void *buf, int len, void *pdata)
     return 0;
 }
 
+int process_elem(struct cn_elem *e, void *buf, int len, void *pdata)
+{
+    printf("!! process\n");
+    return 0;
+}
+
 int io_cmd_req_cb(struct cn_net *n, struct cn_cmd *cmd)
 {
-    printf("!!! yeah got it: %d\n", cmd->id);
-    free(cmd);
+    //printf("!!! yeah got it: %d\n", cmd->id);
+    send_cmd_to_elem(e1, cmd);
+    send_cmd_to_elem(e0, cmd);
+    //free(cmd);
+    return 0;
 }
 
 int main(int argc, char *argv)
 {
     struct cn_net *n0;
-    struct cn_elem *e0, *e1, *e2;
     struct cn_elem *e[1024];
     struct cn_grp *g0;
     struct cn_cmd *cmd;
@@ -69,7 +78,7 @@ int main(int argc, char *argv)
         //cn_rem_elem_from_net(e0, n0);
 
 
-        e1 = cn_elem_init(CN_TYPE_THREAD, CN_ATTR_NO_INPUT, input_elem, NULL);
+        e1 = cn_elem_init(CN_TYPE_THREAD, 0, process_elem, NULL);
         ok(e1);
 
         //while(1){
@@ -107,6 +116,7 @@ int main(int argc, char *argv)
         }
 
         cn_elem_free(e0);
+        cn_elem_free(e1);
         cn_grp_free(g0);
         cn_net_free(n0);
     }
