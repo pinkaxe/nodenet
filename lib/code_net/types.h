@@ -20,4 +20,7 @@ struct cn_elem;
 struct cn_grp;
 struct cn_grp_memb;
 
+struct cn_io_cmd;
+struct cn_io_data;
+
 #endif

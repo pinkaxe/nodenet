@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
 
@@ -60,12 +61,23 @@ int io_cmd_req_cb(struct cn_net *n, struct cn_io_cmd *cmd)
     return 0;
 }
 
+int io_data_req_cb(struct cn_net *n, struct cn_io_data *data)
+{
+    //printf("!!! yeah got it: %d\n", data->id);
+    //send_data_to_elem(e1, data);
+    //send_data_to_elem(e0, data);
+    //free(data);
+    return 0;
+}
+
+
 int main(int argc, char *argv)
 {
     struct cn_net *n0;
     struct cn_elem *e[1024];
     struct cn_grp *g0;
     struct cn_io_cmd *cmd;
+    struct cn_io_data *data;
     struct cn_io_conf *conf;
 
     while(1){
@@ -118,13 +130,20 @@ int main(int argc, char *argv)
         */
 
         cn_net_set_cmd_cb(n0, io_cmd_req_cb);
+        cn_net_set_data_cb(n0, io_data_req_cb);
         cn_net_run(n0);
 
         while(1){
-           // cmd = malloc(sizeof(*cmd));
-           // cmd->id = 66;
-           // cn_net_add_cmd_req(n0, cmd);
-            usleep(1000);
+
+            cmd = malloc(sizeof(*cmd));
+            cmd->id = 66;
+            cn_net_add_cmd_req(n0, cmd);
+
+            data = malloc(sizeof(*data));
+            cn_net_add_data_req(n0, data);
+
+            //usleep(1000);
+            sleep(1);
         }
 
         cn_elem_free(e0);

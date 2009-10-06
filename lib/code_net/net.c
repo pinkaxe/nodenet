@@ -175,6 +175,18 @@ int net_add_cmd_req(struct cn_net *n, struct cn_io_cmd *cmd)
     return que_add(n->cmd_req, cmd);
 }
 
+int net_set_data_cb(struct cn_net *n, io_data_req_cb_t cb)
+{
+    net_isvalid(n);
+    n->io_data_req_cb = cb;
+    return 0;
+}
+
+int net_add_data_req(struct cn_net *n, struct cn_io_data *data)
+{
+    return que_add(n->data_req, data);
+}
+
 /* thread implementation */
 #include "arch/thread.h"
 
@@ -195,8 +207,26 @@ void *cmd_req_thread(void *arg)
     }
 }
 
+void *data_req_thread(void *arg)
+{
+    struct timespec ts = {0, 0};
+    struct cn_net *n = arg;
+    struct cn_io_data *data;
+
+    thread_detach(thread_self());
+
+    for(;;){
+        data = que_get(n->data_req, NULL);
+        if(data){
+            n->io_data_req_cb(n, data);
+        }
+
+    }
+}
+
 int net_run(struct cn_net *n)
 {
     thread_t tid;
     thread_create(&tid, NULL, cmd_req_thread, n);
+    thread_create(&tid, NULL, data_req_thread, n);
 }

@@ -10,6 +10,7 @@
 
 #include "util/log.h"
 #include "arch/thread.h"
+#include "code_net/types.h"
 /*
 int dispatcher_lproc(struct cn_elem *e) 
 {

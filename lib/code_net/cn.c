@@ -178,6 +178,23 @@ int cn_net_add_cmd_req(struct cn_net *n, struct cn_io_cmd *cmd)
     return r;
 }
 
+int cn_net_set_data_cb(struct cn_net *n, io_data_req_cb_t cb)
+{
+    int r;
+
+    ICHK(LWARN, r, net_set_data_cb(n, cb));
+    return r;
+}
+
+int cn_net_add_data_req(struct cn_net *n, struct cn_io_data *data)
+{
+    int r;
+
+    r = net_add_data_req(n, data);
+    return r;
+}
+
+
 /*
 int cn_link_elem(struct cn_elem *from, struct cn_elem *to)
 {
