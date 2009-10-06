@@ -170,7 +170,7 @@ int cn_net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb)
     return r;
 }
 
-int cn_net_add_cmd_req(struct cn_net *n, struct cn_cmd *cmd)
+int cn_net_add_cmd_req(struct cn_net *n, struct cn_io_cmd *cmd)
 {
     int r;
 

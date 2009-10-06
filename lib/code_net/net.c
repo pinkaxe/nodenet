@@ -170,7 +170,7 @@ int net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb)
     return 0;
 }
 
-int net_add_cmd_req(struct cn_net *n, struct cn_cmd *cmd)
+int net_add_cmd_req(struct cn_net *n, struct cn_io_cmd *cmd)
 {
     return que_add(n->cmd_req, cmd);
 }
@@ -182,7 +182,7 @@ void *cmd_req_thread(void *arg)
 {
     struct timespec ts = {0, 0};
     struct cn_net *n = arg;
-    struct cn_cmd *cmd;
+    struct cn_io_cmd *cmd;
 
     thread_detach(thread_self());
 

@@ -24,6 +24,12 @@ int run(struct cn_elem *e)
         case CN_TYPE_THREAD:
             r = dispatcher_thread(e);
             break;
+        case CN_TYPE_LPROC:
+            r = dispatcher_lproc(e);
+            break;
+        case CN_TYPE_BIN:
+            r = dispatcher_bin(e);
+            break;
        // case CN_TYPE_SOCK:
        //     dispatcher_sock(e);
        //     break;

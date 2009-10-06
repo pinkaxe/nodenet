@@ -28,13 +28,13 @@ void *elem_get_codep(struct cn_elem *e);
 void *elem_read_in_cmd(struct cn_elem *e, struct timespec *ts);
 //void *elem_write_in_buf(struct cn_elem *e);
 void *elem_read_in_buf(struct cn_elem *e, struct timespec *ts);
-//
+
 //void *elem_write_out_cmd(struct cn_elem *e);
 //void *elem_read_out_cmd(struct cn_elem *e, struct timespec *ts);
 //void *elem_write_out_buf(struct cn_elem *e);
 //void *elem_read_out_buf(struct cn_elem *e, struct timespec *ts);
 
-int  send_cmd_to_elem(struct cn_elem *e, struct cn_cmd *cmd);
+int  send_cmd_to_elem(struct cn_elem *e, struct cn_io_cmd *cmd);
 int  send_data_to_elem(struct cn_elem *e, void *data, uint32_t data_no);
 
 #endif

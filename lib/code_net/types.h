@@ -3,6 +3,7 @@
 
 enum cn_elem_type {
     CN_TYPE_THREAD,
+    CN_TYPE_LPROC,
     CN_TYPE_BIN
 };
 
@@ -18,7 +19,5 @@ struct cn_net;
 struct cn_elem;
 struct cn_grp;
 struct cn_grp_memb;
-struct cn_io_cmd_req;
-struct cn_io_data_req;
 
 #endif

@@ -276,7 +276,7 @@ void *elem_get_codep(struct cn_elem *e)
     return e->code;
 }
 
-int  send_cmd_to_elem(struct cn_elem *e, struct cn_cmd *cmd)
+int  send_cmd_to_elem(struct cn_elem *e, struct cn_io_cmd *cmd)
 {
     //printf("!!! sending: %p\n", cmd);
     return que_add(e->in_cmd_queh, cmd);
@@ -291,7 +291,7 @@ int  send_data_to_elem(struct cn_elem *e, void *data, uint32_t data_no)
  
 int elem_write_in_cmd(struct cn_elem *e, enum cn_elem_cmd cmd, void *pdata)
 {
-    struct cn_cmd *c = malloc(sizeof(*c));
+    struct cn_io_cmd *c = malloc(sizeof(*c));
 
     c->id = cmd;
     c->pdata = pdata;
@@ -307,7 +307,7 @@ void *elem_write_in_buf(struct cn_elem *e)
 
 void *elem_read_in_cmd(struct cn_elem *e, struct timespec *ts)
 {
-    struct cn_cmd *c;
+    struct cn_io_cmd *c;
 
     c = que_get(e->in_cmd_queh, ts);
     printf("!!! cheking: %p\n", c);

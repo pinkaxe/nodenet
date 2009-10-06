@@ -45,7 +45,13 @@ int process_elem(struct cn_elem *e, void *buf, int len, void *pdata)
     return 0;
 }
 
-int io_cmd_req_cb(struct cn_net *n, struct cn_cmd *cmd)
+int process_lproc_elem(struct cn_elem *e, void *buf, int len, void *pdata)
+{
+    printf("!! process lproc_\n");
+    return 0;
+}
+
+int io_cmd_req_cb(struct cn_net *n, struct cn_io_cmd *cmd)
 {
     //printf("!!! yeah got it: %d\n", cmd->id);
     send_cmd_to_elem(e1, cmd);
@@ -59,7 +65,8 @@ int main(int argc, char *argv)
     struct cn_net *n0;
     struct cn_elem *e[1024];
     struct cn_grp *g0;
-    struct cn_cmd *cmd;
+    struct cn_io_cmd *cmd;
+    struct cn_io_conf *conf;
 
     while(1){
         n0 = cn_net_init();
@@ -81,14 +88,19 @@ int main(int argc, char *argv)
         e1 = cn_elem_init(CN_TYPE_THREAD, 0, process_elem, NULL);
         ok(e1);
 
-        //while(1){
-        //sleep(5);
         cn_add_elem_to_net(e1, n0);
         cn_add_elem_to_grp(e1, g0);
-        //cn_rem_elem_from_net(e1, n0);
 
-        cn_elem_run(e0);
-        cn_elem_run(e1);
+
+        e2 = cn_elem_init(CN_TYPE_LPROC, 0, process_lproc_elem, NULL);
+        ok(e2);
+
+        cn_add_elem_to_net(e2, n0);
+        cn_add_elem_to_grp(e2, g0);
+
+        //cn_elem_run(e0);
+        //cn_elem_run(e1);
+        cn_elem_run(e2);
         //cn_elem_run(e1);
 
         /*
@@ -109,9 +121,9 @@ int main(int argc, char *argv)
         cn_net_run(n0);
 
         while(1){
-            cmd = malloc(sizeof(*cmd));
-            cmd->id = 66;
-            cn_net_add_cmd_req(n0, cmd);
+           // cmd = malloc(sizeof(*cmd));
+           // cmd->id = 66;
+           // cn_net_add_cmd_req(n0, cmd);
             usleep(1000);
         }
 
