@@ -6,7 +6,7 @@
 
 #include "util/log.h"
 #include "util/ll.h"
-#include "arch/thread.h"
+#include "sys/thread.h"
 
 
 

@@ -10,7 +10,7 @@ AC_PROG_LIBTOOL
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile
 		lib/Makefile
-		lib/arch/Makefile
+		lib/sys/Makefile
 		lib/wrap/Makefile
 		lib/util/Makefile
 		lib/db/Makefile

@@ -6,7 +6,7 @@
 #include<assert.h>
 
 #include "util/log.h"
-#include "arch/thread.h"
+#include "sys/thread.h"
 
 struct que {
     int head, tail, len;

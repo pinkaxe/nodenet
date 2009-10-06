@@ -188,7 +188,7 @@ int net_add_data_req(struct cn_net *n, struct cn_io_data *data)
 }
 
 /* thread implementation */
-#include "arch/thread.h"
+#include "sys/thread.h"
 
 void *cmd_req_thread(void *arg)
 {

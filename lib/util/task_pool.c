@@ -8,7 +8,7 @@
 #include<assert.h>
 
 #include "wrap/xstdlib.h"
-#include "arch/thread.h"
+#include "sys/thread.h"
 
 #include "util/log.h"
 #include "util/debug.h"

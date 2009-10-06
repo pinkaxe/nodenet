@@ -9,7 +9,7 @@
 
 #include "util/log.h"
 #include "util/que.h"
-#include "arch/thread.h"
+#include "sys/thread.h"
 
 #include "code_net/types.h"
 #include "code_net/elem.h"

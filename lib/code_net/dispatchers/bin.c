@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 
 #include "util/log.h"
-#include "arch/thread.h"
+#include "sys/thread.h"
 #include "code_net/types.h"
 
 /*

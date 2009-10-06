@@ -5,7 +5,7 @@
 #include<stdint.h>
 #include<errno.h>
 
-#include "arch/thread.h"
+#include "sys/thread.h"
 
 #include "util/log.h"
 #include "util/bitmap.h"
@@ -39,10 +39,10 @@ struct dpool *dpool_create(size_t bufsize, size_t max_no, int opt)
         dpool_free(h);
         goto err;
     }
-    
+
     h->bufsize = bufsize;
     h->max_no = max_no;
-     
+
     h->bitmap = bitmap_create(max_no);
     if(!h->bitmap){
         dpool_free(h);
