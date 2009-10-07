@@ -1,5 +1,4 @@
 
-
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,25 +10,6 @@
 #include "util/log.h"
 
 #include "code_net/io.h"
-
-struct cn_io_conf {
-    int sendto_no;  /* send to how many */
-    int sendto_type; /* grp/elem/all */
-    int sendto_id;  /* depend on send_to_type grp_id/elem_id */
-};
-
-struct cn_io_cmd {
-    enum cn_elem_cmd id;
-    void *pdata;
-    int data_no;
-    struct cn_io_conf *conf;
-};
-
-struct cn_io_data {
-    void *data;
-    int data_no;
-    struct cn_io_conf *conf;
-};
 
 
 struct cn_io_cmd *io_cmd_init(enum cn_elem_cmd id, void *pdata, int data_no,
@@ -62,6 +42,36 @@ struct cn_io_cmd *io_cmd_init(enum cn_elem_cmd id, void *pdata, int data_no,
 err:
 
     return cmd;
+}
+
+struct cn_io_cmd *io_cmd_clone(struct cn_io_cmd *cmd)
+{
+    struct cn_io_cmd *clone;
+    struct cn_io_conf *conf;
+
+    PCHK(LWARN, clone, malloc(sizeof(*clone)));
+    if(!clone){
+        goto err;
+    }
+    clone->id = cmd->id;
+    clone->pdata = cmd->pdata;
+    clone->data_no = cmd->data_no;
+    clone->conf = NULL;
+
+    PCHK(LWARN, conf, malloc(sizeof(*conf)));
+    if(!conf){
+        io_cmd_free(clone);
+        clone = NULL;
+        goto err;
+    }
+    conf->sendto_no = cmd->conf->sendto_no;
+    conf->sendto_type = cmd->conf->sendto_type;
+    conf->sendto_id = cmd->conf->sendto_id;
+
+    clone->conf = conf;
+
+err:
+    return clone;
 }
 
 int io_cmd_free(struct cn_io_cmd *cmd)

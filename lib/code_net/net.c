@@ -12,6 +12,7 @@
 
 #include "types.h"
 #include "io.h"
+#include "elem.h"
 #include "net.h"
 
 struct cn_net_memb {
@@ -139,6 +140,32 @@ int net_ismemb(struct cn_net *n, struct cn_elem *e)
 
     return r;
 }
+
+
+int net_sendto_all(struct cn_net *n, struct cn_io_cmd *cmd)
+{
+    int r = 0;
+    struct cn_net_memb *nm;
+    void *iter;
+    struct cn_io_cmd *clone;
+
+    assert(n);
+
+    iter = NULL;
+    while((nm=ll2_next(n->memb, &iter))){
+        clone = io_cmd_clone(cmd);
+        while((r=send_cmd_to_elem(nm->memb, clone))){
+            usleep(100);
+        }
+        if(r){
+            goto err;
+        }
+    }
+
+err:
+    return r;
+}
+
 
 int net_print(struct cn_net *n)
 {

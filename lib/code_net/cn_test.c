@@ -55,8 +55,25 @@ int process_lproc_elem(struct cn_elem *e, void *buf, int len, void *pdata)
 int io_cmd_req_cb(struct cn_net *n, struct cn_io_cmd *cmd)
 {
     //printf("!!! yeah got it: %d\n", cmd->id);
-    send_cmd_to_elem(e1, cmd);
-    send_cmd_to_elem(e0, cmd);
+    //struct cn_io_conf *conf;
+
+    assert(cmd);
+    assert(cmd->conf);
+
+    switch(cmd->conf->sendto_type){
+        case CN_SENDTO_GRP:
+            break;
+        case CN_SENDTO_ELEM:
+            //send_cmd_to_elem(e1, cmd);
+            break;
+        case CN_SENDTO_ALL:
+            net_sendto_all(n, cmd);
+            //printf("freeing %p\n", cmd);
+            io_cmd_free(cmd);
+            break;
+        default:
+            break;
+    }
     //free(cmd);
     return 0;
 }
@@ -108,12 +125,12 @@ int main(int argc, char *argv)
         e2 = cn_elem_init(CN_TYPE_LPROC, 0, process_lproc_elem, NULL);
         ok(e2);
 
-        cn_add_elem_to_net(e2, n0);
+        //cn_add_elem_to_net(e2, n0);
         cn_add_elem_to_grp(e2, g0);
 
         cn_elem_run(e0);
         cn_elem_run(e1);
-        cn_elem_run(e2);
+        //cn_elem_run(e2);
         //cn_elem_run(e1);
 
         /*
@@ -136,14 +153,21 @@ int main(int argc, char *argv)
 
         while(1){
 
-            cmd = io_cmd_init(6, NULL, 0, 1, CN_SENDTO_GRP, 0);
-            cn_net_add_cmd_req(n0, cmd);
+            cmd = io_cmd_init(6, NULL, 0, 1, CN_SENDTO_ALL, 0);
+            //printf("malloced %p\n", cmd);
+            //io_cmd_free(cmd);
+            //printf("leed %p\n", cmd);
+            // make sure to check return value if que is full
+            while(cn_net_add_cmd_req(n0, cmd)){
+                //assert(1 == 0);
+                usleep(100);
+            }
 
             //data = malloc(sizeof(*data));
             //cn_net_add_data_req(n0, data);
 
-            //usleep(1000);
-            sleep(1);
+            //usleep(10000);
+            //sleep(1);
         }
 
         cn_elem_free(e0);

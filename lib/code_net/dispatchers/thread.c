@@ -13,6 +13,7 @@
 
 #include "code_net/types.h"
 #include "code_net/elem.h"
+#include "code_net/io.h"
 
 static void *thread_watchdog(void *arg)
 {
@@ -62,7 +63,9 @@ static void *thread_loop(void *arg)
         /* incoming commands */
         cmd_buf = elem_read_in_cmd(h, &cmd_check_timespec);
         if(cmd_buf){
-            printf("!!! Got a cmd_buf\n ");
+            //printf("!!! Got a cmd_buf\n ");
+            io_cmd_free(cmd_buf);
+            //printf("!!! freed cmd_buf\n ");
             //exit(1);
             //free(cmd_buf);
             //break;

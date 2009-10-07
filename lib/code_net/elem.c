@@ -310,7 +310,7 @@ void *elem_read_in_cmd(struct cn_elem *e, struct timespec *ts)
     struct cn_io_cmd *c;
 
     c = que_get(e->in_cmd_queh, ts);
-    printf("!!! cheking: %p\n", c);
+    //printf("!!! cheking: %p\n", c);
     //if(c){
     //    pdata = c->pdata;
     //    free(c);
