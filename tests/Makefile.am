@@ -1,5 +1,5 @@
 
-bin_PROGRAMS = sbuf_test task_pool_test sm_test ll_test bitmap_test dpool_test ll2_test
+bin_PROGRAMS = sbuf_test task_pool_test sm_test ll_test bitmap_test dpool_test ll2_test que_test
 
 #AM_LDFLAGS = -L../lib/sys -lsys -L../lib/wrap -lwrap -L../lib/util -lutil -lpthread
 AM_LDFLAGS = ../lib/sys/libsys.la ../lib/wrap/libwrap.la ../lib/util/libutil.la -lpthread
@@ -11,3 +11,4 @@ ll_test_SOURCES = ll_test.c
 ll2_test_SOURCES = ll2_test.c
 bitmap_test_SOURCES = bitmap_test.c
 dpool_test_SOURCES = dpool_test.c
+que_test_SOURCES = que_test.c

@@ -71,7 +71,7 @@ int que_add(struct que *h, void *item)
 
     h->pp[h->head] = item;
 
-    if(++h->head >= h->len){
+    if(++h->head > h->len){
         h->head = 0;
     }
 
@@ -104,7 +104,7 @@ void *que_get(struct que *h, struct timespec *ts)
 
             //printf("--start wait: %ld, %ld\n", timeout.tv_sec, timeout.tv_nsec);
             waitr = cond_timedwait(&h->cond, &h->mutex, &timeout);
-            printf("--end wait: %d\n", waitr);
+            //printf("--end wait: %d\n", waitr);
             if(waitr == ETIMEDOUT){
             //printf("--timeout\n");
                 e = ETIMEDOUT;
@@ -117,7 +117,7 @@ void *que_get(struct que *h, struct timespec *ts)
 
     r = h->pp[h->tail];
 
-    if(++h->tail >= h->len){
+    if(++h->tail > h->len){
         h->tail = 0;
     }
 
@@ -133,34 +133,4 @@ void *que_set_get_cb(struct que *h, void (*get_cb)(void *p))
     h->get_cb = get_cb;
 }
 
-/*
-int main(int argc, char **argv)
-{
-    int i;
-    struct que *h;
-    char *str0 = "abc";
-    char *str1 = "---";
-
-    while(1){
-        h = que_init(6);
-        for(i=0; i < 2; i++){
-            que_add(h, str0);     
-            que_add(h, str1);     
-            que_add(h, str0);     
-            que_add(h, str1);     
-            que_add(h, str0);     
-            que_add(h, str1);     
-            printf("** %s\n", (char *)que_get(h));
-            printf("** %s\n", (char *)que_get(h));
-            printf("** %s\n", (char *)que_get(h));
-            printf("** %s\n", (char *)que_get(h));
-            printf("** %s\n", (char *)que_get(h));
-            printf("** %s\n", (char *)que_get(h));
-        }
-        que_free(h);
-    }
-
-    return 0;
-}
-*/
 
