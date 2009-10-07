@@ -1,0 +1,16 @@
+Idea:
+
+Very thin layer to abstract communication between different
+programs/components etc.
+
+Use for:
+ - Distributed computing(clusters etc.)
+ - Pipelines
+
+4 layers
+- App
+- Top level api
+- Code element dispatchers(threads/process/remote process)
+- Low level objects(elem, net, grp etc.)
+
+
