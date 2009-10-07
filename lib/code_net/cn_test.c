@@ -27,7 +27,7 @@ struct cn_io_data_req {
 int cn_io_write_cmd(struct cn_elem *e, enum cn_elem_cmd cmd, void *pdata);
 
 int cn_io_write_data(struct cn_elem *e, struct io_buf_attr *attr, void *buf,
-        int len, void (*cleanup_cb)(void *buf, void *pdata));
+        jint len, void (*cleanup_cb)(void *buf, void *pdata));
 #endif
 
 static struct cn_elem *e0, *e1, *e2;
@@ -136,12 +136,11 @@ int main(int argc, char *argv)
 
         while(1){
 
-            cmd = malloc(sizeof(*cmd));
-            cmd->id = 66;
+            cmd = io_cmd_init(6, NULL, 0, 1, CN_SENDTO_GRP, 0);
             cn_net_add_cmd_req(n0, cmd);
 
-            data = malloc(sizeof(*data));
-            cn_net_add_data_req(n0, data);
+            //data = malloc(sizeof(*data));
+            //cn_net_add_data_req(n0, data);
 
             //usleep(1000);
             sleep(1);

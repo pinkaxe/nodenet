@@ -5,6 +5,7 @@ libcode_net_la_SOURCES = \
 			 net.c \
 			 elem.c \
 			 grp.c \
+			 io.c \
 			 cn.c \
 			 run.c \
 			 dispatchers/thread.c \
