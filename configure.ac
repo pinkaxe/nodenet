@@ -21,9 +21,9 @@ AC_CONFIG_FILES([Makefile
 AC_ARG_ENABLE(debug, [  --enable-debug            enable debugging
         [[default=yes]]],, enable_debug=yes)
 if test x"$enable_debug" = x"yes"; then
-    CFLAGS="$CFLAGS -O0 -g -fno-inline "
+    CFLAGS="-O0 -g -fno-inline "
 else
-    CFLAGS="$CFLAGS -O3 -DNDEBUG "
+    CFLAGS="-O3 -DNDEBUG "
 fi
 CFLAGS+=-I$PWD/lib
 

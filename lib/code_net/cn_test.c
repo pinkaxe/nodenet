@@ -63,6 +63,7 @@ int io_cmd_req_cb(struct cn_net *n, struct cn_io_cmd *cmd)
 
 int io_data_req_cb(struct cn_net *n, struct cn_io_data *data)
 {
+    printf("ggg!!!!!!!!!!!!!!\n");
     //printf("!!! yeah got it: %d\n", data->id);
     //send_data_to_elem(e1, data);
     //send_data_to_elem(e0, data);
@@ -110,8 +111,8 @@ int main(int argc, char *argv)
         cn_add_elem_to_net(e2, n0);
         cn_add_elem_to_grp(e2, g0);
 
-        //cn_elem_run(e0);
-        //cn_elem_run(e1);
+        cn_elem_run(e0);
+        cn_elem_run(e1);
         cn_elem_run(e2);
         //cn_elem_run(e1);
 

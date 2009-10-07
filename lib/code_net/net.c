@@ -196,8 +196,6 @@ void *cmd_req_thread(void *arg)
     struct cn_net *n = arg;
     struct cn_io_cmd *cmd;
 
-    thread_detach(thread_self());
-
     for(;;){
         cmd = que_get(n->cmd_req, NULL);
         if(cmd){
@@ -213,8 +211,6 @@ void *data_req_thread(void *arg)
     struct cn_net *n = arg;
     struct cn_io_data *data;
 
-    thread_detach(thread_self());
-
     for(;;){
         data = que_get(n->data_req, NULL);
         if(data){
@@ -228,5 +224,8 @@ int net_run(struct cn_net *n)
 {
     thread_t tid;
     thread_create(&tid, NULL, cmd_req_thread, n);
+    thread_detach(tid);
+
     thread_create(&tid, NULL, data_req_thread, n);
+    thread_detach(tid);
 }

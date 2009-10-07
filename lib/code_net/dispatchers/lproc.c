@@ -123,6 +123,7 @@ int dispatcher_lproc(struct cn_elem *e)
         //printf("parent\n");
         thread_t tid;
         thread_create(&tid, NULL, lproc_middle, e);
+        thread_detach(tid);
     }else if(pid == 0){
         // child
         close(fd[0]);
