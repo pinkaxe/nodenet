@@ -41,6 +41,10 @@ struct cn_elem {
     struct que *out_cmd_queh;         /* input cmds for code elem */
 
     void *pdata; /* private passthru data */
+
+    /* maximum time a element is allowed to exe on one buffer processing */
+    uint32_t max_exe_usec;
+
     DBG_STRUCT_END
 };
 

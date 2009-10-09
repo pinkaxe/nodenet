@@ -23,14 +23,15 @@ int main(int argc, char **argv)
         if(!h){
             printf("!! err\n");
         }
-        
+
         for(i=0; i < 1024; i++){
             p = dpool_get_buf(h);
             p2 = dpool_get_buf(h);
             printf("!! got buf: %p\n", p);
             printf("!! got buf: %p\n", p2);
-            printf("!! return buf: %d\n", dpool_ret_buf(h, p));
-            printf("!! return buf: %d\n", dpool_ret_buf(h, p2));
+            sleep(1);
+        //    printf("!! return buf: %d\n", dpool_ret_buf(h, p));
+        //    printf("!! return buf: %d\n", dpool_ret_buf(h, p2));
         }
 
         dpool_free(h);

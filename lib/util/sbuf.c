@@ -53,7 +53,6 @@ int sbuf_grow(struct sbuf *b, size_t size)
 }
 
 
-			
 static int insert(struct sbuf *b, size_t pos, const char *buf)
 {
 	size_t need, len; 

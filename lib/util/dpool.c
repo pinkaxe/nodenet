@@ -43,6 +43,7 @@ struct dpool *dpool_create(size_t bufsize, size_t max_no, int opt)
     h->bufsize = bufsize;
     h->max_no = max_no;
 
+    /* use a bitmap to keep track of which bufs used/unused */
     h->bitmap = bitmap_init(max_no);
     if(!h->bitmap){
         dpool_free(h);
@@ -83,7 +84,7 @@ void dpool_free(struct dpool *h)
     if(h->bitmap){
         bitmap_free(h->bitmap);
     }
-   
+
     if(h->bufs){
         free(h->bufs);
     }
@@ -102,7 +103,7 @@ struct dpool_buf *dpool_get_buf(struct dpool *h)
 {
     void *buf = NULL;
     int n;
-    
+
     mutex_lock(&h->mutex);
 
     /* get the number of a free buf */
@@ -127,7 +128,7 @@ struct dpool_buf *dpool_get_filled_buf(struct dpool *h)
 {
     void *buf = NULL;
     int n;
-    
+
     mutex_lock(&h->mutex);
 
     /* get the number of a free buf */

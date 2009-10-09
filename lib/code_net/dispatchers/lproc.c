@@ -11,6 +11,7 @@
 #include "util/log.h"
 #include "sys/thread.h"
 #include "code_net/types.h"
+
 /*
 int dispatcher_lproc(struct cn_elem *e) 
 {
@@ -23,6 +24,7 @@ static int fd[2];
 
 void *lproc_middle(void *arg)
 {
+#if 0
     char buf[5];
     write(fd[0], "yes", 4);
     read(fd[0], buf, 3);
@@ -33,7 +35,6 @@ void *lproc_middle(void *arg)
         fprintf(stderr, "in middle\n");
     }
 
-#if 0
     void *buf = NULL;
     void *cmd_buf = NULL;
     struct cn_elem *h = arg;
@@ -128,14 +129,15 @@ int dispatcher_lproc(struct cn_elem *e)
         // child
         close(fd[0]);
 
-      //  if(fd[1] != STDIN_FILENO)
-      //      dup2(fd[1], STDIN_FILENO);
+        if(fd[1] != STDIN_FILENO)
+            dup2(fd[1], STDIN_FILENO);
 
-      //  if(fd[1] != STDOUT_FILENO)
-      //      dup2(fd[1], STDOUT_FILENO);
+        if(fd[1] != STDOUT_FILENO)
+            dup2(fd[1], STDOUT_FILENO);
 
         //printf("child\n");
         lproc_loop();
+        // or exec here
     }
 
 err:

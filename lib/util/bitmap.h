@@ -1,5 +1,7 @@
-#ifndef BITMAP_H
-#define BITMAP_H
+#ifndef UTIL_BITMAP_H__
+#define UTIL_BITMAP_H__
+
+/* no locking,  depending on app lib user have to do locking */
 
 struct bitmap;
 
