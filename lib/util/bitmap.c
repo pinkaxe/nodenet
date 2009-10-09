@@ -5,6 +5,8 @@
 #include<stdbool.h>
 #include<assert.h>
 
+#include "util/bitmap.h"
+
 struct bitmap {
     uint32_t bits_no;
     size_t bytes_no;
@@ -12,7 +14,7 @@ struct bitmap {
 };
 
 
-struct bitmap *bitmap_create(uint32_t bits)
+struct bitmap *bitmap_init(uint32_t bits)
 {
     struct bitmap *h;
 

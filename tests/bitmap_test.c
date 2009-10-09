@@ -24,7 +24,7 @@ int test_brute(int min, int max)
 
     for(bits_no=min; bits_no <= max; bits_no++){
         for(bits_empty=0; bits_empty < bits_no; bits_empty++){
-            b = bitmap_create(bits_no);
+            b = bitmap_init(bits_no);
             bits_fill = bits_no - bits_empty;
             if(!b){
                 printf("fail\n");

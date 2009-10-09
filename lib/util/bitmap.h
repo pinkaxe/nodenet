@@ -3,7 +3,7 @@
 
 struct bitmap;
 
-struct bitmap *bitmap_create(uint32_t bits);
+struct bitmap *bitmap_init(uint32_t bits);
 void bitmap_free(struct bitmap *h);
 
 int bitmap_get_bit(struct bitmap *h, int start, int offset);

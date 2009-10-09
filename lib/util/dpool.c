@@ -43,7 +43,7 @@ struct dpool *dpool_create(size_t bufsize, size_t max_no, int opt)
     h->bufsize = bufsize;
     h->max_no = max_no;
 
-    h->bitmap = bitmap_create(max_no);
+    h->bitmap = bitmap_init(max_no);
     if(!h->bitmap){
         dpool_free(h);
         goto err;
@@ -107,6 +107,9 @@ struct dpool_buf *dpool_get_buf(struct dpool *h)
 
     /* get the number of a free buf */
     n = bitmap_get_bit(h->bitmap, 0, 4);
+    printf("!! got %d\n", n);
+    printf("!! maxno: %d\n", h->max_no);
+
     if(n == -1){
         errno = -ENONEAVAIL;
     }else{
