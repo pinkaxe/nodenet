@@ -24,9 +24,9 @@ struct bitmap *bitmap_init(uint32_t bits)
     }
 
     h->bits_no = bits;
-    h->bytes_no = (bits / 8) + 1;
+    h->bytes_no = (bits / 8);
 
-    h->map = calloc(h->bytes_no, sizeof(uint8_t));
+    h->map = calloc(h->bytes_no + 1, sizeof(uint8_t));
     if(!h->map){
         bitmap_free(h);
         h = NULL;

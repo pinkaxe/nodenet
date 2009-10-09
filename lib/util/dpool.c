@@ -109,7 +109,6 @@ struct dpool_buf *dpool_get_buf(struct dpool *h)
     /* get the number of a free buf */
     n = bitmap_get_bit(h->bitmap, 0, 4);
     printf("!! got %d\n", n);
-    printf("!! maxno: %d\n", h->max_no);
 
     if(n == -1){
         errno = -ENONEAVAIL;
