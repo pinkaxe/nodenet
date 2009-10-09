@@ -4,7 +4,7 @@
 #include<stddef.h>
 
 #include "util/log.h"
-#include "util/ll2.h"
+#include "util/ll.h"
 
 struct elem {
     int y;
@@ -14,7 +14,7 @@ struct elem {
 int main()
 {
     int r;
-    struct ll2 *h;
+    struct ll *h;
 	struct elem *new, *e;
     void *iter = NULL;
 	int j;
@@ -22,7 +22,7 @@ int main()
 
     for(;;){
 
-        h = ll2_init();
+        h = ll_init();
         if(!h){
             r = 1;
             goto err;
@@ -31,31 +31,31 @@ int main()
 		for(i=0; i < 10; i++){
 			new = malloc(sizeof *new);
 			new->x = i;
-			r = ll2_add_front(h, (void **)&new);
+			r = ll_add_front(h, (void **)&new);
             if(r){
                 goto err;
             }
 		}
 
         iter = NULL;
-        while((e=ll2_next(h, &iter))){
+        while((e=ll_next(h, &iter))){
             printf("*%d\n", e->x);
             if(e->x < 6){
-                ll2_rem(h, e);
+                ll_rem(h, e);
                 free(e);
             }
         }
 
 
         iter = NULL;
-        while((e=ll2_next(h, &iter))){
+        while((e=ll_next(h, &iter))){
             printf("**%d\n", e->x);
         }
 
         int r;
-        ll2_each(r, h, e, iter){
+        ll_each(r, h, e, iter){
             printf("xx **%d\n", e->x);
-            ll2_rem(h, e);
+            ll_rem(h, e);
             free(e);
         }
 
@@ -88,7 +88,7 @@ int main()
             //free(curr);
         }
 #endif
-        ll2_free(h);
+        ll_free(h);
 	}
 
 err:

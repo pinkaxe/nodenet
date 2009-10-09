@@ -5,266 +5,174 @@
 #include<assert.h>
 
 #include "util/log.h"
-#include "util/ll.h"
-#include "sys/thread.h"
 
+#include "ll.h"
 
-
-struct ll {
-	void *start;
-	void *end;
-    int offset; /* offset of link in struct */
-    int c;
-    mutex_t mutex;
+struct ll_elem {
+	struct ll_elem *prev;
+    void *data;
+	struct ll_elem *next;
 };
 
+struct ll {
+	struct ll_elem *start;
+	struct ll_elem *end;
+    int c;
+};
 
-struct ll *__ll_init(int offset, int *err)
+struct ll *ll_init()
 {
 	struct ll *h;
 
-	if(!(h = malloc(sizeof *h))){
-        *err = errno;
+	PCHK(LWARN, h, calloc(1, sizeof(*h)));
+    if(!h){
         goto err;
 	}
 
-    mutex_init(&h->mutex, NULL);
-
-	h->offset = offset;
-	h->start = NULL;
-	h->end = NULL;
-	h->c = 0;
-
-    printf("init done\n");
 err:
 	return h;
+
 }
 
-
-void ll_free(struct ll *h)
+int ll_free(struct ll *h)
 {
-    int r;
-    r = mutex_destroy(&h->mutex);
+    assert(h);
     free(h);
 }
 
-void *ll_get_start(struct ll *h)
+int ll_add_front(struct ll *h, void **data)
 {
-    return h->start;
-}
+	struct ll_elem *e;
 
-int ll_add_front(struct ll *h, void *new) 
-{
-	struct link *new_link; // = new + h->offset;
-    struct link *start_link;
-
-    mutex_lock(&h->mutex);
-
-    new_link = new + h->offset;
-    start_link = h->start + h->offset;
+	PCHK(LWARN, e, calloc(1, sizeof *e));
+    if(!e){
+        goto err;
+	}
 
     if(!h->start){
-        h->start = h->end = new;
-        new_link->prev = NULL;
-        new_link->next = NULL;
+        e->prev = NULL;
+        e->data = *data;
+        e->next = NULL;
+        h->start = e;
     }else{
-        new_link->prev = NULL;
-        new_link->next = h->start;
-        start_link->prev = new;
-        h->start = new;
-        h->c++;
+        e->prev = NULL;
+        e->data = *data;
+        e->next = h->start;
+        h->start->prev = e;
+        h->start = e;
     }
 
-    mutex_unlock(&h->mutex);
+    h->c++;
 
+err:
 	return 0;
 }
 
-int ll_add_end(struct ll *h, void *new) 
+static int _ll_rem(struct ll *h, struct ll_elem *e)
 {
-	struct link *new_link;
-    struct link *end_link;
+    int r;
 
-    mutex_lock(&h->mutex);
-
-    new_link = new + h->offset;
-    end_link = h->end + h->offset;
-
-    if(!h->start){
-        h->start = h->end = new;
-        new_link->prev = NULL;
-        new_link->next = NULL;
+    if(e->prev){
+        e->prev->next = e->next;
     }else{
-        end_link->next = new;
-        new_link->prev = h->end;
-        new_link->next = NULL;
-        h->end = new;
-        h->c++;
+        /* first */
+        h->start = e->next;
     }
 
-    mutex_unlock(&h->mutex);
-
-    return 0;
-}
-
-void *ll_rem(struct ll *h, void *item)
-{
-	struct link *item_link = item + h->offset;
-    void *prev = item_link->prev;
-	struct link *prev_link = prev + h->offset;
-    void *next = item_link->next;
-	struct link *next_link = next + h->offset;
-
-	if(prev)
-		prev_link->next = NULL;
-	if(next)
-		next_link->prev = NULL;
-
-	if(prev && next){
-		prev_link->next = next;
-		next_link->prev = prev;
-	}
-
-    return item;
-}
-
-/*
-void *ll_rem_match(struct ll *h, void *match, int (*cb)(void *match, void
-            *item))
-{
-    ll_foreach(){
-        cb(match, curr);
-    }
-
-}
-*/
-
-#if 0
-
-int ll_rem_front(struct ll *h, void **item) 
-{
-	*item = h->start - h->offset;
-
-    if(h->start){
-        h->end = h->end->prev;
-    }
-    /* last item? */
-    if(!h->start){
-        h->end= NULL;
+    if(e->next){
+        e->next->prev = e->prev;
     }else{
-        h->start->prev = NULL;
+        /* last */
+        h->end = e->prev;
     }
 
-    return 0;
+    h->c--;
+    free(e);
+    r = 0;
+
+    return r;
 }
 
-
-int ll_get_front(struct ll *h, void **item) 
+int ll_rem(struct ll *h, void *data)
 {
-	*item = h->start - h->offset;
+    int r = 1;
+    struct ll_elem *e;
+    void *iter = NULL;
 
-    return 0;
-}
-
-#define xll_rem_end(h, type, elem) \
-{ \
-    void *entry \
-    entry = list_entry(h->end, type, elem); \
-    _ll_rem_end(); \
-}
-#endif
-
-void *ll_rem_end(struct ll *h)
-{
-	void *item = h->end;
-    struct link *end_link = h->end + h->offset;
-
-    mutex_lock(&h->mutex);
-
-    if(h->end){
-        h->end = end_link->prev;
-    }
-    /* last item? */
-    if(!h->end){
-        h->start = NULL;
-        //errno = -ENODATA;
-    }else{
-        end_link->next = NULL;
+    e = h->start;
+    while(e){
+        if(e->data == data){
+            r = _ll_rem(h, e);
+            break;
+        }
+        e = e->next;
     }
 
-    mutex_unlock(&h->mutex);
-
-    return item;
+    return r;
 }
 
-void *ll_next(struct ll *h, void *curr)
-{
-	struct link *curr_link; 
 
-    if(!curr){
-        return NULL;
+
+void *ll_next(struct ll *h,  void **iter)
+{
+    void *r = NULL;
+    struct ll_elem *_iter;
+
+    if(!(*iter)){
+        /* first */
+        *iter = h->start;
+        _iter = *iter;
+        if(_iter){
+            r = _iter->data;
+        }
+        goto end;
     }
 
-    curr_link = curr + h->offset;;
-
-    if(curr_link){
-        return curr_link->next;
-    }else{
-        return NULL;
+    _iter = *iter;
+    if(_iter->next){
+        /* got next */
+        r = _iter->next->data;
+        *iter = _iter->next;
     }
+
+end:
+    return r;
 }
 
-
-/*
-int ll_get_end(struct ll *h, void **item) 
+int ll_next2(struct ll *h, void **res, void **iter)
 {
-	*item = h->end - h->offset;
-    return 0;
+    int r = 1;
+    struct ll_elem *_iter;
+
+    if(!(*iter)){
+        /* first */
+        *iter = h->start;
+        _iter = *iter;
+        if(_iter){
+            *res = _iter->data;
+            if(*res){
+                r = 0;
+            }
+        }
+        goto end;
+    }
+
+    _iter = *iter;
+    if(_iter->next){
+        /* got next */
+        *res = _iter->next->data;
+        if(*res){
+            r = 0;
+        }
+        *iter = _iter->next;
+    }
+
+end:
+    return r;
 }
-*/
 
-
-/*
-void ll_del(struct ll *h, void *item)
+void *ll_prev(void **iter)
 {
-	struct link *item_link = item;
-	struct link *prev = item_link->prev;
-	struct link *next = item_link->next;
-
-	if(prev)
-		prev->next = NULL;
-	if(next)
-		next->prev = NULL;
-
-	if(prev && next){
-		prev->next = next;
-		next->prev = prev;
-	}
+    //assert(curr);
+    //return curr->prev;
 }
-
-*/
-
-/*
-struct ll *ll_init(size_t size)
-{
-	struct ll *ll;
-
-	if(!(ll = malloc(sizeof *ll))){
-		return NULL;
-	}
-
-	ll->p = NULL;
-	ll->n = NULL;
-
-	return ll;
-}
-
-int ll_insert()
-{
-}
-
-
-int ll_remove()
-{
-}
-*/

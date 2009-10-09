@@ -13,9 +13,9 @@ AC_CONFIG_FILES([Makefile
 		lib/sys/Makefile
 		lib/wrap/Makefile
 		lib/util/Makefile
+		lib/util/tests/Makefile
 		lib/db/Makefile
 		lib/code_net/Makefile
-		tests/Makefile
             ])
 
 AC_ARG_ENABLE(debug, [  --enable-debug            enable debugging
@@ -26,6 +26,9 @@ else
     CFLAGS="-O3 -DNDEBUG "
 fi
 CFLAGS+=-I$PWD/lib
+
+#AC_CONFIG_SUBDIRS([lib/util])
+
 
 # conditionals 
 

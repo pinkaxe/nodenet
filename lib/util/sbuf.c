@@ -55,7 +55,7 @@ int sbuf_grow(struct sbuf *b, size_t size)
 
 static int insert(struct sbuf *b, size_t pos, const char *buf)
 {
-	size_t need, len; 
+	size_t need, len;
 
 	len = strlen(buf);
 	need = b->end - b->start + len + 1;
@@ -66,7 +66,7 @@ static int insert(struct sbuf *b, size_t pos, const char *buf)
 		}
 	}
 
-	memmove(b->start + pos + len, b->start + pos, 
+	memmove(b->start + pos + len, b->start + pos,
 			b->end - b->start - pos);
 	memcpy(b->start + pos, buf, len);
 	b->end += len;

@@ -8,7 +8,7 @@
 
 #include "util/log.h"
 #include "util/que.h"
-#include "util/ll2.h"
+#include "util/ll.h"
 
 #include "types.h"
 #include "io.h"
@@ -20,7 +20,7 @@ struct cn_net_memb {
 };
 
 struct cn_net {
-    struct ll2 *memb;
+    struct ll *memb;
     struct que *cmd_req;
     io_cmd_req_cb_t io_cmd_req_cb;
     struct que *data_req;
@@ -43,7 +43,7 @@ struct cn_net *net_init()
         goto err;
     }
 
-    PCHK(LWARN, n->memb, ll2_init());
+    PCHK(LWARN, n->memb, ll_init());
     if(!n->memb){
         net_free(n);
         n = NULL;
@@ -76,7 +76,7 @@ int net_free(struct cn_net *n)
     net_isvalid(n);
 
     if(n->memb){
-        ICHK(LWARN, r, ll2_free(n->memb));
+        ICHK(LWARN, r, ll_free(n->memb));
     }
 
     if(n->cmd_req){
@@ -105,7 +105,7 @@ int net_add_memb(struct cn_net *n, struct cn_elem *e)
 
 
     nm->memb = e;
-    ICHK(LWARN, r, ll2_add_front(n->memb, (void **)&nm));
+    ICHK(LWARN, r, ll_add_front(n->memb, (void **)&nm));
 
 err:
     return r;
@@ -117,7 +117,7 @@ int net_rem_memb(struct cn_net *n, struct cn_elem *e)
 
     net_isvalid(n);
 
-    ICHK(LWARN, r, ll2_rem(n->memb, e));
+    ICHK(LWARN, r, ll_rem(n->memb, e));
 
     return r;
 }
@@ -131,7 +131,7 @@ int net_ismemb(struct cn_net *n, struct cn_elem *e)
     assert(n);
 
     iter = NULL;
-    while((nm=ll2_next(n->memb, &iter))){
+    while((nm=ll_next(n->memb, &iter))){
         if(nm->memb == e){
             r = 0;
             break;
@@ -152,7 +152,7 @@ int net_sendto_all(struct cn_net *n, struct cn_io_cmd *cmd)
     assert(n);
 
     iter = NULL;
-    while((nm=ll2_next(n->memb, &iter))){
+    while((nm=ll_next(n->memb, &iter))){
         clone = io_cmd_clone(cmd);
         while((r=send_cmd_to_elem(nm->memb, clone))){
             usleep(100);
@@ -178,8 +178,8 @@ int net_print(struct cn_net *n)
     c = 0;
 
     iter = NULL;
-    //ll2_each(n->memb, nm, iter){
-    while((nm = ll2_next(n->memb, &iter))){
+    //ll_each(n->memb, nm, iter){
+    while((nm = ll_next(n->memb, &iter))){
         printf("zee\n");
         printf("p:%p\n", nm->memb);
         c++;

@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "util/ll2.h"
+#include "util/ll.h"
 #include "util/log.h"
 
 #include "types.h"
@@ -19,7 +19,7 @@ struct cn_grp_memb {
 };
 
 struct cn_grp {
-    struct ll2 *memb;
+    struct ll *memb;
     int id;
     int memb_no;
 };
@@ -41,7 +41,7 @@ int grp_print(struct cn_grp *g)
     c = 0;
 
     iter = NULL;
-    while((gm=ll2_next(g->memb, &iter))){
+    while((gm=ll_next(g->memb, &iter))){
         printf("p:%p\n", gm->memb);
         c++;
     }
@@ -62,7 +62,7 @@ struct cn_grp *grp_init(int id)
         goto err;
     }
 
-    PCHK(LWARN, g->memb, ll2_init());
+    PCHK(LWARN, g->memb, ll_init());
     if(!g->memb){
         grp_free(g);
         goto err;
@@ -81,7 +81,7 @@ int grp_free(struct cn_grp *g)
 
     if(g){
         if(g->memb){
-            ICHK(LWARN, r, ll2_free(g->memb));
+            ICHK(LWARN, r, ll_free(g->memb));
         }
         free(g);
     }
@@ -106,7 +106,7 @@ int grp_add_memb(struct cn_grp *h, struct cn_elem *memb)
     }
 
     m->memb = memb;
-    ICHK(LWARN, r, ll2_add_front(h->memb, (void *)&m));
+    ICHK(LWARN, r, ll_add_front(h->memb, (void *)&m));
 
     r = 0;
 
@@ -125,7 +125,7 @@ int grp_get_memb(struct cn_grp *h, void **memb, int max)
     grp_isok(h);
 
     iter = NULL;
-    while(m=ll2_next(h->memb, &iter)){
+    while(m=ll_next(h->memb, &iter)){
         // randomize?
         memb[i++] = m;
     }
@@ -142,7 +142,7 @@ int grp_ismemb(struct cn_grp *h, struct cn_elem *memb)
     grp_isok(h);
 
     iter = NULL;
-    while(m=ll2_next(h->memb, &iter)){
+    while(m=ll_next(h->memb, &iter)){
         if(m->memb == memb){
             r = 0;
             break;
@@ -161,9 +161,9 @@ int grp_rem_memb(struct cn_grp *h, struct cn_elem *memb)
     grp_isok(h);
 
     iter = NULL;
-    while(m=ll2_next(h->memb, &iter)){
+    while(m=ll_next(h->memb, &iter)){
         if(m->memb == memb){
-            ICHK(LWARN, r, ll2_rem(h->memb, m));
+            ICHK(LWARN, r, ll_rem(h->memb, m));
             r = 0;
             grp_isok(h);
             grp_print(h);

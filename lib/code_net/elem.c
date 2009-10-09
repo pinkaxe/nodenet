@@ -10,7 +10,7 @@
 #include "util/log.h"
 #include "util/dpool.h"
 #include "util/que.h"
-#include "util/ll2.h"
+#include "util/ll.h"
 #include "util/dbg.h"
 
 #include "types.h"
@@ -28,10 +28,10 @@ struct cn_elem {
     void *code;  /* pointer to object depending on type */
 
     /* pointers for relationships */
-    struct ll2 *out_links_llh;         /* links to other code_elem's */
-    struct ll2 *in_links_llh;          /* links coming in from other code_elem's */
-    struct ll2 *grp_llh;             /* links to all groups this elem belongs to */
-    struct ll2 *net_llh;               /* links to all groups this elem belongs to */
+    struct ll *out_links_llh;         /* links to other code_elem's */
+    struct ll *in_links_llh;          /* links coming in from other code_elem's */
+    struct ll *grp_llh;             /* links to all groups this elem belongs to */
+    struct ll *net_llh;               /* links to all groups this elem belongs to */
 
     /* bufs */
     struct que *in_data_queh;         /* input for code elem */
@@ -89,19 +89,19 @@ struct cn_elem *elem_init(enum cn_elem_type type, enum cn_elem_attr attr,
         goto err;
     }
 
-    PCHK(LWARN, e->in_links_llh, ll2_init());
+    PCHK(LWARN, e->in_links_llh, ll_init());
     if(!e->in_links_llh){
         PCHK(LWARN, r, elem_free(e));
         goto err;
     }
 
-    PCHK(LWARN, e->grp_llh, ll2_init());
+    PCHK(LWARN, e->grp_llh, ll_init());
     if(!e->grp_llh){
         PCHK(LWARN, r, elem_free(e));
         goto err;
     }
 
-    PCHK(LWARN, e->net_llh, ll2_init());
+    PCHK(LWARN, e->net_llh, ll_init());
     if(!e->net_llh){
         PCHK(LWARN, r, elem_free(e));
         goto err;
@@ -126,17 +126,17 @@ int elem_free(struct cn_elem *e)
     elem_isok(e);
 
     if(e->net_llh){
-        ICHK(LWARN, r, ll2_free(e->net_llh));
+        ICHK(LWARN, r, ll_free(e->net_llh));
         if(r) fail++;
     }
 
     if(e->grp_llh){
-        ICHK(LWARN, r, ll2_free(e->grp_llh));
+        ICHK(LWARN, r, ll_free(e->grp_llh));
         if(r) fail++;
     }
 
     if(e->in_links_llh){
-        ICHK(LWARN, r, ll2_free(e->in_links_llh));
+        ICHK(LWARN, r, ll_free(e->in_links_llh));
         if(r) fail++;
     }
 
@@ -177,7 +177,7 @@ int elem_add_to_net(struct cn_elem *e, struct cn_net *n)
     }
 
     en->net = n;
-    ICHK(LWARN, r, ll2_add_front(e->net_llh, (void **)&en));
+    ICHK(LWARN, r, ll_add_front(e->net_llh, (void **)&en));
 
 err:
     return r;
@@ -189,7 +189,7 @@ int elem_rem_from_net(struct cn_elem *e, struct cn_net *n)
 
     elem_isok(e);
 
-    ICHK(LWARN, r, ll2_rem(e->net_llh, n));
+    ICHK(LWARN, r, ll_rem(e->net_llh, n));
     //TODO:
     return 0;
 }
@@ -205,7 +205,7 @@ int elem_add_to_grp(struct cn_elem *e, struct cn_grp *g)
     }
 
     eg->grp = g;
-    ICHK(LWARN, r, ll2_add_front(e->grp_llh, (void **)&eg));
+    ICHK(LWARN, r, ll_add_front(e->grp_llh, (void **)&eg));
 
 err:
     return r;
@@ -217,7 +217,7 @@ int elem_rem_from_grp(struct cn_elem *e, struct cn_grp *g)
 
     elem_isok(e);
 
-    ICHK(LWARN, r, ll2_rem(e->grp_llh, g));
+    ICHK(LWARN, r, ll_rem(e->grp_llh, g));
     return 0;
 }
 
@@ -242,7 +242,7 @@ int elem_link(struct cn_elem *from, struct cn_elem *to)
     }
 
     link->elem = to;
-    PCHK(LWARN, r, ll2_add_front(from->out_links_llh, (void **)&link));
+    PCHK(LWARN, r, ll_add_front(from->out_links_llh, (void **)&link));
 
     // link back
     PCHK(LWARN, link, malloc(sizeof(*link)));
@@ -252,7 +252,7 @@ int elem_link(struct cn_elem *from, struct cn_elem *to)
         //LOG1(
     }
 
-    ll2_add_front(to->in_links_llh, (void **)&link);
+    ll_add_front(to->in_links_llh, (void **)&link);
 }
 
 int elem_unlink(struct cn_elem *from, struct cn_elem *to)
@@ -344,7 +344,7 @@ int elem_net_isok(struct cn_elem *e)
     void *iter;
 
     iter = NULL;
-    while((n=ll2_next(e->net_llh, &iter))){
+    while((n=ll_next(e->net_llh, &iter))){
         /* make sure we are a member */
         r = net_ismemb(n->net, e);
         //r = net_print(n->net);
@@ -366,7 +366,7 @@ int elem_grp_isok(struct cn_elem *e)
     void *iter;
 
     iter = NULL;
-    while((g=ll2_next(e->grp_llh, &iter))){
+    while((g=ll_next(e->grp_llh, &iter))){
         r = grp_ismemb(g->grp, e);
         assert(r == 0);
         //r = grp_print(g->grp);
@@ -417,7 +417,7 @@ int elem_print(struct cn_elem *e)
     c = 0;
 
     iter = NULL;
-    while((n=ll2_next(e->net_llh, &iter))){
+    while((n=ll_next(e->net_llh, &iter))){
         printf("p:%p\n", n->net);
         c++;
     }
@@ -426,7 +426,7 @@ int elem_print(struct cn_elem *e)
 
     c = 0;
     iter = NULL;
-    while((g=ll2_next(e->grp_llh, &iter))){
+    while((g=ll_next(e->grp_llh, &iter))){
         printf("p:%p\n", g->grp);
         c++;
     }
