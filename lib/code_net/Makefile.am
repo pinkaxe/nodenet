@@ -8,9 +8,12 @@ libcode_net_la_SOURCES = \
 			 io.c \
 			 cn.c \
 			 run.c \
-			 dispatchers/thread.c \
-			 dispatchers/lproc.c \
-			 dispatchers/bin.c
+			 ioroute.c \
+			 elem_io.c \
+			 elem_types/elem_type.c \
+			 elem_types/thread.c \
+			 elem_types/lproc.c \
+			 elem_types/bin.c
 
 libcode_net_la_LIBADD =
 

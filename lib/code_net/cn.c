@@ -36,7 +36,7 @@ int cn_net_run(struct cn_net *n)
 {
     int r;
 
-    ICHK(LWARN, r, net_run(n));
+    ICHK(LWARN, r, ioroute_run(n));
     return r;
 }
 
@@ -194,6 +194,7 @@ int cn_net_add_data_req(struct cn_net *n, struct cn_io_data *data)
     return r;
 }
 
+//route_route()
 
 /*
 int cn_link_elem(struct cn_elem *from, struct cn_elem *to)

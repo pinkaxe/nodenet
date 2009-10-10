@@ -13,4 +13,6 @@ Use for:
 - Code element dispatchers(threads/process/remote process)
 - Low level objects(elem, net, grp etc.)
 
-
+hard work to build safety into c.
+ - much easier to just put the whole struct in the header!!
+  - makes you think about the layout/relationships though

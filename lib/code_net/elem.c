@@ -20,6 +20,7 @@
 #include "net.h"
 #include "run.h"
 
+#include "elem_types/elem_type.h"
 
 struct cn_elem {
     DBG_STRUCT_START
@@ -28,8 +29,6 @@ struct cn_elem {
     void *code;  /* pointer to object depending on type */
 
     /* pointers for relationships */
-    struct ll *out_links_llh;         /* links to other code_elem's */
-    struct ll *in_links_llh;          /* links coming in from other code_elem's */
     struct ll *grp_llh;             /* links to all groups this elem belongs to */
     struct ll *net_llh;               /* links to all groups this elem belongs to */
 
@@ -44,6 +43,8 @@ struct cn_elem {
 
     /* maximum time a element is allowed to exe on one buffer processing */
     uint32_t max_exe_usec;
+
+    struct elem_type_ops *ops;
 
     DBG_STRUCT_END
 };
@@ -77,6 +78,9 @@ struct cn_elem *elem_init(enum cn_elem_type type, enum cn_elem_attr attr,
     }
     DBG_STRUCT_INIT(e);
 
+    e->ops = elem_type_get_ops(e->type);
+    assert(e->ops);
+
     PCHK(LWARN, e->in_data_queh, que_init(8));
     if(!e->in_data_queh){
         PCHK(LWARN, r, elem_free(e));
@@ -85,12 +89,6 @@ struct cn_elem *elem_init(enum cn_elem_type type, enum cn_elem_attr attr,
 
     PCHK(LWARN, e->in_cmd_queh, que_init(8));
     if(!e->in_cmd_queh){
-        PCHK(LWARN, r, elem_free(e));
-        goto err;
-    }
-
-    PCHK(LWARN, e->in_links_llh, ll_init());
-    if(!e->in_links_llh){
         PCHK(LWARN, r, elem_free(e));
         goto err;
     }
@@ -135,11 +133,6 @@ int elem_free(struct cn_elem *e)
         if(r) fail++;
     }
 
-    if(e->in_links_llh){
-        ICHK(LWARN, r, ll_free(e->in_links_llh));
-        if(r) fail++;
-    }
-
     if(e->in_data_queh){
         ICHK(LWARN, r, que_free(e->in_data_queh));
         if(r) fail++;
@@ -159,9 +152,8 @@ int elem_free(struct cn_elem *e)
 int elem_start(struct cn_elem *e)
 {
     int r;
-    /* we call run in a different file so it is possible to replaced it with a
-     * version not using threads */
-    ICHK(LWARN, r, run(e));
+
+    ICHK(LWARN, r, elem_io_run(e));
 
     return r;
 }

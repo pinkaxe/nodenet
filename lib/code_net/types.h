@@ -15,6 +15,12 @@ enum cn_elem_cmd {
     CN_ELEM_CMD_STOP
 };
 
+enum cn_elem_state {
+    CN_ELEM_CMD_RUNNING,
+    CN_ELEM_CMD_PAUSED,
+    CN_ELEM_CMD_STOPPED,
+};
+
 struct cn_net;
 struct cn_elem;
 struct cn_grp;
