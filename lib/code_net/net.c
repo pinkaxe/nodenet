@@ -11,11 +11,20 @@
 #include "util/ll.h"
 
 #include "types.h"
-#include "io.h"
-#include "elem.h"
+#include "cmd.h"
 #include "net.h"
 
-#include "netpriv.h"
+struct cn_net_memb {
+    struct cn_elem *memb;
+};
+
+struct cn_net {
+    struct ll *memb;
+    struct que *cmd_req;
+    struct que *data_req;
+    io_cmd_req_cb_t io_cmd_req_cb;
+    //io_data_req_cb_t io_data_req_cb;
+};
 
 int net_isvalid(struct cn_net *n)
 {
@@ -80,6 +89,7 @@ int net_free(struct cn_net *n)
     free(n);
     return r;
 }
+
 
 int net_add_memb(struct cn_net *n, struct cn_elem *e)
 {
@@ -166,47 +176,39 @@ int net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb)
 int net_set_data_cb(struct cn_net *n, io_data_req_cb_t cb)
 {
     net_isvalid(n);
-    n->io_data_req_cb = cb;
+    //n->io_data_req_cb = cb;
     return 0;
 }
 
-
-
-
-/* called from elem, net in */
-int net_add_cmd_req(struct cn_net *n, struct cn_io_cmd *cmd)
+int net_add_cmd(struct cn_net *n, struct cn_cmd *cmd)
 {
     return que_add(n->cmd_req, cmd);
 }
 
-int net_add_data_req(struct cn_net *n, struct cn_io_data *data)
+struct cn_cmd *net_get_cmd(struct cn_net *n, struct timespec *ts)
 {
-    return que_add(n->data_req, data);
+    return que_get(n->cmd_req, ts);
 }
 
+//int net_add_data_req(struct cn_net *n, struct cn_data *data)
+//{
+//    return que_add(n->data_req, data);
+//}
 
-/* called from router, net out send to elem(add to it's input que */
-int net_sendto_all(struct cn_net *n, struct cn_io_cmd *cmd)
+
+struct cn_elem *net_memb_iter(struct cn_net *n, void **iter)
 {
     int r = 0;
-    struct cn_net_memb *nm;
-    void *iter;
-    struct cn_io_cmd *clone;
+    struct cn_net_memb *m;
+    struct cn_cmd *clone;
 
     assert(n);
 
-    iter = NULL;
-    while((nm=ll_next(n->memb, &iter))){
-        clone = io_cmd_clone(cmd);
-        while((r=send_cmd_to_elem(nm->memb, clone))){
-            usleep(100);
-        }
-        if(r){
-            goto err;
-        }
+    m = ll_next(n->memb, iter);
+
+    if(m){
+        return m->memb;
+    }else{
+        return NULL;
     }
-
-err:
-    return r;
 }
-

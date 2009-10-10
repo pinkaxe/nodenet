@@ -8,7 +8,7 @@ int cn_net_run(struct cn_net *n);
 int cn_net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb);
 // cn_net_get_cmd_req(n, req, timeout)
 // cn_net_get_data_req(n, req, timeout)
-int cn_net_add_cmd_req(struct cn_net *n, struct cn_io_cmd *cmd);
+int cn_net_add_cmd_req(struct cn_net *n, struct cn_cmd *cmd);
 
 /* elem */
 struct cn_elem *cn_elem_init(enum cn_elem_type type, enum cn_elem_attr attr,

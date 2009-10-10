@@ -7,7 +7,7 @@
 #include "util/log.h"
 
 #include "code_net/types.h"
-#include "code_net/io.h"
+#include "code_net/cmd.h"
 #include "code_net/cn.h"
 
 #define ok(x){ \
@@ -52,7 +52,13 @@ int process_lproc_elem(struct cn_elem *e, void *buf, int len, void *pdata)
     return 0;
 }
 
-int io_cmd_req_cb(struct cn_net *n, struct cn_io_cmd *cmd)
+//route_to_all
+//route_to_elem
+//route_to_grp
+
+
+/*
+int io_cmd_req_cb(struct cn_net *n, struct cn_cmd *cmd)
 {
     //printf("!!! yeah got it: %d\n", cmd->id);
     //struct cn_io_conf *conf;
@@ -69,7 +75,7 @@ int io_cmd_req_cb(struct cn_net *n, struct cn_io_cmd *cmd)
         case CN_SENDTO_ALL:
             net_sendto_all(n, cmd);
             //printf("freeing %p\n", cmd);
-            io_cmd_free(cmd);
+            cmd_free(cmd);
             break;
         default:
             break;
@@ -87,6 +93,7 @@ int io_data_req_cb(struct cn_net *n, struct cn_io_data *data)
     //free(data);
     return 0;
 }
+*/
 
 
 int main(int argc, char *argv)
@@ -94,7 +101,7 @@ int main(int argc, char *argv)
     struct cn_net *n0;
     struct cn_elem *e[1024];
     struct cn_grp *g0;
-    struct cn_io_cmd *cmd;
+    struct cn_cmd *cmd;
     struct cn_io_data *data;
     struct cn_io_conf *conf;
 
@@ -147,15 +154,15 @@ int main(int argc, char *argv)
         }
         */
 
-        cn_net_set_cmd_cb(n0, io_cmd_req_cb);
-        cn_net_set_data_cb(n0, io_data_req_cb);
+        //cn_net_set_cmd_cb(n0, io_cmd_req_cb);
+        //cn_net_set_data_cb(n0, io_data_req_cb);
         cn_net_run(n0);
 
         while(1){
 
-            cmd = io_cmd_init(6, NULL, 0, 1, CN_SENDTO_ALL, 0);
+            cmd = cmd_init(6, NULL, 0, 1, CN_SENDTO_ALL, 0);
             //printf("malloced %p\n", cmd);
-            //io_cmd_free(cmd);
+            //cmd_free(cmd);
             //printf("leed %p\n", cmd);
             // make sure to check return value if que is full
             while(cn_net_add_cmd_req(n0, cmd)){

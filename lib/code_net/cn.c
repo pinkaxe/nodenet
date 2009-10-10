@@ -8,7 +8,7 @@
 #include "util/log.h"
 
 #include "types.h"
-#include "io.h"
+#include "cmd.h"
 #include "net.h"
 #include "elem.h"
 #include "grp.h"
@@ -170,27 +170,27 @@ int cn_net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb)
     return r;
 }
 
-int cn_net_add_cmd_req(struct cn_net *n, struct cn_io_cmd *cmd)
+int cn_net_add_cmd_req(struct cn_net *n, struct cn_cmd *cmd)
 {
     int r;
 
-    r = net_add_cmd_req(n, cmd);
+    r = net_add_cmd(n, cmd);
     return r;
 }
 
-int cn_net_set_data_cb(struct cn_net *n, io_data_req_cb_t cb)
-{
-    int r;
-
-    ICHK(LWARN, r, net_set_data_cb(n, cb));
-    return r;
-}
+//int cn_net_set_data_cb(struct cn_net *n, io_data_req_cb_t cb)
+//{
+//    int r;
+//
+//    ICHK(LWARN, r, net_set_data_cb(n, cb));
+//    return r;
+//}
 
 int cn_net_add_data_req(struct cn_net *n, struct cn_io_data *data)
 {
     int r;
 
-    r = net_add_data_req(n, data);
+    //r = net_add_data_req(n, data);
     return r;
 }
 

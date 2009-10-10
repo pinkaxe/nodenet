@@ -5,9 +5,9 @@ libcode_net_la_SOURCES = \
 			 net.c \
 			 elem.c \
 			 grp.c \
-			 io.c \
+			 cmd.c \
 			 cn.c \
-			 io_route.c \
+			 router.c \
 			 elem_io.c \
 			 elem_types/elem_type.c \
 			 elem_types/thread.c \

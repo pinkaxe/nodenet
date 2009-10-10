@@ -14,7 +14,7 @@
 #include "util/dbg.h"
 
 #include "types.h"
-#include "io.h"
+#include "cmd.h"
 #include "elem.h"
 #include "grp.h"
 #include "net.h"
@@ -271,22 +271,37 @@ void *elem_get_codep(struct cn_elem *e)
     return e->code;
 }
 
-int  send_cmd_to_elem(struct cn_elem *e, struct cn_io_cmd *cmd)
+int  elem_add_cmd(struct cn_elem *e, struct cn_cmd *cmd)
 {
-    //printf("!!! sending: %p\n", cmd);
     return que_add(e->in_cmd_queh, cmd);
 }
 
-int  send_data_to_elem(struct cn_elem *e, void *data, uint32_t data_no)
+int elem_add_data(struct cn_elem *e, void *data, uint32_t data_no)
 {
+}
+
+void *elem_get_cmd(struct cn_elem *e, struct timespec *ts)
+{
+    struct cn_cmd *c;
+
+    c = que_get(e->in_cmd_queh, ts);
+
+    return c;
+}
+
+void *elem_get_buf(struct cn_elem *e, struct timespec *ts)
+{
+    void *buf;
+
+    buf = que_get(e->in_data_queh, ts);
+    return buf;
 }
 
 
 /*
- 
 int elem_write_in_cmd(struct cn_elem *e, enum cn_elem_cmd cmd, void *pdata)
 {
-    struct cn_io_cmd *c = malloc(sizeof(*c));
+    struct cn_cmd *c = malloc(sizeof(*c));
 
     c->id = cmd;
     c->pdata = pdata;
@@ -300,28 +315,7 @@ void *elem_write_in_buf(struct cn_elem *e)
 
 */
 
-void *elem_read_in_cmd(struct cn_elem *e, struct timespec *ts)
-{
-    struct cn_io_cmd *c;
 
-    c = que_get(e->in_cmd_queh, ts);
-    //printf("!!! cheking: %p\n", c);
-    //if(c){
-    //    pdata = c->pdata;
-    //    free(c);
-    //}
-
-    return c;
-}
-
-
-void *elem_read_in_buf(struct cn_elem *e, struct timespec *ts)
-{
-    void *buf;
-
-    buf = que_get(e->in_data_queh, ts);
-    return buf;
-}
 
 
 /** debug functions **/

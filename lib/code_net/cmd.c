@@ -9,13 +9,13 @@
 
 #include "util/log.h"
 
-#include "code_net/io.h"
+#include "code_net/cmd.h"
 
 
-struct cn_io_cmd *io_cmd_init(enum cn_elem_cmd id, void *pdata, int data_no,
+struct cn_cmd *cmd_init(enum cn_elem_cmd id, void *pdata, int data_no,
         int sendto_no, int sendto_type, int sendto_id)
 {
-    struct cn_io_cmd *cmd;
+    struct cn_cmd *cmd;
     struct cn_io_conf *conf;
 
     PCHK(LWARN, cmd, malloc(sizeof(*cmd)));
@@ -29,7 +29,7 @@ struct cn_io_cmd *io_cmd_init(enum cn_elem_cmd id, void *pdata, int data_no,
 
     PCHK(LWARN, conf, malloc(sizeof(*conf)));
     if(!conf){
-        io_cmd_free(cmd);
+        cmd_free(cmd);
         cmd = NULL;
         goto err;
     }
@@ -44,9 +44,9 @@ err:
     return cmd;
 }
 
-struct cn_io_cmd *io_cmd_clone(struct cn_io_cmd *cmd)
+struct cn_cmd *cmd_clone(struct cn_cmd *cmd)
 {
-    struct cn_io_cmd *clone;
+    struct cn_cmd *clone;
     struct cn_io_conf *conf;
 
     PCHK(LWARN, clone, malloc(sizeof(*clone)));
@@ -60,7 +60,7 @@ struct cn_io_cmd *io_cmd_clone(struct cn_io_cmd *cmd)
 
     PCHK(LWARN, conf, malloc(sizeof(*conf)));
     if(!conf){
-        io_cmd_free(clone);
+        cmd_free(clone);
         clone = NULL;
         goto err;
     }
@@ -74,7 +74,7 @@ err:
     return clone;
 }
 
-int io_cmd_free(struct cn_io_cmd *cmd)
+int cmd_free(struct cn_cmd *cmd)
 {
     if(cmd){
         if(cmd->conf){
@@ -96,7 +96,7 @@ struct cn_io_data_req {
     void *buf;
 };
 
-struct cn_io_cmd_req {
+struct cn_cmd_req {
     cmd_id;
 }
 

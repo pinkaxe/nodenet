@@ -17,6 +17,7 @@
 static void *elem_io_thread(void *arg);
 static handle_int_cmd(struct cn_io_cmd *cmd);
 
+
 /* start specific dispatcher */
 int elem_io_run(struct cn_elem *e)
 {
@@ -53,15 +54,15 @@ static void *elem_io_thread(void *arg)
         cmd_check_timespec.tv_nsec = 0;
 
         /* incoming commands */
-        cmd_buf = elem_read_in_cmd(h, &cmd_check_timespec);
+        cmd_buf = elem_get_cmd(h, &cmd_check_timespec);
         if(cmd_buf){
-            //printf("!!! Got a cmd_buf\n ");
+            printf("!!! Got a cmd_buf\n ");
             struct cn_io_cmd *cmd = cmd_buf;
 
             //int cmdid = cmd->cmd;
             handle_int_cmd(cmd);
 
-            io_cmd_free(cmd);
+            cmd_free(cmd);
 
             //switch(cmdid){
             //    case CN_ELEM_CMD_RUN:
@@ -93,7 +94,7 @@ static void *elem_io_thread(void *arg)
 
             }else{
                 /* incoming data */
-                buf = elem_read_in_buf(h, &buf_check_timespec);
+                buf = elem_get_buf(h, &buf_check_timespec);
                 if(buf){
                     /* call user function */
                     user_func(h, buf, 1, pdata);
