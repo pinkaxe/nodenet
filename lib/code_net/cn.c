@@ -36,7 +36,7 @@ int cn_net_run(struct cn_net *n)
 {
     int r;
 
-    ICHK(LWARN, r, ioroute_run(n));
+    ICHK(LWARN, r, io_route_run(n));
     return r;
 }
 

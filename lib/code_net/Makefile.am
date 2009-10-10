@@ -7,7 +7,7 @@ libcode_net_la_SOURCES = \
 			 grp.c \
 			 io.c \
 			 cn.c \
-			 ioroute.c \
+			 io_route.c \
 			 elem_io.c \
 			 elem_types/elem_type.c \
 			 elem_types/thread.c \

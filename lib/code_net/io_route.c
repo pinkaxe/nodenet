@@ -44,7 +44,7 @@ static void *data_in_thread(void *arg)
 }
 
 
-int ioroute_run(struct cn_net *n)
+int io_route_run(struct cn_net *n)
 {
     thread_t tid;
     thread_create(&tid, NULL, cmd_in_thread, n);
