@@ -3,14 +3,15 @@
 #include <time.h>
 #include <stdint.h>
 
-#include "types.h"
-#include "elem.h"
-#include "elem_io.h"
-
 #include "sys/thread.h"
 #include "util/log.h"
 
+#include "types.h"
+#include "elem.h"
+#include "elem_io.h"
+#include "elem_types/elem_type.h"
 #include "elem_types/thread.h"
+
 //#include "code_net/elem_types/lproc.h"
 //#include "code_net/elem_types/bin.h"
 
@@ -51,12 +52,12 @@ static void *elem_io_thread(void *arg)
         buf_check_timespec.tv_sec = 0;
         buf_check_timespec.tv_nsec = 10000000;
         cmd_check_timespec.tv_sec = 0;
-        cmd_check_timespec.tv_nsec = 0;
+        cmd_check_timespec.tv_nsec = 1000000;
 
         /* incoming commands */
         cmd_buf = elem_get_cmd(h, &cmd_check_timespec);
         if(cmd_buf){
-            printf("!!! Got a cmd_buf\n ");
+            printf("!!! Got a cmd_buf\n");
             struct cn_io_cmd *cmd = cmd_buf;
 
             //int cmdid = cmd->cmd;
@@ -75,14 +76,14 @@ static void *elem_io_thread(void *arg)
             //        h->state = CN_ELEM_STATE_STOP0;
             //        goto end;
 
-            //printf("!!! freed cmd_buf\n ");
+            //printf("!!! freed cmd_buf\rt ");
             //exit(1);
             //free(cmd_buf);
             //break;
             // process and free
         }else{
             if(errno == ETIMEDOUT){
-                //printf("!! timedout xxxx\n");
+                //printf("!! timedout xxxx\rt");
             }
         }
 
@@ -90,8 +91,8 @@ static void *elem_io_thread(void *arg)
         //if(h->state == CN_ELEM_STATE_RUNNING){
             if((attr & CN_ATTR_NO_INPUT)){
                 /* call user function */
-                user_func(h, NULL, 0, pdata);
-
+                //user_func(h, NULL, 0, pdata);
+                //h->ops->elem_buf_exe(h, NULL, 0, pdata);
             }else{
                 /* incoming data */
                 buf = elem_get_buf(h, &buf_check_timespec);
@@ -100,7 +101,7 @@ static void *elem_io_thread(void *arg)
                     user_func(h, buf, 1, pdata);
                 }else{
                     if(errno == ETIMEDOUT){
-                        //printf("!! timedout xx\n");
+                        //printf("!! timedout xx\rt");
                     }
                 }
                 //sleep(1);
@@ -110,7 +111,7 @@ static void *elem_io_thread(void *arg)
 
     }
 end:
-    printf("elem_io exit\n");
+    printf("elem_io exit\rt");
     return NULL;
 }
 

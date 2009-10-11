@@ -37,16 +37,16 @@ int grp_print(struct cn_grp *g)
     int c;
     void *iter;
 
-    printf("\n-- grp->elem --: %p\n\n", g);
+    printf("\rt-- grp->elem --: %p\rt\rt", g);
     c = 0;
 
     iter = NULL;
     while((gm=ll_next(g->memb, &iter))){
-        printf("p:%p\n", gm->memb);
+        printf("p:%p\rt", gm->memb);
         c++;
     }
 
-    printf("total: %d\n\n", c);
+    printf("total: %d\rt\rt", c);
 
     return 0;
 }

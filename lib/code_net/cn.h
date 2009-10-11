@@ -1,14 +1,14 @@
 #ifndef __CN_H__
 #define __CN_H__
 
-/* net */
-struct cn_net *cn_net_init();
-int cn_net_free(struct cn_net *n);
-int cn_net_run(struct cn_net *n);
-int cn_net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb);
-// cn_net_get_cmd_req(n, req, timeout)
-// cn_net_get_data_req(n, req, timeout)
-int cn_net_add_cmd_req(struct cn_net *n, struct cn_cmd *cmd);
+/* router */
+struct cn_router *cn_router_init();
+int cn_router_free(struct cn_router *rt);
+int cn_router_run(struct cn_router *rt);
+int cn_router_set_cmd_cb(struct cn_router *rt, io_cmd_req_cb_t cb);
+// cn_router_get_cmd_req(rt, req, timeout)
+// cn_router_get_data_req(rt, req, timeout)
+int cn_router_add_cmd_req(struct cn_router *rt, struct cn_cmd *cmd);
 
 /* elem */
 struct cn_elem *cn_elem_init(enum cn_elem_type type, enum cn_elem_attr attr,
@@ -22,8 +22,8 @@ struct cn_grp *cn_grp_init(int id);
 int cn_grp_free(struct cn_grp *g);
 
 /* rel */
-int cn_add_elem_to_net(struct cn_elem *e, struct cn_net *n);
-int cn_rem_elem_from_net(struct cn_elem *e, struct cn_net *n);
+int cn_add_elem_to_router(struct cn_elem *e, struct cn_router *rt);
+int cn_rem_elem_from_router(struct cn_elem *e, struct cn_router *rt);
 
 int cn_add_elem_to_grp(struct cn_elem *e, struct cn_grp *g);
 int cn_rem_elem_from_grp(struct cn_elem *e, struct cn_grp *g);

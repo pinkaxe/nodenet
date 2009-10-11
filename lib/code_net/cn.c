@@ -9,34 +9,34 @@
 
 #include "types.h"
 #include "cmd.h"
-#include "net.h"
+#include "router.h"
 #include "elem.h"
 #include "grp.h"
 
 #include "cn.h"
 
 
-struct cn_net *cn_net_init(void)
+struct cn_router *cn_router_init(void)
 {
-    struct cn_net *n;
+    struct cn_router *rt;
 
-    PCHK(LWARN, n, net_init());
-    return n;
+    PCHK(LWARN, rt, router_init());
+    return rt;
 }
 
-int cn_net_free(struct cn_net *n)
+int cn_router_free(struct cn_router *rt)
 {
     int r;
 
-    ICHK(LWARN, r, net_free(n));
+    ICHK(LWARN, r, router_free(rt));
     return r;
 }
 
-int cn_net_run(struct cn_net *n)
+int cn_router_run(struct cn_router *rt)
 {
     int r;
 
-    ICHK(LWARN, r, io_route_run(n));
+    ICHK(LWARN, r, router_run(rt));
     return r;
 }
 
@@ -83,19 +83,19 @@ int cn_grp_free(struct cn_grp *g)
     return r;
 }
 
-int cn_add_elem_to_net(struct cn_elem *e, struct cn_net *n)
+int cn_add_elem_to_router(struct cn_elem *e, struct cn_router *rt)
 {
     int r;
 
-    ICHK(LWARN, r, elem_add_to_net(e, n));
+    ICHK(LWARN, r, elem_add_to_router(e, rt));
     if(r){
         goto err;
     }
 
-    ICHK(LWARN, r, net_add_memb(n, e));
+    ICHK(LWARN, r, router_add_memb(rt, e));
     if(r){
         int rr;
-        ICHK(LWARN, rr, elem_rem_from_net(e, n));
+        ICHK(LWARN, rr, elem_rem_from_router(e, rt));
         if(rr){
         }
     }
@@ -104,16 +104,16 @@ err:
     return r;
 }
 
-int cn_rem_elem_from_net(struct cn_elem *e, struct cn_net *n)
+int cn_rem_elem_from_router(struct cn_elem *e, struct cn_router *rt)
 {
     int r;
 
-    ICHK(LWARN, r, net_rem_memb(n, e));
+    ICHK(LWARN, r, router_rem_memb(rt, e));
     if(r){
         goto err;
     }
 
-    ICHK(LWARN, r, elem_rem_from_net(e, n));
+    ICHK(LWARN, r, elem_rem_from_router(e, rt));
     if(r){
         goto err;
     }
@@ -162,35 +162,35 @@ err:
 
 }
 
-int cn_net_set_cmd_cb(struct cn_net *n, io_cmd_req_cb_t cb)
+int cn_router_set_cmd_cb(struct cn_router *rt, io_cmd_req_cb_t cb)
 {
     int r;
 
-    ICHK(LWARN, r, net_set_cmd_cb(n, cb));
+    ICHK(LWARN, r, router_set_cmd_cb(rt, cb));
     return r;
 }
 
-int cn_net_add_cmd_req(struct cn_net *n, struct cn_cmd *cmd)
+int cn_router_add_cmd_req(struct cn_router *rt, struct cn_cmd *cmd)
 {
     int r;
 
-    r = net_add_cmd(n, cmd);
+    r = router_add_cmd(rt, cmd);
     return r;
 }
 
-//int cn_net_set_data_cb(struct cn_net *n, io_data_req_cb_t cb)
+//int cn_router_set_data_cb(struct cn_router *rt, io_data_req_cb_t cb)
 //{
 //    int r;
 //
-//    ICHK(LWARN, r, net_set_data_cb(n, cb));
+//    ICHK(LWARN, r, router_set_data_cb(rt, cb));
 //    return r;
 //}
 
-int cn_net_add_data_req(struct cn_net *n, struct cn_io_data *data)
+int cn_router_add_data_req(struct cn_router *rt, struct cn_io_data *data)
 {
     int r;
 
-    //r = net_add_data_req(n, data);
+    //r = router_add_data_req(rt, data);
     return r;
 }
 

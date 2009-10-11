@@ -1,124 +1,214 @@
 
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdint.h>
 #include <assert.h>
 
-#include "sys/thread.h"
 #include "util/log.h"
+#include "util/que.h"
+#include "util/ll.h"
 
 #include "types.h"
 #include "cmd.h"
-#include "net.h"
-//#include "netpriv.h"
+#include "router.h"
 
-/* main io route threads */
+struct cn_router_memb {
+    struct cn_elem *memb;
+};
 
-static int route_to_net(struct cn_net *n, struct cn_cmd *cmd)
+struct cn_router {
+    struct ll *memb;
+    struct que *cmd_req;
+    struct que *data_req;
+    io_cmd_req_cb_t io_cmd_req_cb;
+    //io_data_req_cb_t io_data_req_cb;
+};
+
+int router_isvalid(struct cn_router *rt)
+{
+    assert(rt->memb);
+}
+
+struct cn_router *router_init()
+{
+    int err;
+    struct cn_router *rt;
+
+    PCHK(LWARN, rt, calloc(1, sizeof(*rt)));
+    if(!rt){
+        goto err;
+    }
+
+    PCHK(LWARN, rt->memb, ll_init());
+    if(!rt->memb){
+        router_free(rt);
+        rt = NULL;
+        goto err;
+    }
+
+    PCHK(LWARN, rt->cmd_req, que_init(32));
+    if(!rt->cmd_req){
+        router_free(rt);
+        rt = NULL;
+        goto err;
+    }
+
+
+    PCHK(LWARN, rt->data_req, que_init(32));
+    if(!rt->data_req){
+        router_free(rt);
+        rt = NULL;
+        goto err;
+    }
+
+    router_isvalid(rt);
+err:
+    return rt;
+}
+
+int router_free(struct cn_router *rt)
 {
     int r = 0;
-    struct cn_elem *e;
-    void *iter;
-    struct cn_cmd *clone;
+    router_isvalid(rt);
 
-    assert(n);
+    if(rt->memb){
+        ICHK(LWARN, r, ll_free(rt->memb));
+    }
 
-    iter = NULL;
-    while((e=net_memb_iter(n, &iter))){
-        clone = cmd_clone(cmd);
-        while((r=elem_add_cmd(e, clone))){
-            usleep(100);
-        }
-        if(r){
-            goto err;
-        }
-   }
+    if(rt->cmd_req){
+        ICHK(LWARN, r, que_free(rt->cmd_req));
+    }
+
+    if(rt->data_req){
+        ICHK(LWARN, r, que_free(rt->data_req));
+    }
+
+
+    free(rt);
+    return r;
+}
+
+
+int router_add_memb(struct cn_router *rt, struct cn_elem *e)
+{
+    int r = 1;
+    struct cn_router_memb *nm;
+    router_isvalid(rt);
+
+    PCHK(LWARN, nm, malloc(sizeof(*nm)));
+    if(!nm){
+        goto err;
+    }
+
+
+    nm->memb = e;
+    ICHK(LWARN, r, ll_add_front(rt->memb, (void **)&nm));
 
 err:
     return r;
 }
 
-
-static int route_to_grp(struct cn_grp *g, struct cn_cmd *cmd)
+int router_rem_memb(struct cn_router *rt, struct cn_elem *e)
 {
+    int r;
+
+    router_isvalid(rt);
+
+    ICHK(LWARN, r, ll_rem(rt->memb, e));
+
+    return r;
 }
 
-static int route_to_elem(struct cn_net *n, struct cn_cmd *cmd)
+int router_ismemb(struct cn_router *rt, struct cn_elem *e)
 {
-}
+    int r = 1;
+    struct cn_router_memb *nm;
+    void *iter;
 
+    assert(rt);
 
-/* decide who/where to route */
-static int route_cmd(struct cn_net *n, struct cn_cmd *cmd)
-{
-    //printf("!!! yeah got it: %d\n", cmd->id);
-    //struct cn_io_conf *conf;
-
-    assert(cmd);
-    assert(cmd->conf);
-
-    switch(cmd->conf->sendto_type){
-        case CN_SENDTO_GRP:
-            //route_to_grp(g, );
+    iter = NULL;
+    while((nm=ll_next(rt->memb, &iter))){
+        if(nm->memb == e){
+            r = 0;
             break;
-        case CN_SENDTO_ELEM:
-            //send_cmd_to_elem(e1, cmd);
-            break;
-        case CN_SENDTO_ALL:
-            route_to_net(n, cmd);
-            //printf("freeing %p\n", cmd);
-            cmd_free(cmd);
-            break;
-        default:
-            break;
+        }
     }
-    //free(cmd);
+
+    return r;
+}
+
+
+
+int router_print(struct cn_router *rt)
+{
+    struct cn_router_memb *nm;
+    int r = 0;
+    int c;
+    void *iter;
+
+    printf("\rt-- router->elem --: %p\rt\rt", rt);
+    c = 0;
+
+    iter = NULL;
+    //ll_each(rt->memb, nm, iter){
+    while((nm = ll_next(rt->memb, &iter))){
+        printf("zee\rt");
+        printf("p:%p\rt", nm->memb);
+        c++;
+    }
+
+    printf("total: %d\rt\rt", c);
+
     return 0;
 }
 
 
-/* pick up cmds coming from net, and call router */
-static void *route_cmd_thread(void *arg)
+int router_set_cmd_cb(struct cn_router *rt, io_cmd_req_cb_t cb)
 {
-    struct timespec ts = {0, 0};
-    struct cn_net *n = arg;
-    struct cn_cmd *cmd;
-
-    for(;;){
-        cmd = net_get_cmd(n, NULL);
-        if(cmd){
-            //n->io_cmd_req_cb(n, cmd);
-            route_cmd(n, cmd);
-        }
-
-    }
+    router_isvalid(rt);
+    rt->io_cmd_req_cb = cb;
+    return 0;
 }
 
-/* pick up data coming from e and call router cb */
-//static void *route_data_thread(void *arg)
+int router_set_data_cb(struct cn_router *rt, io_data_req_cb_t cb)
+{
+    router_isvalid(rt);
+    //rt->io_data_req_cb = cb;
+    return 0;
+}
+
+int router_add_cmd(struct cn_router *rt, struct cn_cmd *cmd)
+{
+    return que_add(rt->cmd_req, cmd);
+}
+
+struct cn_cmd *router_get_cmd(struct cn_router *rt, struct timespec *ts)
+{
+    return que_get(rt->cmd_req, ts);
+}
+
+//int router_add_data_req(struct cn_router *rt, struct cn_data *data)
 //{
-//    struct timespec ts = {0, 0};
-//    struct cn_net *n = arg;
-//    struct cn_io_data *data;
-//
-//    for(;;){
-//        data = que_get(n->data_req, NULL);
-//          cmd = net_get_cmd(n, NULL);
-//        if(data){
-//            n->io_data_req_cb(n, data);
-//        }
-//
-//    }
+//    return que_add(rt->data_req, data);
 //}
 
 
-int io_route_run(struct cn_net *n)
+struct cn_elem *router_memb_iter(struct cn_router *rt, void **iter)
 {
-    thread_t tid;
-    thread_create(&tid, NULL, route_cmd_thread, n);
-    thread_detach(tid);
+    int r = 0;
+    struct cn_router_memb *m;
+    struct cn_cmd *clone;
 
-    //thread_create(&tid, NULL, route_data_thread, n);
-    //thread_detach(tid);
+    assert(rt);
 
-    return 0;
+    m = ll_next(rt->memb, iter);
+
+    if(m){
+        return m->memb;
+    }else{
+        return NULL;
+    }
 }
-

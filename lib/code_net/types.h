@@ -21,7 +21,7 @@ enum cn_elem_state {
     CN_ELEM_CMD_STOPPED,
 };
 
-struct cn_net;
+struct cn_router;
 struct cn_elem;
 struct cn_grp;
 struct cn_grp_memb;

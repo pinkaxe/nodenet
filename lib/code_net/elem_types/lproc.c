@@ -28,11 +28,11 @@ void *lproc_middle(void *arg)
     char buf[5];
     write(fd[0], "yes", 4);
     read(fd[0], buf, 3);
-    fprintf(stderr, "!! read: %s\n", buf);
+    fprintf(stderr, "!! read: %s\rt", buf);
 
     while(1){
         sleep(1);
-        fprintf(stderr, "in middle\n");
+        fprintf(stderr, "in middle\rt");
     }
 
     void *buf = NULL;
@@ -65,7 +65,7 @@ void *lproc_middle(void *arg)
                 user_func(h, buf, 1, pdata);
             }else{
                 if(errno == ETIMEDOUT){
-                    //printf("!! timedout xx\n");
+                    //printf("!! timedout xx\rt");
                 }
             }
             //sleep(1);
@@ -74,14 +74,14 @@ void *lproc_middle(void *arg)
         /* incoming commands */
         cmd_buf = elem_read_in_cmd(h, &cmd_check_timespec);
         if(cmd_buf){
-            printf("!!! Got a cmd_buf\n ");
+            printf("!!! Got a cmd_buf\rt ");
             //exit(1);
             //free(cmd_buf);
             //break;
             // process and free
         }else{
             if(errno == ETIMEDOUT){
-                //printf("!! timedout xxxx\n");
+                //printf("!! timedout xxxx\rt");
             }
         }
 
@@ -93,14 +93,14 @@ int lproc_loop()
 {
     char buf[5];
     read(fd[1], buf, 4);
-    printf("!! read0: %s\n", buf);
+    printf("!! read0: %s\rt", buf);
     write(fd[1], "no", 3);
     while(1){
         sleep(1);
-        printf("in process\n");
+        printf("in process\rt");
     }
 end:
-    printf("... lproc exit\n");
+    printf("... lproc exit\rt");
     return 0;
 
 }
@@ -121,7 +121,7 @@ int dispatcher_lproc(struct cn_elem *e)
     }else if(pid > 0){
         // parent
         close(fd[1]);
-        //printf("parent\n");
+        //printf("parent\rt");
         thread_t tid;
         thread_create(&tid, NULL, lproc_middle, e);
         thread_detach(tid);
@@ -135,7 +135,7 @@ int dispatcher_lproc(struct cn_elem *e)
         if(fd[1] != STDOUT_FILENO)
             dup2(fd[1], STDOUT_FILENO);
 
-        //printf("child\n");
+        //printf("child\rt");
         lproc_loop();
         // or exec here
     }

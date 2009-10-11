@@ -35,14 +35,15 @@ static struct cn_elem *e0, *e1, *e2;
 int input_elem(struct cn_elem *e, void *buf, int len, void *pdata)
 {
     //j
-    //cn_io_write(e, 0, b, n, cleanup_cb);
-    //L(LWARN, "loop\n");
+    //cn_io_write(e, 0, b, rt, cleanup_cb);
+    //L(LWARN, "loop\rt");
     return 0;
 }
 
 int process_elem(struct cn_elem *e, void *buf, int len, void *pdata)
 {
     printf("!! process\n");
+    //e->add_output_data();
     return 0;
 }
 
@@ -58,9 +59,9 @@ int process_lproc_elem(struct cn_elem *e, void *buf, int len, void *pdata)
 
 
 /*
-int io_cmd_req_cb(struct cn_net *n, struct cn_cmd *cmd)
+int io_cmd_req_cb(struct cn_router *rt, struct cn_cmd *cmd)
 {
-    //printf("!!! yeah got it: %d\n", cmd->id);
+    //printf("!!! yeah got it: %d\rt", cmd->id);
     //struct cn_io_conf *conf;
 
     assert(cmd);
@@ -73,8 +74,8 @@ int io_cmd_req_cb(struct cn_net *n, struct cn_cmd *cmd)
             //send_cmd_to_elem(e1, cmd);
             break;
         case CN_SENDTO_ALL:
-            net_sendto_all(n, cmd);
-            //printf("freeing %p\n", cmd);
+            router_sendto_all(rt, cmd);
+            //printf("freeing %p\rt", cmd);
             cmd_free(cmd);
             break;
         default:
@@ -84,10 +85,10 @@ int io_cmd_req_cb(struct cn_net *n, struct cn_cmd *cmd)
     return 0;
 }
 
-int io_data_req_cb(struct cn_net *n, struct cn_io_data *data)
+int io_data_req_cb(struct cn_router *rt, struct cn_io_data *data)
 {
-    printf("ggg!!!!!!!!!!!!!!\n");
-    //printf("!!! yeah got it: %d\n", data->id);
+    printf("ggg!!!!!!!!!!!!!!\rt");
+    //printf("!!! yeah got it: %d\rt", data->id);
     //send_data_to_elem(e1, data);
     //send_data_to_elem(e0, data);
     //free(data);
@@ -98,7 +99,7 @@ int io_data_req_cb(struct cn_net *n, struct cn_io_data *data)
 
 int main(int argc, char *argv)
 {
-    struct cn_net *n0;
+    struct cn_router *rt0;
     struct cn_elem *e[1024];
     struct cn_grp *g0;
     struct cn_cmd *cmd;
@@ -106,8 +107,8 @@ int main(int argc, char *argv)
     struct cn_io_conf *conf;
 
     while(1){
-        n0 = cn_net_init();
-        ok(n0);
+        rt0 = cn_router_init();
+        ok(rt0);
 
         g0 = cn_grp_init(GRP0);
         ok(g0);
@@ -117,22 +118,22 @@ int main(int argc, char *argv)
 
         //while(1){
         //sleep(5);
-        cn_add_elem_to_net(e0, n0);
+        cn_add_elem_to_router(e0, rt0);
         cn_add_elem_to_grp(e0, g0);
-        //cn_rem_elem_from_net(e0, n0);
+        //cn_rem_elem_from_router(e0, rt0);
 
 
         e1 = cn_elem_init(CN_TYPE_THREAD, 0, process_elem, NULL);
         ok(e1);
 
-        cn_add_elem_to_net(e1, n0);
+        cn_add_elem_to_router(e1, rt0);
         cn_add_elem_to_grp(e1, g0);
 
 
         e2 = cn_elem_init(CN_TYPE_LPROC, 0, process_lproc_elem, NULL);
         ok(e2);
 
-        //cn_add_elem_to_net(e2, n0);
+        //cn_add_elem_to_router(e2, rt0);
         cn_add_elem_to_grp(e2, g0);
 
         cn_elem_run(e0);
@@ -140,11 +141,10 @@ int main(int argc, char *argv)
         //cn_elem_run(e2);
         //cn_elem_run(e1);
 
-        /*
         int i;
         for(i=0; i < 300; i++){
-            e[i] = cn_elem_init(CN_TYPE_THREAD, CN_ATTR_NO_INPUT, input_elem, NULL);
-            cn_add_elem_to_net(e[i], n0);
+            e[i] = cn_elem_init(CN_TYPE_THREAD, CN_ATTR_NO_INPUT, process_elem, NULL);
+            cn_add_elem_to_router(e[i], rt0);
             cn_add_elem_to_grp(e[i], g0);
             cn_elem_run(e[i]);
         }
@@ -152,26 +152,25 @@ int main(int argc, char *argv)
         for(i=0; i < 300; i++){
             //cn_elem_run(e[i]);
         }
-        */
 
-        //cn_net_set_cmd_cb(n0, io_cmd_req_cb);
-        //cn_net_set_data_cb(n0, io_data_req_cb);
-        cn_net_run(n0);
+        //cn_router_set_cmd_cb(rt0, io_cmd_req_cb);
+        //cn_router_set_data_cb(rt0, io_data_req_cb);
+        cn_router_run(rt0);
 
         while(1){
 
             cmd = cmd_init(6, NULL, 0, 1, CN_SENDTO_ALL, 0);
-            //printf("malloced %p\n", cmd);
+            //printf("malloced %p\rt", cmd);
             //cmd_free(cmd);
-            //printf("leed %p\n", cmd);
+            //printf("leed %p\rt", cmd);
             // make sure to check return value if que is full
-            while(cn_net_add_cmd_req(n0, cmd)){
+            while(cn_router_add_cmd_req(rt0, cmd)){
                 //assert(1 == 0);
                 usleep(100);
             }
 
             //data = malloc(sizeof(*data));
-            //cn_net_add_data_req(n0, data);
+            //cn_router_add_data_req(rt0, data);
 
             //usleep(10000);
             //sleep(1);
@@ -180,7 +179,7 @@ int main(int argc, char *argv)
         cn_elem_free(e0);
         cn_elem_free(e1);
         cn_grp_free(g0);
-        cn_net_free(n0);
+        cn_router_free(rt0);
     }
 
     return 0;

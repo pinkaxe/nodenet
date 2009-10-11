@@ -2,13 +2,13 @@
 lib_LTLIBRARIES = libcode_net.la
 
 libcode_net_la_SOURCES = \
-			 net.c \
 			 elem.c \
+			 elem_io.c \
 			 grp.c \
 			 cmd.c \
 			 cn.c \
 			 router.c \
-			 elem_io.c \
+			 router_io.c \
 			 elem_types/elem_type.c \
 			 elem_types/thread.c \
 			 elem_types/lproc.c \

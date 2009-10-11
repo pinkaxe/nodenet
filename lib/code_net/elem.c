@@ -8,18 +8,16 @@
 #include <assert.h>
 
 #include "util/log.h"
-#include "util/dpool.h"
+#include "util/dbg.h"
 #include "util/que.h"
 #include "util/ll.h"
-#include "util/dbg.h"
 
 #include "types.h"
 #include "cmd.h"
-#include "elem.h"
-#include "grp.h"
-#include "net.h"
 
+#include "elem.h"
 #include "elem_types/elem_type.h"
+
 
 struct cn_elem {
     DBG_STRUCT_START
@@ -29,7 +27,7 @@ struct cn_elem {
 
     /* pointers for relationships */
     struct ll *grp_llh;             /* links to all groups this elem belongs to */
-    struct ll *net_llh;               /* links to all groups this elem belongs to */
+    struct ll *router_llh;               /* links to all groups this elem belongs to */
 
     /* bufs */
     struct que *in_data_queh;         /* input for code elem */
@@ -57,8 +55,8 @@ struct cn_elem_grp {
     struct cn_grp *grp;
 };
 
-struct cn_elem_net {
-    struct cn_net *net;
+struct cn_elem_router {
+    struct cn_router *router;
 };
 
 
@@ -98,8 +96,8 @@ struct cn_elem *elem_init(enum cn_elem_type type, enum cn_elem_attr attr,
         goto err;
     }
 
-    PCHK(LWARN, e->net_llh, ll_init());
-    if(!e->net_llh){
+    PCHK(LWARN, e->router_llh, ll_init());
+    if(!e->router_llh){
         PCHK(LWARN, r, elem_free(e));
         goto err;
     }
@@ -114,7 +112,7 @@ struct cn_elem *elem_init(enum cn_elem_type type, enum cn_elem_attr attr,
 err:
     return e;
 }
- 
+
 int elem_free(struct cn_elem *e)
 {
     int fail = 0;
@@ -122,8 +120,8 @@ int elem_free(struct cn_elem *e)
 
     elem_isok(e);
 
-    if(e->net_llh){
-        ICHK(LWARN, r, ll_free(e->net_llh));
+    if(e->router_llh){
+        ICHK(LWARN, r, ll_free(e->router_llh));
         if(r) fail++;
     }
 
@@ -157,30 +155,30 @@ int elem_start(struct cn_elem *e)
     return r;
 }
 
-int elem_add_to_net(struct cn_elem *e, struct cn_net *n)
+int elem_add_to_router(struct cn_elem *e, struct cn_router *rt)
 {
     int r = 1;
-    struct cn_elem_net *en;
+    struct cn_elem_router *en;
 
     PCHK(LWARN, en, malloc(sizeof(*en)));
     if(!en){
         goto err;
     }
 
-    en->net = n;
-    ICHK(LWARN, r, ll_add_front(e->net_llh, (void **)&en));
+    en->router = rt;
+    ICHK(LWARN, r, ll_add_front(e->router_llh, (void **)&en));
 
 err:
     return r;
 }
 
-int elem_rem_from_net(struct cn_elem *e, struct cn_net *n)
+int elem_rem_from_router(struct cn_elem *e, struct cn_router *rt)
 {
     int r;
 
     elem_isok(e);
 
-    ICHK(LWARN, r, ll_rem(e->net_llh, n));
+    ICHK(LWARN, r, ll_rem(e->router_llh, rt));
     //TODO:
     return 0;
 }
@@ -227,7 +225,7 @@ int elem_link(struct cn_elem *from, struct cn_elem *to)
 
     PCHK(LWARN, link, malloc(sizeof(*link)));
     if(!link){
-        printf("cunt\n");
+        printf("cunt\rt");
         exit(-1);
         //LOG1(
     }
@@ -238,7 +236,7 @@ int elem_link(struct cn_elem *from, struct cn_elem *to)
     // link back
     PCHK(LWARN, link, malloc(sizeof(*link)));
     if(!link){
-        printf("cunt\n");
+        printf("cunt\rt");
         exit(-1);
         //LOG1(
     }
@@ -320,19 +318,19 @@ void *elem_write_in_buf(struct cn_elem *e)
 
 /** debug functions **/
 
-/* check that the net's it points to points back */
-int elem_net_isok(struct cn_elem *e)
+/* check that the router's it points to points back */
+int elem_router_isok(struct cn_elem *e)
 {
     void *track;
-    struct cn_elem_net *n;
+    struct cn_elem_router *rt;
     int r = 0;
     void *iter;
 
     iter = NULL;
-    while((n=ll_next(e->net_llh, &iter))){
+    while((rt=ll_next(e->router_llh, &iter))){
         /* make sure we are a member */
-        r = net_ismemb(n->net, e);
-        //r = net_print(n->net);
+        r = router_ismemb(rt->router, e);
+        //r = router_print(rt->router);
         assert(r == 0);
         if(r){
             break;
@@ -375,13 +373,13 @@ int elem_isok(struct cn_elem *e)
     //assert(e->out_links_llh);
     //assert(e->in_links_llh);
     //assert(e->grp_llh);
-    //assert(e->net_llh);
+    //assert(e->router_llh);
     assert(e->in_data_queh);
     assert(e->in_cmd_queh);
     //assert(e->out_data_queh);
     //assert(e->out_cmd_queh);
 
-    elem_net_isok(e);
+    elem_router_isok(e);
     elem_grp_isok(e);
     //elem_print(e);
 
@@ -391,32 +389,32 @@ int elem_isok(struct cn_elem *e)
 int elem_print(struct cn_elem *e)
 {
     void *track;
-    struct cn_elem_net *n;
+    struct cn_elem_router *rt;
     struct cn_elem_grp *g;
     int r = 0;
     int c;
     void *iter;
 
-    puts("\n-- elem->net --\n");
+    puts("\rt-- elem->router --\rt");
 
     c = 0;
 
     iter = NULL;
-    while((n=ll_next(e->net_llh, &iter))){
-        printf("p:%p\n", n->net);
+    while((rt=ll_next(e->router_llh, &iter))){
+        printf("p:%p\rt", rt->router);
         c++;
     }
 
-    puts("\n-- elem->grp --\n");
+    puts("\rt-- elem->grp --\rt");
 
     c = 0;
     iter = NULL;
     while((g=ll_next(e->grp_llh, &iter))){
-        printf("p:%p\n", g->grp);
+        printf("p:%p\rt", g->grp);
         c++;
     }
 
-    printf("total: %d\n\n", c);
+    printf("total: %d\rt\rt", c);
 
     return 0;
 }
