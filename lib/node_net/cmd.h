@@ -17,7 +17,7 @@ struct nn_io_conf {
 };
 
 struct nn_cmd {
-    enum nn_node_cmd id;
+    enum nn_cmd_cmd id;
     void *pdata;
     int data_no;
     struct nn_io_conf *conf;
@@ -45,7 +45,7 @@ int nn_io_set_data_cb(struct nn_router *rt, int (*nn_io_req)(struct nn_io_data
 int nn_io_add_data_req(struct nn_io_data *req);
 */
 
-struct nn_cmd *cmd_init(enum nn_node_cmd id, void *pdata, int data_no,
+struct nn_cmd *cmd_init(enum nn_cmd_cmd id, void *pdata, int data_no,
         int sendto_no, int sendto_type, int sendto_id);
 int cmd_free(struct nn_cmd *cmd);
 struct nn_cmd *cmd_clone(struct nn_cmd *cmd);

@@ -11,15 +11,16 @@ enum nn_node_attr {
     NN_NODE_ATTR_NO_INPUT = 0x01
 };
 
-enum nn_node_cmd {
-    NN_NODE_CMD_STOP
+enum nn_node_state {
+    NN_NODE_STATE_RUNNING,
+    NN_NODE_STATE_PAUSED,
+    NN_NODE_STATE_STOPPED,
 };
 
-enum nn_node_state {
-    NN_NODE_CMD_RUNNING,
-    NN_NODE_CMD_PAUSED,
-    NN_NODE_CMD_STOPPED,
+enum nn_cmd_cmd {
+    NN_CMD_CMD_STOP
 };
+
 
 struct nn_router;
 struct nn_node;

@@ -24,7 +24,7 @@ struct nn_io_data_req {
     void *buf;
 };
 
-int nn_io_write_cmd(struct nn_node *n, enum nn_node_cmd cmd, void *pdata);
+int nn_io_write_cmd(struct nn_node *n, enum nn_cmd_cmd cmd, void *pdata);
 
 int nn_io_write_data(struct nn_node *n, struct io_buf_attr *attr, void *buf,
         jint len, void (*cleanup_cb)(void *buf, void *pdata));

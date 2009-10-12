@@ -12,7 +12,7 @@
 #include "node_net/cmd.h"
 
 
-struct nn_cmd *cmd_init(enum nn_node_cmd id, void *pdata, int data_no,
+struct nn_cmd *cmd_init(enum nn_cmd_cmd id, void *pdata, int data_no,
         int sendto_no, int sendto_type, int sendto_id)
 {
     struct nn_cmd *cmd;

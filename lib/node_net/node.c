@@ -300,7 +300,7 @@ void *node_get_buf(struct nn_node *n, struct timespec *ts)
 
 
 /*
-int node_write_in_cmd(struct nn_node *n, enum nn_node_cmd cmd, void *pdata)
+int node_write_in_cmd(struct nn_node *n, enum nn_cmd_cmd cmd, void *pdata)
 {
     struct nn_cmd *c = malloc(sizeof(*c));
 
