@@ -9,11 +9,11 @@
 #include "types.h"
 #include "node.h"
 #include "node_io.h"
-#include "node_types/node_type.h"
-#include "node_types/thread.h"
+#include "node_drivers/node_driver.h"
+#include "node_drivers/thread.h"
 
-//#include "node_net/node_types/lproc.h"
-//#include "node_net/node_types/bin.h"
+//#include "node_net/node_drivers/lproc.h"
+//#include "node_net/node_drivers/bin.h"
 
 static void *node_io_thread(void *arg);
 static handle_int_cmd(struct nn_cmd *cmd);
@@ -89,7 +89,7 @@ static void *node_io_thread(void *arg)
 
         /* incoming data */
         //if(h->state == nn_node_STATE_RUNNING){
-            if((attr & NN_ATTR_NO_INPUT)){
+            if((attr & NN_NODE_ATTR_NO_INPUT)){
                 /* call user function */
                 //user_func(h, NULL, 0, pdata);
                 //h->ops->node_buf_exe(h, NULL, 0, pdata);

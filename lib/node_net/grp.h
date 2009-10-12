@@ -1,6 +1,6 @@
 
-#ifndef __NN_%0RP_H__
-#define __NN_%0RP_H__
+#ifndef __NN_GRP_H__
+#define __NN_GRP_H__
 
 #include<stdbool.h>
 

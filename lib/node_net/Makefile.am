@@ -9,10 +9,10 @@ libnode_net_la_SOURCES = \
 			 grp.c \
 			 cmd.c \
 			 nn.c \
-			 node_types/node_type.c \
-			 node_types/thread.c \
-			 node_types/lproc.c \
-			 node_types/bin.c
+			 node_drivers/node_driver.c \
+			 node_drivers/thread.c \
+			 node_drivers/lproc.c \
+			 node_drivers/bin.c
 
 libnode_net_la_LIBADD =
 

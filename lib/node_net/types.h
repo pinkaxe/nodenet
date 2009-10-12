@@ -1,14 +1,14 @@
-#ifndef __NN_NODE_TYPES_H__
-#define __NN_NODE_TYPES_H__
+#ifndef __NN_node_driverS_H__
+#define __NN_node_driverS_H__
 
-enum nn_node_type {
+enum nn_node_driver {
     NN_NODE_TYPE_THREAD,
     NN_NODE_TYPE_LPROC,
     NN_NODE_TYPE_BIN
 };
 
 enum nn_node_attr {
-    NN_ATTR_NO_INPUT = 0x01
+    NN_NODE_ATTR_NO_INPUT = 0x01
 };
 
 enum nn_node_cmd {

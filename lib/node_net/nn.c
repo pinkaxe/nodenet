@@ -40,7 +40,7 @@ int nn_router_run(struct nn_router *rt)
     return r;
 }
 
-struct nn_node *nn_node_init(enum nn_node_type type, enum nn_node_attr attr,
+struct nn_node *nn_node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata)
 {
     struct nn_node *n;

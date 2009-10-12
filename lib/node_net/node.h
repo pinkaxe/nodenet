@@ -1,7 +1,7 @@
-#ifndef __nn_node_H__
-#define __nn_node_H__
+#ifndef __NN_NODE_H__
+#define __NN_NODE_H__
 
-struct nn_node *node_init(enum nn_node_type type, enum nn_node_attr attr,
+struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata);
 int node_free(struct nn_node *node);
 

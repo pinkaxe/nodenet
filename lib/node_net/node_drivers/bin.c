@@ -55,7 +55,7 @@ void *lproc_middle(void *arg)
         cmd_check_timespec.tv_sec = 0;
         cmd_check_timespec.tv_nsec = 10000000;
 
-        if((attr & NN_ATTR_NO_INPUT)){
+        if((attr & NN_NODE_ATTR_NO_INPUT)){
             /* call user function */
             user_func(h, NULL, 0, pdata);
 

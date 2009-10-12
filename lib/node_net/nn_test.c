@@ -114,7 +114,7 @@ int main(int argc, char *argv)
         g0 = nn_grp_init(GRP0);
         ok(g0);
 
-        e0 = nn_node_init(NN_NODE_TYPE_THREAD, NN_ATTR_NO_INPUT, input_node, NULL);
+        e0 = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT, input_node, NULL);
         ok(e0);
 
         //while(1){
@@ -144,7 +144,7 @@ int main(int argc, char *argv)
 
         int i;
         for(i=0; i < 300; i++){
-            n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_ATTR_NO_INPUT, process_node, NULL);
+            n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT, process_node, NULL);
             nn_add_node_to_router(n[i], rt0);
             nn_add_node_to_grp(n[i], g0);
             nn_node_run(n[i]);

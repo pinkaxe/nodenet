@@ -16,14 +16,14 @@
 #include "cmd.h"
 
 #include "node.h"
-#include "node_types/node_type.h"
+#include "node_drivers/node_driver.h"
 
 
 struct nn_node {
 
     DBG_STRUCT_START
 
-    enum nn_node_type type; /* thread, process etc. */
+    enum nn_node_driver type; /* thread, process etc. */
     enum nn_node_attr attr;
 
     /* rel */
@@ -38,7 +38,7 @@ struct nn_node {
     struct que *out_cmd;         /* input cmds for code node */
 
     /* funcp's to communicate with this node type for this node type */
-    struct node_type_ops *ops;
+    struct node_driver_ops *ops;
 
     void *code;  /* pointer to object depending on type */
 
@@ -65,7 +65,7 @@ struct nn_node_router {
 
 /** node type **/
 
-struct nn_node *node_init(enum nn_node_type type, enum nn_node_attr attr,
+struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata)
 {
     int r;
@@ -78,7 +78,7 @@ struct nn_node *node_init(enum nn_node_type type, enum nn_node_attr attr,
     }
     DBG_STRUCT_INIT(n);
 
-    n->ops = node_type_get_ops(n->type);
+    n->ops = node_driver_get_ops(n->type);
     assert(n->ops);
 
     PCHK(LWARN, n->in_data, que_init(8));
