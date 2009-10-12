@@ -15,16 +15,16 @@ struct node_type_ops *node_type_get_ops(int type)
     struct node_type_ops *ops = NULL;
 
     switch(type){
-        case nn_TYPE_THREAD:
+        case NN_NODE_TYPE_THREAD:
             ops = node_type_thread_get_ops();
             break;
-       // case nn_TYPE_LPROC:
+       // case NN_NODE_TYPE_LPROC:
        //     r = node_type_lproc_init(n);
        //     break;
-       // case nn_TYPE_BIN:
+       // case NN_NODE_TYPE_BIN:
        //     r = node_type_bin_init(n);
        //     break;
-       // case nn_TYPE_SOCK:
+       // case NN_NODE_TYPE_SOCK:
        //     break;
     }
 

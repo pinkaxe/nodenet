@@ -66,13 +66,13 @@ static void *node_io_thread(void *arg)
             cmd_free(cmd);
 
             //switch(cmdid){
-            //    case nn_node_CMD_RUN:
+            //    case NN_NODE_CMD_RUN:
             //        h->state = nn_node_STATE_RUNNING;
             //        break;
-            //    case nn_node_CMD_PAUSE:
+            //    case NN_NODE_CMD_PAUSE:
             //        h->state = nn_node_STATE_PAUSE;
             //        break;
-            //    case nn_node_CMD_STOP:
+            //    case NN_NODE_CMD_STOP:
             //        h->state = nn_node_STATE_STOP0;
             //        goto end;
 
@@ -89,7 +89,7 @@ static void *node_io_thread(void *arg)
 
         /* incoming data */
         //if(h->state == nn_node_STATE_RUNNING){
-            if((attr & nn_ATTR_NO_INPUT)){
+            if((attr & NN_ATTR_NO_INPUT)){
                 /* call user function */
                 //user_func(h, NULL, 0, pdata);
                 //h->ops->node_buf_exe(h, NULL, 0, pdata);

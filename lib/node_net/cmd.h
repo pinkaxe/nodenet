@@ -1,12 +1,12 @@
-#ifndef __nn_IO_H__
-#define __nn_IO_H__
+#ifndef __NN_CMD_H__
+#define __NN_CMD_H__
 
 #include "node_net/types.h"
 
 enum {
-    nn_SENDTO_node,
-    nn_SENDTO_GRP,
-    nn_SENDTO_ALL
+    NN_SENDTO_NODE,
+    NN_SENDTO_GRP,
+    NN_SENDTO_ALL
 };
 
 /* FIXME: move to .c and implement getters */

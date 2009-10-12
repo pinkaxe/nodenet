@@ -68,12 +68,12 @@ int io_cmd_req_cb(struct nn_router *rt, struct nn_cmd *cmd)
     assert(cmd->conf);
 
     switch(cmd->conf->sendto_type){
-        case nn_SENDTO_GRP:
+        case NN_SENDTO_GRP:
             break;
-        case nn_SENDTO_node:
+        case NN_SENDTO_NODE:
             //send_cmd_to_node(e1, cmd);
             break;
-        case nn_SENDTO_ALL:
+        case NN_SENDTO_ALL:
             router_sendto_all(rt, cmd);
             //printf("freeing %p\rt", cmd);
             cmd_free(cmd);
@@ -114,7 +114,7 @@ int main(int argc, char *argv)
         g0 = nn_grp_init(GRP0);
         ok(g0);
 
-        e0 = nn_node_init(nn_TYPE_THREAD, nn_ATTR_NO_INPUT, input_node, NULL);
+        e0 = nn_node_init(NN_NODE_TYPE_THREAD, NN_ATTR_NO_INPUT, input_node, NULL);
         ok(e0);
 
         //while(1){
@@ -124,14 +124,14 @@ int main(int argc, char *argv)
         //nn_rem_node_from_router(e0, rt0);
 
 
-        e1 = nn_node_init(nn_TYPE_THREAD, 0, process_node, NULL);
+        e1 = nn_node_init(NN_NODE_TYPE_THREAD, 0, process_node, NULL);
         ok(e1);
 
         nn_add_node_to_router(e1, rt0);
         nn_add_node_to_grp(e1, g0);
 
 
-        e2 = nn_node_init(nn_TYPE_LPROC, 0, process_lproc_node, NULL);
+        e2 = nn_node_init(NN_NODE_TYPE_LPROC, 0, process_lproc_node, NULL);
         ok(e2);
 
         //nn_add_node_to_router(e2, rt0);
@@ -144,7 +144,7 @@ int main(int argc, char *argv)
 
         int i;
         for(i=0; i < 300; i++){
-            n[i] = nn_node_init(nn_TYPE_THREAD, nn_ATTR_NO_INPUT, process_node, NULL);
+            n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_ATTR_NO_INPUT, process_node, NULL);
             nn_add_node_to_router(n[i], rt0);
             nn_add_node_to_grp(n[i], g0);
             nn_node_run(n[i]);
@@ -157,7 +157,7 @@ int main(int argc, char *argv)
 
         for(i = 0; i < 128; i++){
 
-            cmd = cmd_init(6, NULL, 0, 1, nn_SENDTO_ALL, 0);
+            cmd = cmd_init(6, NULL, 0, 1, NN_SENDTO_ALL, 0);
             //printf("malloced %p\rt", cmd);
             //cmd_free(cmd);
             //printf("leed %p\rt", cmd);

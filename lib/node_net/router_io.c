@@ -54,13 +54,13 @@ static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
     assert(cmd->conf);
 
     switch(cmd->conf->sendto_type){
-        case nn_SENDTO_GRP:
+        case NN_SENDTO_GRP:
             //route_to_grp(g, );
             break;
-        case nn_SENDTO_node:
+        case NN_SENDTO_NODE:
             //send_cmd_to_node(e1, cmd);
             break;
-        case nn_SENDTO_ALL:
+        case NN_SENDTO_ALL:
             route_to_router(rt, cmd);
             //printf("freeing %p\rt", cmd);
             cmd_free(cmd);
