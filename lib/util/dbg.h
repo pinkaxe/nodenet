@@ -1,6 +1,6 @@
 
-#ifndef __DBG_H__
-#define __DBG_H__
+#ifndef UTIL_DBG_H__
+#define UTIL_DBG_H__
 
 #define _DEBUG_
 #ifdef _DEBUG_

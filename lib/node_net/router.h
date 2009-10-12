@@ -1,6 +1,6 @@
 
-#ifndef __nn_router_H__
-#define __nn_router_H__
+#ifndef NN_ROUTER_H__
+#define NN_ROUTER_H__
 
 struct nn_router *router_init();
 int router_free(struct nn_router *h);

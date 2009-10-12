@@ -1,5 +1,5 @@
-#ifndef __QUE_H__
-#define __QUE_H__
+#ifndef UTIL_QUE_H__
+#define UTIL_QUE_H__
 
 struct que;
 

@@ -1,5 +1,5 @@
-#ifndef NN_ROUTER_H__
-#define NN_ROUTER_H__
+#ifndef NN_NN_H__
+#define NN_NN_H__
 
 /* router */
 struct nn_router *nn_router_init();

@@ -1,5 +1,5 @@
-#ifndef node_driver_THREAD_H__
-#define node_driver_THREAD_H__
+#ifndef NN_NODE_DRIVERS_NODE_DRIVER_H__
+#define NN_NODE_DRIVERS_NODE_DRIVER_H__
 
 struct node_driver_ops {
     int (*node_buf_exe)(struct nn_node *n, char *buf, size_t len, void *pdata);

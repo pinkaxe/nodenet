@@ -1,5 +1,5 @@
-#ifndef __XSTDLIB__H__
-#define __XSTDLIB__H__
+#ifndef WRAP_XSTDLIB_H__
+#define WRAP_XSTDLIB_H__
 
 #undef malloc
 #define malloc xmalloc

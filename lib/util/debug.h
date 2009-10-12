@@ -1,5 +1,5 @@
-#ifndef __DEBUG_H
-#define __DEBUG_H
+#ifndef UTIL_DEBUG_H__
+#define UTIL_DEBUG_H__
 
 #define ASSERT(call) \
 	if(!(call)){ \

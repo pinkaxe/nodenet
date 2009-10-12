@@ -1,5 +1,5 @@
-#ifndef DPOOL_H
-#define DPOOL_H
+#ifndef UTIL_DPOOL_H__
+#define UTIL_DPOOL_H__
 
 struct dpool_buf {
     int id;

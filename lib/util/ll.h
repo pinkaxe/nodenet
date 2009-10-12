@@ -1,6 +1,6 @@
 
-#ifndef __ll_H__
-#define __ll_H__
+#ifndef UTIL_LL_H__
+#define UTIL_LL_H__
 
 #include<stddef.h> // offsetof
 

@@ -1,5 +1,5 @@
-#ifndef CODE_router_router_H__
-#define CODE_router_router_H__
+#ifndef NN_ROUTER_IO_H__
+#define NN_ROUTER_IO_H__
 
 int router_run(struct nn_router *rt);
 

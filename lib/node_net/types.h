@@ -1,5 +1,13 @@
-#ifndef __NN_node_driverS_H__
-#define __NN_node_driverS_H__
+#ifndef NN_TYPES_H__
+#define NN_TYPES_H__
+
+struct nn_router;
+struct nn_node;
+struct nn_grp;
+struct nn_grp_memb;
+
+struct nn_cmd;
+struct nn_io_data;
 
 enum nn_node_driver {
     NN_NODE_TYPE_THREAD,
@@ -20,14 +28,5 @@ enum nn_node_state {
 enum nn_cmd_cmd {
     NN_CMD_CMD_STOP
 };
-
-
-struct nn_router;
-struct nn_node;
-struct nn_grp;
-struct nn_grp_memb;
-
-struct nn_cmd;
-struct nn_io_data;
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef __DB__
-#define __DB__
+#ifndef DB_XSQLITE3_H__
+#define DB_XSQLITE3_H__
 
 struct db {
     sqlite3 *h;

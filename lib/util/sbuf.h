@@ -1,5 +1,5 @@
-#ifndef __SBUF_H__
-#define __SBUF_H__
+#ifndef UTIL_SBUF_H__
+#define UTIL_SBUF_H__
 
 struct sbuf *sbuf_init(size_t size, int *n);
 void sbuf_free(struct sbuf *b);

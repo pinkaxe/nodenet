@@ -1,5 +1,5 @@
-#ifndef __LOG_H__
-#define __LOG_H__
+#ifndef UTIL_LOG_H__
+#define UTIL_LOG_H__
 
 #include<errno.h>
 

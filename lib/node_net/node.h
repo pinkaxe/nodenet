@@ -1,5 +1,5 @@
-#ifndef __NN_NODE_H__
-#define __NN_NODE_H__
+#ifndef NN_NODE_H__
+#define NN_NODE_H__
 
 struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata);

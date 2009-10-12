@@ -1,5 +1,5 @@
-#ifndef __NN_CMD_H__
-#define __NN_CMD_H__
+#ifndef NN_CMD_H__
+#define NN_CMD_H__
 
 #include "node_net/types.h"
 
