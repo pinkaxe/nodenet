@@ -38,6 +38,7 @@ int ll_free(struct ll *h)
 {
     assert(h);
     free(h);
+    return 0;
 }
 
 int ll_add_front(struct ll *h, void **data)

@@ -53,7 +53,7 @@ int que_free(struct que *h)
         free(h);
     }
 
-    return 1;
+    return 0;
 }
 
 int que_add(struct que *h, void *item) 

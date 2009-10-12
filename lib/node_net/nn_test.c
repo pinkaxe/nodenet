@@ -99,6 +99,7 @@ int io_data_req_cb(struct nn_router *rt, struct nn_io_data *data)
 
 int main(int argc, char *argv)
 {
+    int i;
     struct nn_router *rt0;
     struct nn_node *n[1024];
     struct nn_grp *g0;
@@ -149,15 +150,12 @@ int main(int argc, char *argv)
             nn_node_run(n[i]);
         }
 
-        for(i=0; i < 300; i++){
-            //nn_node_run(n[i]);
-        }
 
         //nn_router_set_cmd_cb(rt0, io_cmd_req_cb);
         //nn_router_set_data_cb(rt0, io_data_req_cb);
         nn_router_run(rt0);
 
-        while(1){
+        for(i = 0; i < 128; i++){
 
             cmd = cmd_init(6, NULL, 0, 1, nn_SENDTO_ALL, 0);
             //printf("malloced %p\rt", cmd);
@@ -176,8 +174,11 @@ int main(int argc, char *argv)
             //sleep(1);
         }
 
-        nn_node_free(e0);
-        nn_node_free(e1);
+        for(i=0; i < 300; i++){
+            nn_node_free(n[i]);
+        }
+        //nn_node_free(e0);
+        //nn_node_free(e1);
         nn_grp_free(g0);
         nn_router_free(rt0);
     }
