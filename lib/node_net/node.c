@@ -30,14 +30,21 @@ struct nn_node {
     struct ll *grps;     /* all groups this node belongs to */
     struct ll *routers;  /* all routers this node belongs to */
 
-    /* bufp's */
+    /* bufp's for app */
     struct que *in_data;         /* input for code node */
     struct que *in_cmd;          /* input cmds for code node */
 
     struct que *out_data;        /* output to other code node's */
-    struct que *out_cmd;         /* input cmds for code node */
+    struct que *out_cmd;         /* output cmds for code node*/
 
-    /* funcp's to communicate with this node type for this node type */
+    /* notifications from driver to router */
+    struct que *out_notify;
+
+    /* internal commands, between node_io and router_io */
+    struct que *in_int_cmd; /* only for control node */
+    struct que *out_int_cmd;
+
+    /* funcp's to communicate with this node type */
     struct node_driver_ops *ops;
 
     void *code;  /* pointer to object depending on type */

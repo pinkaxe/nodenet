@@ -14,16 +14,27 @@
 #include "cmd.h"
 #include "router.h"
 
-struct nn_router_memb {
-    struct nn_node *memb;
-};
 
 struct nn_router {
     struct ll *memb;
-    struct que *cmd_req;
-    struct que *data_req;
-    io_cmd_req_cb_t io_cmd_req_cb;
-    //io_data_req_cb_t io_data_req_cb;
+
+    struct que *in_cmd;
+    struct que *in_data;
+    struct que *out_cmd;
+    struct que *out_data;
+    struct que *in_notify;
+
+    /* internal commands */
+    struct que *in_int_cmd;
+    struct que *out_int_cmd;
+
+    io_in_cmd_cb_t io_in_cmd_cb;
+    //io_in_data_cb_t io_in_data_cb;
+};
+
+/* for nn_router->memb */
+struct nn_router_memb {
+    struct nn_node *memb;
 };
 
 int router_isvalid(struct nn_router *rt)
@@ -48,16 +59,16 @@ struct nn_router *router_init()
         goto err;
     }
 
-    PCHK(LWARN, rt->cmd_req, que_init(32));
-    if(!rt->cmd_req){
+    PCHK(LWARN, rt->in_cmd, que_init(32));
+    if(!rt->in_cmd){
         router_free(rt);
         rt = NULL;
         goto err;
     }
 
 
-    PCHK(LWARN, rt->data_req, que_init(32));
-    if(!rt->data_req){
+    PCHK(LWARN, rt->in_data, que_init(32));
+    if(!rt->in_data){
         router_free(rt);
         rt = NULL;
         goto err;
@@ -77,12 +88,12 @@ int router_free(struct nn_router *rt)
         ICHK(LWARN, r, ll_free(rt->memb));
     }
 
-    if(rt->cmd_req){
-        ICHK(LWARN, r, que_free(rt->cmd_req));
+    if(rt->in_cmd){
+        ICHK(LWARN, r, que_free(rt->in_cmd));
     }
 
-    if(rt->data_req){
-        ICHK(LWARN, r, que_free(rt->data_req));
+    if(rt->in_data){
+        ICHK(LWARN, r, que_free(rt->in_data));
     }
 
 
@@ -166,33 +177,33 @@ int router_print(struct nn_router *rt)
 }
 
 
-int router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
+int router_set_cmd_cb(struct nn_router *rt, io_in_cmd_cb_t cb)
 {
     router_isvalid(rt);
-    rt->io_cmd_req_cb = cb;
+    rt->io_in_cmd_cb = cb;
     return 0;
 }
 
-int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
+int router_set_data_cb(struct nn_router *rt, io_in_data_cb_t cb)
 {
     router_isvalid(rt);
-    //rt->io_data_req_cb = cb;
+    //rt->io_in_data_cb = cb;
     return 0;
 }
 
 int router_add_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 {
-    return que_add(rt->cmd_req, cmd);
+    return que_add(rt->in_cmd, cmd);
 }
 
 struct nn_cmd *router_get_cmd(struct nn_router *rt, struct timespec *ts)
 {
-    return que_get(rt->cmd_req, ts);
+    return que_get(rt->in_cmd, ts);
 }
 
-//int router_add_data_req(struct nn_router *rt, struct nn_data *data)
+//int router_add_in_data(struct nn_router *rt, struct nn_data *data)
 //{
-//    return que_add(rt->data_req, data);
+//    return que_add(rt->in_data, data);
 //}
 
 
