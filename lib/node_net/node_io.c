@@ -87,6 +87,7 @@ static void *node_io_thread(void *arg)
             }
         }
 
+#if 0
         /* incoming data */
         //if(h->state == nn_node_STATE_RUNNING){
             if((attr & NN_NODE_ATTR_NO_INPUT)){
@@ -107,6 +108,7 @@ static void *node_io_thread(void *arg)
                 //sleep(1);
             }
         //}
+#endif
 
 
     }
