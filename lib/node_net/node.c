@@ -125,17 +125,32 @@ err:
 
 int node_free(struct nn_node *n)
 {
+    void *iter;
     int fail = 0;
     int r = 0;
+
+    struct nn_node_router *nr;
+    struct nn_node_grp *ng;
 
     node_isok(n);
 
     if(n->routers){
+        // rem and free first
+        iter = NULL;
+        while(nr=ll_next(n->routers, &iter)){
+            ICHK(LWARN, r, ll_rem(n->routers, nr));
+            free(nr);
+        }
         ICHK(LWARN, r, ll_free(n->routers));
         if(r) fail++;
     }
 
     if(n->grps){
+        iter = NULL;
+        while(ng=ll_next(n->grps, &iter)){
+            ICHK(LWARN, r, ll_rem(n->grps, ng));
+            free(ng);
+        }
         ICHK(LWARN, r, ll_free(n->grps));
         if(r) fail++;
     }

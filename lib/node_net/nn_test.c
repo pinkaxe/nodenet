@@ -79,6 +79,7 @@ int main(int argc, char *argv)
             nn_add_node_to_grp(n[i], g[2]);
         }
 
+        /*
         for(i = 0; i < 30; i++){
             nn_node_run(n[i]);
         }
@@ -107,6 +108,7 @@ int main(int argc, char *argv)
             //usleep(10000);
             //sleep(1);
         }
+        */
 
         for(i=0; i < 30; i++){
             nn_node_free(n[i]);
@@ -114,7 +116,11 @@ int main(int argc, char *argv)
         //nn_node_free(n[0]);
         //nn_node_free(n1);
         nn_grp_free(g[0]);
+        nn_grp_free(g[1]);
+        nn_grp_free(g[2]);
+
         nn_router_free(rt[0]);
+        usleep(100000);
     }
 
     return 0;

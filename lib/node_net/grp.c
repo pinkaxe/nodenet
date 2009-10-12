@@ -75,17 +75,25 @@ err:
 
 int grp_free(struct nn_grp *g)
 {
+    void *iter = NULL;
     int r;
+    struct nn_grp_memb *m;
 
     grp_isok(g);
 
     if(g){
         if(g->memb){
+            // rem and free first
+            while(m=ll_next(g->memb, &iter)){
+                ICHK(LWARN, r, ll_rem(g->memb, m));
+                free(m);
+            }
             ICHK(LWARN, r, ll_free(g->memb));
         }
         free(g);
     }
 
+    grp_isok(g);
 
     return 0;
 }
@@ -164,6 +172,7 @@ int grp_rem_memb(struct nn_grp *h, struct nn_node *memb)
     while(m=ll_next(h->memb, &iter)){
         if(m->memb == memb){
             ICHK(LWARN, r, ll_rem(h->memb, m));
+            free(m);
             r = 0;
             grp_isok(h);
             grp_print(h);

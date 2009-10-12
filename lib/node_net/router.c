@@ -81,10 +81,17 @@ err:
 
 int router_free(struct nn_router *rt)
 {
+    void *iter;
+    struct nn_router_memb *rm;
     int r = 0;
     router_isvalid(rt);
 
     if(rt->memb){
+        iter = NULL;
+        while(rm=ll_next(rt->memb, &iter)){
+            ICHK(LWARN, r, ll_rem(rt->memb, rm));
+            free(rm);
+        }
         ICHK(LWARN, r, ll_free(rt->memb));
     }
 

@@ -21,7 +21,13 @@ struct nn_cmd {
     void *pdata;
     int data_no;
     struct nn_io_conf *conf;
-    ////////////////uint32_t seq_no;
+    //uint32_t seq_no;
+};
+
+struct nn_packet_icmd {
+    enum nn_cmd_cmd id;
+    void *pdata;
+    int data_no;
 };
 
 /*

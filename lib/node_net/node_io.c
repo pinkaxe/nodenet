@@ -12,8 +12,8 @@
 #include "node_drivers/node_driver.h"
 #include "node_drivers/thread.h"
 
-//#include "node_net/node_drivers/lproc.h"
-//#include "node_net/node_drivers/bin.h"
+//#include "node_net/node_drivers/lproc.n"
+//#include "node_net/node_drivers/bin.n"
 
 static void *node_io_thread(void *arg);
 static handle_int_cmd(struct nn_cmd *cmd);
@@ -38,14 +38,14 @@ static void *node_io_thread(void *arg)
 {
     void *buf = NULL;
     void *cmd_buf = NULL;
-    struct nn_node *h = arg;
+    struct nn_node *n = arg;
     struct timespec buf_check_timespec;
     struct timespec cmd_check_timespec;
 
-    void (*user_func)(struct nn_node *h, void *buf, int len, void *pdata) =
-        node_get_codep(h);
-    void *pdata = node_get_pdatap(h);
-    int attr = node_get_attr(h);
+    void (*user_func)(struct nn_node *n, void *buf, int len, void *pdata) =
+        node_get_codep(n);
+    void *pdata = node_get_pdatap(n);
+    int attr = node_get_attr(n);
 
     for(;;){
 
@@ -55,7 +55,7 @@ static void *node_io_thread(void *arg)
         cmd_check_timespec.tv_nsec = 1000000;
 
         /* incoming commands */
-        cmd_buf = node_get_cmd(h, &cmd_check_timespec);
+        cmd_buf = node_get_cmd(n, &cmd_check_timespec);
         if(cmd_buf){
             printf("!!! Got a cmd_buf\n");
             struct nn_cmd *cmd = cmd_buf;
@@ -67,13 +67,13 @@ static void *node_io_thread(void *arg)
 
             //switch(cmdid){
             //    case NN_NODE_STATE_RUN:
-            //        h->state = nn_node_STATE_RUNNING;
+            //        n->state = nn_node_STATE_RUNNING;
             //        break;
             //    case NN_NODE_STATE_PAUSE:
-            //        h->state = nn_node_STATE_PAUSE;
+            //        n->state = nn_node_STATE_PAUSE;
             //        break;
             //    case NN_CMD_CMD_STOP:
-            //        h->state = nn_node_STATE_STOP0;
+            //        n->state = nn_node_STATE_STOP0;
             //        goto end;
 
             //printf("!!! freed cmd_buf\rt ");
@@ -89,17 +89,17 @@ static void *node_io_thread(void *arg)
 
 #if 0
         /* incoming data */
-        //if(h->state == nn_node_STATE_RUNNING){
+        //if(n->state == nn_node_STATE_RUNNING){
             if((attr & NN_NODE_ATTR_NO_INPUT)){
                 /* call user function */
-                //user_func(h, NULL, 0, pdata);
-                //h->ops->node_buf_exe(h, NULL, 0, pdata);
+                //user_func(n, NULL, 0, pdata);
+                //n->ops->node_buf_exe(n, NULL, 0, pdata);
             }else{
                 /* incoming data */
-                buf = node_get_buf(h, &buf_check_timespec);
+                buf = node_get_buf(n, &buf_check_timespec);
                 if(buf){
                     /* call user function */
-                    user_func(h, buf, 1, pdata);
+                    user_func(n, buf, 1, pdata);
                 }else{
                     if(errno == ETIMEDOUT){
                         //printf("!! timedout xx\rt");
