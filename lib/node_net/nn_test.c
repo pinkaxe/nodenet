@@ -15,22 +15,8 @@
 }
 
 #define GRP0 0
-#if 0
-struct nn_io_data_req {
-    struct code_node *from; /* from who? */
-    int type;  /* how to cleanup */
-    void *func; /* func to call to cleanup */
-    int id; /* eg. group id */
-    void *buf;
-};
 
-int nn_io_write_cmd(struct nn_node *n, enum nn_cmd_cmd cmd, void *pdata);
-
-int nn_io_write_data(struct nn_node *n, struct io_buf_attr *attr, void *buf,
-        jint len, void (*cleanup_cb)(void *buf, void *pdata));
-#endif
-
-static struct nn_node *e0, *e1, *e2;
+static struct nn_node *n0, *n1, *n2;
 
 int input_node(struct nn_node *n, void *buf, int len, void *pdata)
 {
@@ -53,50 +39,6 @@ int process_lproc_node(struct nn_node *n, void *buf, int len, void *pdata)
     return 0;
 }
 
-//route_to_all
-//route_to_node
-//route_to_grp
-
-
-/*
-int io_cmd_req_cb(struct nn_router *rt, struct nn_cmd *cmd)
-{
-    //printf("!!! yeah got it: %d\rt", cmd->id);
-    //struct nn_io_conf *conf;
-
-    assert(cmd);
-    assert(cmd->conf);
-
-    switch(cmd->conf->sendto_type){
-        case NN_SENDTO_GRP:
-            break;
-        case NN_SENDTO_NODE:
-            //send_cmd_to_node(e1, cmd);
-            break;
-        case NN_SENDTO_ALL:
-            router_sendto_all(rt, cmd);
-            //printf("freeing %p\rt", cmd);
-            cmd_free(cmd);
-            break;
-        default:
-            break;
-    }
-    //free(cmd);
-    return 0;
-}
-
-int io_data_req_cb(struct nn_router *rt, struct nn_io_data *data)
-{
-    printf("ggg!!!!!!!!!!!!!!\rt");
-    //printf("!!! yeah got it: %d\rt", data->id);
-    //send_data_to_node(e1, data);
-    //send_data_to_node(e0, data);
-    //free(data);
-    return 0;
-}
-*/
-
-
 int main(int argc, char *argv)
 {
     int i;
@@ -114,33 +56,33 @@ int main(int argc, char *argv)
         g0 = nn_grp_init(GRP0);
         ok(g0);
 
-        e0 = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT, input_node, NULL);
-        ok(e0);
+        n0 = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT, input_node, NULL);
+        ok(n0);
 
         //while(1){
         //sleep(5);
-        nn_add_node_to_router(e0, rt0);
-        nn_add_node_to_grp(e0, g0);
-        //nn_rem_node_from_router(e0, rt0);
+        nn_add_node_to_router(n0, rt0);
+        nn_add_node_to_grp(n0, g0);
+        //nn_rem_node_from_router(n0, rt0);
 
 
-        e1 = nn_node_init(NN_NODE_TYPE_THREAD, 0, process_node, NULL);
-        ok(e1);
+        n1 = nn_node_init(NN_NODE_TYPE_THREAD, 0, process_node, NULL);
+        ok(n1);
 
-        nn_add_node_to_router(e1, rt0);
-        nn_add_node_to_grp(e1, g0);
+        nn_add_node_to_router(n1, rt0);
+        nn_add_node_to_grp(n1, g0);
 
 
-        e2 = nn_node_init(NN_NODE_TYPE_LPROC, 0, process_lproc_node, NULL);
-        ok(e2);
+        n2 = nn_node_init(NN_NODE_TYPE_LPROC, 0, process_lproc_node, NULL);
+        ok(n2);
 
-        //nn_add_node_to_router(e2, rt0);
-        nn_add_node_to_grp(e2, g0);
+        //nn_add_node_to_router(n2, rt0);
+        nn_add_node_to_grp(n2, g0);
 
-        nn_node_run(e0);
-        nn_node_run(e1);
-        //nn_node_run(e2);
-        //nn_node_run(e1);
+        nn_node_run(n0);
+        nn_node_run(n1);
+        //nn_node_run(n2);
+        //nn_node_run(n1);
 
         int i;
         for(i=0; i < 300; i++){
@@ -177,11 +119,51 @@ int main(int argc, char *argv)
         for(i=0; i < 300; i++){
             nn_node_free(n[i]);
         }
-        //nn_node_free(e0);
-        //nn_node_free(e1);
+        //nn_node_free(n0);
+        //nn_node_free(n1);
         nn_grp_free(g0);
         nn_router_free(rt0);
     }
 
     return 0;
 }
+
+/*
+int io_cmd_req_cb(struct nn_router *rt, struct nn_cmd *cmd)
+{
+    //printf("!!! yeah got it: %d\rt", cmd->id);
+    //struct nn_io_conf *conf;
+
+    assert(cmd);
+    assert(cmd->conf);
+
+    switch(cmd->conf->sendto_type){
+        case NN_SENDTO_GRP:
+            break;
+        case NN_SENDTO_NODE:
+            //send_cmd_to_node(n1, cmd);
+            break;
+        case NN_SENDTO_ALL:
+            router_sendto_all(rt, cmd);
+            //printf("freeing %p\rt", cmd);
+            cmd_free(cmd);
+            break;
+        default:
+            break;
+    }
+    //free(cmd);
+    return 0;
+}
+
+int io_data_req_cb(struct nn_router *rt, struct nn_io_data *data)
+{
+    printf("ggg!!!!!!!!!!!!!!\rt");
+    //printf("!!! yeah got it: %d\rt", data->id);
+    //send_data_to_node(n1, data);
+    //send_data_to_node(n0, data);
+    //free(data);
+    return 0;
+}
+*/
+
+
