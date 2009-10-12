@@ -28,8 +28,8 @@ struct nn_router {
     struct que *in_int_cmd;
     struct que *out_int_cmd;
 
-    io_in_cmd_cb_t io_in_cmd_cb;
-    //io_in_data_cb_t io_in_data_cb;
+    io_cmd_req_cb_t io_in_cmd_cb;
+    io_data_req_cb_t io_in_data_cb;
 };
 
 /* for nn_router->memb */
@@ -177,14 +177,14 @@ int router_print(struct nn_router *rt)
 }
 
 
-int router_set_cmd_cb(struct nn_router *rt, io_in_cmd_cb_t cb)
+int router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
 {
     router_isvalid(rt);
     rt->io_in_cmd_cb = cb;
     return 0;
 }
 
-int router_set_data_cb(struct nn_router *rt, io_in_data_cb_t cb)
+int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
 {
     router_isvalid(rt);
     //rt->io_in_data_cb = cb;
