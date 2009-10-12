@@ -14,30 +14,30 @@
 #include "grp.h"
 
 
-struct cn_grp_memb {
-    struct cn_elem *memb;
+struct nn_grp_memb {
+    struct nn_node *memb;
 };
 
-struct cn_grp {
+struct nn_grp {
     struct ll *memb;
     int id;
     int memb_no;
 };
 
-int grp_isok(struct cn_grp *g)
+int grp_isok(struct nn_grp *g)
 {
     assert(g->memb_no >= 0);
     assert(g->memb >= 0);
 }
 
-int grp_print(struct cn_grp *g)
+int grp_print(struct nn_grp *g)
 {
-    struct cn_grp_memb *gm;
+    struct nn_grp_memb *gm;
     int r = 0;
     int c;
     void *iter;
 
-    printf("\rt-- grp->elem --: %p\rt\rt", g);
+    printf("\rt-- grp->node --: %p\rt\rt", g);
     c = 0;
 
     iter = NULL;
@@ -51,10 +51,10 @@ int grp_print(struct cn_grp *g)
     return 0;
 }
 
-struct cn_grp *grp_init(int id)
+struct nn_grp *grp_init(int id)
 {
     int err;
-    struct cn_grp *g;
+    struct nn_grp *g;
 
     PCHK(LWARN, g, calloc(1, sizeof(*g)));
 
@@ -73,7 +73,7 @@ err:
     return g;
 }
 
-int grp_free(struct cn_grp *g)
+int grp_free(struct nn_grp *g)
 {
     int r;
 
@@ -91,10 +91,10 @@ int grp_free(struct cn_grp *g)
 }
 
 
-int grp_add_memb(struct cn_grp *h, struct cn_elem *memb)
+int grp_add_memb(struct nn_grp *h, struct nn_node *memb)
 {
     int r = 1;
-    struct cn_grp_memb *m;
+    struct nn_grp_memb *m;
 
     //grp_print(h);
     grp_isok(h);
@@ -116,9 +116,9 @@ err:
     return r;
 }
 
-int grp_get_memb(struct cn_grp *h, void **memb, int max)
+int grp_get_memb(struct nn_grp *h, void **memb, int max)
 {
-    struct cn_grp_memb *m;
+    struct nn_grp_memb *m;
     int i = 0;
     void *iter;
 
@@ -133,10 +133,10 @@ int grp_get_memb(struct cn_grp *h, void **memb, int max)
     return 0;
 }
 
-int grp_ismemb(struct cn_grp *h, struct cn_elem *memb)
+int grp_ismemb(struct nn_grp *h, struct nn_node *memb)
 {
     int r = 1;
-    struct cn_grp_memb *m;
+    struct nn_grp_memb *m;
     void *iter;
 
     grp_isok(h);
@@ -152,10 +152,10 @@ int grp_ismemb(struct cn_grp *h, struct cn_elem *memb)
     return r;
 }
 
-int grp_rem_memb(struct cn_grp *h, struct cn_elem *memb)
+int grp_rem_memb(struct nn_grp *h, struct nn_node *memb)
 {
     int r = 1;
-    struct cn_grp_memb *m;
+    struct nn_grp_memb *m;
     void *iter;
 
     grp_isok(h);

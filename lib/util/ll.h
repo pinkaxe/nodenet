@@ -41,13 +41,13 @@ void *ll_prev(void **iter);
 			curr && ((track=ll_next(h, curr)) || 1) ; \
             curr=track)
 
-int ll_add(struct ll *h, void *elem, void *new);
-void *ll_rem(struct ll *h, void *elem);
+int ll_add(struct ll *h, void *node, void *new);
+void *ll_rem(struct ll *h, void *node);
 
 //void *ll_rem_match(struct ll *h, void *match, bool (*cb)(void *match, void
 //            *item))
 
-//bool ll_find(struct ll *h, void *elem);
+//bool ll_find(struct ll *h, void *node);
 
 int ll_add_front(struct ll *h, void *new);
 int ll_add_end(struct ll *h, void *new);

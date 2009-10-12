@@ -1,7 +1,7 @@
 #ifndef __SBUF_H__
 #define __SBUF_H__
 
-struct sbuf *sbuf_init(size_t size, int *e);
+struct sbuf *sbuf_init(size_t size, int *n);
 void sbuf_free(struct sbuf *b);
 
 int sbuf_grow(struct sbuf *b, size_t size);

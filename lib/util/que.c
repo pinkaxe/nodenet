@@ -86,7 +86,7 @@ err:
 void *que_get(struct que *h, struct timespec *ts)
 {
     int waitr;
-    int e = 0;
+    int n = 0;
     void *r = NULL;
     struct timespec timeout;
     long long nsec;
@@ -103,7 +103,7 @@ void *que_get(struct que *h, struct timespec *ts)
 
             waitr = cond_timedwait(&h->cond, &h->mutex, &timeout);
             if(waitr == ETIMEDOUT){
-                e = ETIMEDOUT;
+                n = ETIMEDOUT;
                 goto timeout;
             }
         }else{
@@ -120,7 +120,7 @@ void *que_get(struct que *h, struct timespec *ts)
 timeout:
     mutex_unlock(&h->mutex);
 
-    if(e) errno = e;
+    if(n) errno = n;
     return r;
 }
 

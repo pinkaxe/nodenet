@@ -15,7 +15,7 @@ AC_CONFIG_FILES([Makefile
 		lib/util/Makefile
 		lib/util/tests/Makefile
 		lib/db/Makefile
-		lib/code_net/Makefile
+		lib/node_net/Makefile
             ])
 
 AC_ARG_ENABLE(debug, [  --enable-debug            enable debugging

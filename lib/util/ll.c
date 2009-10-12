@@ -8,15 +8,15 @@
 
 #include "ll.h"
 
-struct ll_elem {
-	struct ll_elem *prev;
+struct ll_node {
+	struct ll_node *prev;
     void *data;
-	struct ll_elem *next;
+	struct ll_node *next;
 };
 
 struct ll {
-	struct ll_elem *start;
-	struct ll_elem *end;
+	struct ll_node *start;
+	struct ll_node *end;
     int c;
 };
 
@@ -42,24 +42,24 @@ int ll_free(struct ll *h)
 
 int ll_add_front(struct ll *h, void **data)
 {
-	struct ll_elem *e;
+	struct ll_node *n;
 
-	PCHK(LWARN, e, calloc(1, sizeof *e));
-    if(!e){
+	PCHK(LWARN, n, calloc(1, sizeof *n));
+    if(!n){
         goto err;
 	}
 
     if(!h->start){
-        e->prev = NULL;
-        e->data = *data;
-        e->next = NULL;
-        h->start = e;
+        n->prev = NULL;
+        n->data = *data;
+        n->next = NULL;
+        h->start = n;
     }else{
-        e->prev = NULL;
-        e->data = *data;
-        e->next = h->start;
-        h->start->prev = e;
-        h->start = e;
+        n->prev = NULL;
+        n->data = *data;
+        n->next = h->start;
+        h->start->prev = n;
+        h->start = n;
     }
 
     h->c++;
@@ -68,26 +68,26 @@ err:
 	return 0;
 }
 
-static int _ll_rem(struct ll *h, struct ll_elem *e)
+static int _ll_rem(struct ll *h, struct ll_node *n)
 {
     int r;
 
-    if(e->prev){
-        e->prev->next = e->next;
+    if(n->prev){
+        n->prev->next = n->next;
     }else{
         /* first */
-        h->start = e->next;
+        h->start = n->next;
     }
 
-    if(e->next){
-        e->next->prev = e->prev;
+    if(n->next){
+        n->next->prev = n->prev;
     }else{
         /* last */
-        h->end = e->prev;
+        h->end = n->prev;
     }
 
     h->c--;
-    free(e);
+    free(n);
     r = 0;
 
     return r;
@@ -96,16 +96,16 @@ static int _ll_rem(struct ll *h, struct ll_elem *e)
 int ll_rem(struct ll *h, void *data)
 {
     int r = 1;
-    struct ll_elem *e;
+    struct ll_node *n;
     void *iter = NULL;
 
-    e = h->start;
-    while(e){
-        if(e->data == data){
-            r = _ll_rem(h, e);
+    n = h->start;
+    while(n){
+        if(n->data == data){
+            r = _ll_rem(h, n);
             break;
         }
-        e = e->next;
+        n = n->next;
     }
 
     return r;
@@ -116,7 +116,7 @@ int ll_rem(struct ll *h, void *data)
 void *ll_next(struct ll *h,  void **iter)
 {
     void *r = NULL;
-    struct ll_elem *_iter;
+    struct ll_node *_iter;
 
     if(!(*iter)){
         /* first */
@@ -142,7 +142,7 @@ end:
 int ll_next2(struct ll *h, void **res, void **iter)
 {
     int r = 1;
-    struct ll_elem *_iter;
+    struct ll_node *_iter;
 
     if(!(*iter)){
         /* first */

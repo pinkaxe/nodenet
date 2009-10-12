@@ -14,11 +14,11 @@
 #include "cmd.h"
 #include "router.h"
 
-struct cn_router_memb {
-    struct cn_elem *memb;
+struct nn_router_memb {
+    struct nn_node *memb;
 };
 
-struct cn_router {
+struct nn_router {
     struct ll *memb;
     struct que *cmd_req;
     struct que *data_req;
@@ -26,15 +26,15 @@ struct cn_router {
     //io_data_req_cb_t io_data_req_cb;
 };
 
-int router_isvalid(struct cn_router *rt)
+int router_isvalid(struct nn_router *rt)
 {
     assert(rt->memb);
 }
 
-struct cn_router *router_init()
+struct nn_router *router_init()
 {
     int err;
-    struct cn_router *rt;
+    struct nn_router *rt;
 
     PCHK(LWARN, rt, calloc(1, sizeof(*rt)));
     if(!rt){
@@ -68,7 +68,7 @@ err:
     return rt;
 }
 
-int router_free(struct cn_router *rt)
+int router_free(struct nn_router *rt)
 {
     int r = 0;
     router_isvalid(rt);
@@ -91,10 +91,10 @@ int router_free(struct cn_router *rt)
 }
 
 
-int router_add_memb(struct cn_router *rt, struct cn_elem *e)
+int router_add_memb(struct nn_router *rt, struct nn_node *n)
 {
     int r = 1;
-    struct cn_router_memb *nm;
+    struct nn_router_memb *nm;
     router_isvalid(rt);
 
     PCHK(LWARN, nm, malloc(sizeof(*nm)));
@@ -103,35 +103,35 @@ int router_add_memb(struct cn_router *rt, struct cn_elem *e)
     }
 
 
-    nm->memb = e;
+    nm->memb = n;
     ICHK(LWARN, r, ll_add_front(rt->memb, (void **)&nm));
 
 err:
     return r;
 }
 
-int router_rem_memb(struct cn_router *rt, struct cn_elem *e)
+int router_rem_memb(struct nn_router *rt, struct nn_node *n)
 {
     int r;
 
     router_isvalid(rt);
 
-    ICHK(LWARN, r, ll_rem(rt->memb, e));
+    ICHK(LWARN, r, ll_rem(rt->memb, n));
 
     return r;
 }
 
-int router_ismemb(struct cn_router *rt, struct cn_elem *e)
+int router_ismemb(struct nn_router *rt, struct nn_node *n)
 {
     int r = 1;
-    struct cn_router_memb *nm;
+    struct nn_router_memb *nm;
     void *iter;
 
     assert(rt);
 
     iter = NULL;
     while((nm=ll_next(rt->memb, &iter))){
-        if(nm->memb == e){
+        if(nm->memb == n){
             r = 0;
             break;
         }
@@ -142,14 +142,14 @@ int router_ismemb(struct cn_router *rt, struct cn_elem *e)
 
 
 
-int router_print(struct cn_router *rt)
+int router_print(struct nn_router *rt)
 {
-    struct cn_router_memb *nm;
+    struct nn_router_memb *nm;
     int r = 0;
     int c;
     void *iter;
 
-    printf("\rt-- router->elem --: %p\rt\rt", rt);
+    printf("\rt-- router->node --: %p\rt\rt", rt);
     c = 0;
 
     iter = NULL;
@@ -166,41 +166,41 @@ int router_print(struct cn_router *rt)
 }
 
 
-int router_set_cmd_cb(struct cn_router *rt, io_cmd_req_cb_t cb)
+int router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
 {
     router_isvalid(rt);
     rt->io_cmd_req_cb = cb;
     return 0;
 }
 
-int router_set_data_cb(struct cn_router *rt, io_data_req_cb_t cb)
+int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
 {
     router_isvalid(rt);
     //rt->io_data_req_cb = cb;
     return 0;
 }
 
-int router_add_cmd(struct cn_router *rt, struct cn_cmd *cmd)
+int router_add_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 {
     return que_add(rt->cmd_req, cmd);
 }
 
-struct cn_cmd *router_get_cmd(struct cn_router *rt, struct timespec *ts)
+struct nn_cmd *router_get_cmd(struct nn_router *rt, struct timespec *ts)
 {
     return que_get(rt->cmd_req, ts);
 }
 
-//int router_add_data_req(struct cn_router *rt, struct cn_data *data)
+//int router_add_data_req(struct nn_router *rt, struct nn_data *data)
 //{
 //    return que_add(rt->data_req, data);
 //}
 
 
-struct cn_elem *router_memb_iter(struct cn_router *rt, void **iter)
+struct nn_node *router_memb_iter(struct nn_router *rt, void **iter)
 {
     int r = 0;
-    struct cn_router_memb *m;
-    struct cn_cmd *clone;
+    struct nn_router_memb *m;
+    struct nn_cmd *clone;
 
     assert(rt);
 

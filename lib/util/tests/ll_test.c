@@ -6,7 +6,7 @@
 #include "util/log.h"
 #include "util/ll.h"
 
-struct elem {
+struct node {
     int y;
 	int x;
 };
@@ -15,7 +15,7 @@ int main()
 {
     int r;
     struct ll *h;
-	struct elem *new, *e;
+	struct node *new, *n;
     void *iter = NULL;
 	int j;
 	int i;
@@ -38,25 +38,25 @@ int main()
 		}
 
         iter = NULL;
-        while((e=ll_next(h, &iter))){
-            printf("*%d\n", e->x);
-            if(e->x < 6){
-                ll_rem(h, e);
-                free(e);
+        while((n=ll_next(h, &iter))){
+            printf("*%d\n", n->x);
+            if(n->x < 6){
+                ll_rem(h, n);
+                free(n);
             }
         }
 
 
         iter = NULL;
-        while((e=ll_next(h, &iter))){
-            printf("**%d\n", e->x);
+        while((n=ll_next(h, &iter))){
+            printf("**%d\n", n->x);
         }
 
         int r;
-        ll_each(r, h, e, iter){
-            printf("xx **%d\n", e->x);
-            ll_rem(h, e);
-            free(e);
+        ll_each(r, h, n, iter){
+            printf("xx **%d\n", n->x);
+            ll_rem(h, n);
+            free(n);
         }
 
         //sleep(2);

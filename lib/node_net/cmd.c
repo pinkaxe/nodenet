@@ -9,14 +9,14 @@
 
 #include "util/log.h"
 
-#include "code_net/cmd.h"
+#include "node_net/cmd.h"
 
 
-struct cn_cmd *cmd_init(enum cn_elem_cmd id, void *pdata, int data_no,
+struct nn_cmd *cmd_init(enum nn_node_cmd id, void *pdata, int data_no,
         int sendto_no, int sendto_type, int sendto_id)
 {
-    struct cn_cmd *cmd;
-    struct cn_io_conf *conf;
+    struct nn_cmd *cmd;
+    struct nn_io_conf *conf;
 
     PCHK(LWARN, cmd, malloc(sizeof(*cmd)));
     if(!cmd){
@@ -44,10 +44,10 @@ err:
     return cmd;
 }
 
-struct cn_cmd *cmd_clone(struct cn_cmd *cmd)
+struct nn_cmd *cmd_clone(struct nn_cmd *cmd)
 {
-    struct cn_cmd *clone;
-    struct cn_io_conf *conf;
+    struct nn_cmd *clone;
+    struct nn_io_conf *conf;
 
     PCHK(LWARN, clone, malloc(sizeof(*clone)));
     if(!clone){
@@ -74,7 +74,7 @@ err:
     return clone;
 }
 
-int cmd_free(struct cn_cmd *cmd)
+int cmd_free(struct nn_cmd *cmd)
 {
     if(cmd){
         if(cmd->conf){
@@ -88,24 +88,24 @@ int cmd_free(struct cn_cmd *cmd)
 
 
 #if 0
-struct cn_io_data_req {
-    struct code_elem *from; /* from who? */
+struct nn_io_data_req {
+    struct code_node *from; /* from who? */
     int type;  /* how to cleanup */
     void *func; /* func to call to cleanup */
     int id; /* eg. group id */
     void *buf;
 };
 
-struct cn_cmd_req {
+struct nn_cmd_req {
     cmd_id;
 }
 
 /*
-struct cn_io *io_init()
+struct nn_io *io_init()
 {
     int r;
     int err;
-    struct cn_io *io;
+    struct nn_io *io;
 
     PCHK(LWARN, io, calloc(1, sizeof(*io)));
     if(!io){
@@ -114,17 +114,17 @@ struct cn_io *io_init()
     DBG_STRUCT_INIT(io);
 }
 
-int io_free(struct cn_io *io)
+int io_free(struct nn_io *io)
 {
 }
 */
 
-int io_add_data_req(struct code_router *router, struct code_elem *from, 
+int io_add_data_req(struct code_router *router, struct code_node *from, 
         void *buf, struct code_buf_prop *prop, int len)
 {
 }
 
-int io_add_cmd_req(struct code_router *router, struct code_elem *from, 
+int io_add_cmd_req(struct code_router *router, struct code_node *from, 
         void *buf, struct code_buf_prop *prop, int len)
 {
 }
@@ -134,7 +134,7 @@ static void io_ctrl_thread(void *arg)
     // loop and call code_io_ctrl_default for each req
 }
 
-int cn_io_ctrl_default(struct code_io_data_req *req)
+int nn_io_ctrl_default(struct code_io_data_req *req)
 {
     // check req and send appropriately
     switch(req->type){

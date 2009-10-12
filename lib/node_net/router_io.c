@@ -10,19 +10,19 @@
 #include "router.h"
 
 /* main io route threads */
-static int route_to_router(struct cn_router *rt, struct cn_cmd *cmd)
+static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r = 0;
-    struct cn_elem *e;
+    struct nn_node *n;
     void *iter;
-    struct cn_cmd *clone;
+    struct nn_cmd *clone;
 
     assert(rt);
 
     iter = NULL;
-    while((e=router_memb_iter(rt, &iter))){
+    while((n=router_memb_iter(rt, &iter))){
         clone = cmd_clone(cmd);
-        while((r=elem_add_cmd(e, clone))){
+        while((r=node_add_cmd(n, clone))){
             usleep(100);
         }
         if(r){
@@ -35,32 +35,32 @@ err:
 }
 
 
-static int route_to_grp(struct cn_grp *g, struct cn_cmd *cmd)
+static int route_to_grp(struct nn_grp *g, struct nn_cmd *cmd)
 {
 }
 
-static int route_to_elem(struct cn_router *rt, struct cn_cmd *cmd)
+static int route_to_node(struct nn_router *rt, struct nn_cmd *cmd)
 {
 }
 
 
 /* decide who/where to route */
-static int route_cmd(struct cn_router *rt, struct cn_cmd *cmd)
+static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 {
     //printf("!!! yeah got it: %d\rt", cmd->id);
-    //struct cn_io_conf *conf;
+    //struct nn_io_conf *conf;
 
     assert(cmd);
     assert(cmd->conf);
 
     switch(cmd->conf->sendto_type){
-        case CN_SENDTO_GRP:
+        case nn_SENDTO_GRP:
             //route_to_grp(g, );
             break;
-        case CN_SENDTO_ELEM:
-            //send_cmd_to_elem(e1, cmd);
+        case nn_SENDTO_node:
+            //send_cmd_to_node(e1, cmd);
             break;
-        case CN_SENDTO_ALL:
+        case nn_SENDTO_ALL:
             route_to_router(rt, cmd);
             //printf("freeing %p\rt", cmd);
             cmd_free(cmd);
@@ -77,8 +77,8 @@ static int route_cmd(struct cn_router *rt, struct cn_cmd *cmd)
 static void *route_cmd_thread(void *arg)
 {
     struct timespec ts = {0, 0};
-    struct cn_router *rt = arg;
-    struct cn_cmd *cmd;
+    struct nn_router *rt = arg;
+    struct nn_cmd *cmd;
 
     for(;;){
         cmd = router_get_cmd(rt, NULL);
@@ -90,12 +90,12 @@ static void *route_cmd_thread(void *arg)
     }
 }
 
-/* pick up data coming from e and call router cb */
+/* pick up data coming from n and call router cb */
 //static void *route_data_thread(void *arg)
 //{
 //    struct timespec ts = {0, 0};
-//    struct cn_router *rt = arg;
-//    struct cn_io_data *data;
+//    struct nn_router *rt = arg;
+//    struct nn_io_data *data;
 //
 //    for(;;){
 //        data = que_get(rt->data_req, NULL);
@@ -108,7 +108,7 @@ static void *route_cmd_thread(void *arg)
 //}
 
 
-int router_run(struct cn_router *rt)
+int router_run(struct nn_router *rt)
 {
     thread_t tid;
     thread_create(&tid, NULL, route_cmd_thread, rt);

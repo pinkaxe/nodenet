@@ -6,17 +6,17 @@
 #include "util/sbuf.h"
 int main(int argc, char **argv)
 {
-	int e;
+	int n;
 	int i;
 	struct sbuf *b, *b2;
 
 	for(;;){
-		if(!(b = sbuf_init(0, &e))){
-			log1(LERR, "sbuf_init failed: %d", e);
+		if(!(b = sbuf_init(0, &n))){
+			log1(LERR, "sbuf_init failed: %d", n);
 		}
 
-		if(!(b2 = sbuf_init(128, &e))){
-			log1(LERR, "sbuf_init failed: %d", e);
+		if(!(b2 = sbuf_init(128, &n))){
+			log1(LERR, "sbuf_init failed: %d", n);
 		}
 
 
