@@ -52,7 +52,12 @@ int nn_router_run(struct nn_router *rt)
 {
     int r;
 
+    ICHK(LWARN, r, router_lock(rt));
+
     ICHK(LWARN, r, router_run(rt));
+
+    ICHK(LWARN, r, router_unlock(rt));
+
     return r;
 }
 
@@ -62,6 +67,7 @@ struct nn_node *nn_node_init(enum nn_node_driver type, enum nn_node_attr attr,
     struct nn_node *n;
 
     PCHK(LWARN, n, node_init(type, attr, code, pdata));
+
     return n;
 }
 
@@ -94,7 +100,12 @@ int nn_node_run(struct nn_node *n)
 {
     int r;
 
+    node_lock(n);
+
     ICHK(LWARN, r, node_start(n));
+
+    node_unlock(n);
+
     return r;
 }
 
@@ -103,6 +114,7 @@ struct nn_grp *nn_grp_init(int id)
     struct nn_grp *g;
 
     PCHK(LWARN, g, grp_init(id));
+
     return g;
 }
 
@@ -135,6 +147,9 @@ int nn_add_node_to_router(struct nn_node *n, struct nn_router *rt)
 {
     int r;
 
+    router_lock(rt);
+    node_lock(n);
+
     ICHK(LWARN, r, node_add_to_router(n, rt));
     if(r){
         goto err;
@@ -149,12 +164,18 @@ int nn_add_node_to_router(struct nn_node *n, struct nn_router *rt)
     }
 
 err:
+    node_unlock(n);
+    router_unlock(rt);
+
     return r;
 }
 
 int nn_rem_node_from_router(struct nn_node *n, struct nn_router *rt)
 {
     int r;
+
+    router_lock(rt);
+    node_lock(n);
 
     ICHK(LWARN, r, router_rem_memb(rt, n));
     if(r){
@@ -167,6 +188,9 @@ int nn_rem_node_from_router(struct nn_node *n, struct nn_router *rt)
     }
 
 err:
+    node_unlock(n);
+    router_unlock(rt);
+
     return r;
 }
 
@@ -174,6 +198,9 @@ err:
 int nn_add_node_to_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
+
+    grp_lock(g);
+    node_lock(n);
 
     ICHK(LWARN, r, node_add_to_grp(n, g));
     if(r){
@@ -188,12 +215,18 @@ int nn_add_node_to_grp(struct nn_node *n, struct nn_grp *g)
     }
 
 err:
+    node_unlock(n);
+    grp_unlock(g);
+
     return r;
 }
 
 int nn_rem_node_from_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
+
+    grp_lock(g);
+    node_lock(n);
 
     ICHK(LWARN, r, grp_rem_memb(g, n));
     if(r){
@@ -206,6 +239,9 @@ int nn_rem_node_from_grp(struct nn_node *n, struct nn_grp *g)
     }
 
 err:
+    node_unlock(n);
+    grp_unlock(g);
+
     return r;
 
 }
@@ -214,7 +250,12 @@ int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
 {
     int r;
 
+    router_lock(rt);
+
     ICHK(LWARN, r, router_set_cmd_cb(rt, cb));
+
+    router_unlock(rt);
+
     return r;
 }
 
@@ -222,7 +263,12 @@ int nn_router_add_cmd_req(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r;
 
+    router_lock(rt);
+
     r = router_add_cmd(rt, cmd);
+
+    router_unlock(rt);
+
     return r;
 }
 

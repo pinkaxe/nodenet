@@ -42,16 +42,20 @@ end:
 
 int que_free(struct que *h)
 {
+
+    mutex_lock(&h->mutex);
+
     if(h->pp){
         free(h->pp);
     }
 
-    //mutex_free(&h->mutex);
-    //cond_free(&h->cond);
+    mutex_unlock(&h->mutex);
+    mutex_destroy(&h->mutex);
 
     if(h){
         free(h);
     }
+
 
     return 0;
 }

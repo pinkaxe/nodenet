@@ -8,6 +8,7 @@
 #include <assert.h>
 
 #include "sys/thread.h"
+
 #include "util/log.h"
 #include "util/dbg.h"
 #include "util/que.h"
@@ -119,6 +120,9 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     n->code = code;
     n->pdata = pdata;
 
+    // FIXME: err checking
+    mutex_init(&n->mutex, NULL);
+
     node_isok(n);
 
 err:
@@ -135,6 +139,8 @@ int node_free(struct nn_node *n)
     struct nn_node_grp *ng;
 
     node_isok(n);
+
+    mutex_lock(&n->mutex);
 
     if(n->routers){
         // rem and free first
@@ -167,6 +173,9 @@ int node_free(struct nn_node *n)
         if(r) fail++;
     }
 
+    mutex_unlock(&n->mutex);
+    mutex_destroy(&n->mutex);
+
     free(n);
 
     return fail;
@@ -185,11 +194,13 @@ int node_start(struct nn_node *n)
 int node_lock(struct nn_node *n)
 {
     mutex_lock(&n->mutex);
+    return 0;
 }
 
 int node_unlock(struct nn_node *n)
 {
     mutex_unlock(&n->mutex);
+    return 0;
 }
 
 

@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <time.h>
 
+#include "sys/thread.h"
+
 #include "util/ll.h"
 #include "util/log.h"
 
@@ -22,6 +24,7 @@ struct nn_grp {
     struct ll *memb;
     int id;
     int memb_no;
+    mutex_t mutex;
 };
 
 int grp_isok(struct nn_grp *g)
@@ -68,6 +71,8 @@ struct nn_grp *grp_init(int id)
         goto err;
     }
 
+    mutex_init(&g->mutex, NULL);
+
 err:
 
     return g;
@@ -81,6 +86,8 @@ int grp_free(struct nn_grp *g)
 
     grp_isok(g);
 
+    mutex_lock(&g->mutex);
+
     if(g){
         if(g->memb){
             // rem and free first
@@ -93,11 +100,24 @@ int grp_free(struct nn_grp *g)
         free(g);
     }
 
-    grp_isok(g);
+    mutex_unlock(&g->mutex);
+    mutex_destroy(&g->mutex);
 
     return 0;
 }
 
+
+int grp_lock(struct nn_grp *g)
+{
+    mutex_lock(&g->mutex);
+    return 0;
+}
+
+int grp_unlock(struct nn_grp *g)
+{
+    mutex_unlock(&g->mutex);
+    return 0;
+}
 
 int grp_add_memb(struct nn_grp *h, struct nn_node *memb)
 {

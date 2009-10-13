@@ -79,7 +79,7 @@ int main(int argc, char *argv)
             nn_add_node_to_grp(n[i], g[2]);
         }
 
-        nn_router_run(rt[0]);
+        //nn_router_run(rt[0]);
 
         /*
         for(i = 0; i < 300; i++){

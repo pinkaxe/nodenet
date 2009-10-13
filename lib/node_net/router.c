@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include "sys/thread.h"
+
 #include "util/log.h"
 #include "util/que.h"
 #include "util/ll.h"
@@ -30,6 +32,8 @@ struct nn_router {
 
     io_cmd_req_cb_t io_in_cmd_cb;
     io_data_req_cb_t io_in_data_cb;
+
+    mutex_t mutex;
 };
 
 /* for nn_router->memb */
@@ -74,6 +78,9 @@ struct nn_router *router_init()
         goto err;
     }
 
+    // FIXME: err checking
+    mutex_init(&rt->mutex, NULL);
+
     router_isvalid(rt);
 err:
     return rt;
@@ -85,6 +92,8 @@ int router_free(struct nn_router *rt)
     struct nn_router_memb *rm;
     int r = 0;
     router_isvalid(rt);
+
+    mutex_lock(&rt->mutex);
 
     if(rt->memb){
         iter = NULL;
@@ -109,11 +118,25 @@ int router_free(struct nn_router *rt)
         ICHK(LWARN, r, que_free(rt->in_data));
     }
 
+    mutex_unlock(&rt->mutex);
+    mutex_destroy(&rt->mutex);
 
     free(rt);
     return r;
 }
 
+
+int router_lock(struct nn_router *rt)
+{
+    mutex_lock(&rt->mutex);
+    return 0;
+}
+
+int router_unlock(struct nn_router *rt)
+{
+    mutex_unlock(&rt->mutex);
+    return 0;
+}
 
 int router_add_memb(struct nn_router *rt, struct nn_node *n)
 {
@@ -125,7 +148,6 @@ int router_add_memb(struct nn_router *rt, struct nn_node *n)
     if(!nm){
         goto err;
     }
-
 
     nm->memb = n;
     ICHK(LWARN, r, ll_add_front(rt->memb, (void **)&nm));
