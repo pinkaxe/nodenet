@@ -14,21 +14,22 @@
 
 #include "types.h"
 #include "cmd.h"
+#include "conn.h"
 #include "router.h"
 
 
 struct nn_router {
-    struct ll *memb;
+    struct ll *conn;
 
-    struct que *in_cmd;
-    struct que *in_data;
-    struct que *out_cmd;
-    struct que *out_data;
-    struct que *in_notify;
+   // struct que *in_cmd;
+   // struct que *in_data;
+   // struct que *out_cmd;
+   // struct que *out_data;
+   // struct que *in_notify;
 
-    /* internal commands */
-    struct que *in_int_cmd;
-    struct que *out_int_cmd;
+   // /* internal commands */
+   // struct que *in_int_cmd;
+   // struct que *out_int_cmd;
 
     io_cmd_req_cb_t io_in_cmd_cb;
     io_data_req_cb_t io_in_data_cb;
@@ -36,14 +37,14 @@ struct nn_router {
     mutex_t mutex;
 };
 
-/* for nn_router->memb */
+/* for nn_router->conn */
 struct nn_router_memb {
-    struct nn_node *memb;
+    struct nn_conn_node_router *conn;
 };
 
 int router_isvalid(struct nn_router *rt)
 {
-    assert(rt->memb);
+    assert(rt->conn);
 }
 
 struct nn_router *router_init()
@@ -56,13 +57,14 @@ struct nn_router *router_init()
         goto err;
     }
 
-    PCHK(LWARN, rt->memb, ll_init());
-    if(!rt->memb){
+    PCHK(LWARN, rt->conn, ll_init());
+    if(!rt->conn){
         router_free(rt);
         rt = NULL;
         goto err;
     }
 
+    /*
     PCHK(LWARN, rt->in_cmd, que_init(32));
     if(!rt->in_cmd){
         router_free(rt);
@@ -77,6 +79,7 @@ struct nn_router *router_init()
         rt = NULL;
         goto err;
     }
+    */
 
     // FIXME: err checking
     mutex_init(&rt->mutex, NULL);
@@ -95,21 +98,26 @@ int router_free(struct nn_router *rt)
 
     mutex_lock(&rt->mutex);
 
-    if(rt->memb){
+    if(rt->conn){
         iter = NULL;
 //
-//        if(rm=ll_next(rt->memb, &iter)){
+//        if(rm=ll_next(rt->conn, &iter)){
 //                assert(0 == 1);
 //        }
 
-        while(rm=ll_next(rt->memb, &iter)){
-            ICHK(LWARN, r, ll_rem(rt->memb, rm));
-            //elem_rem_from_grp(rm);
-            free(rm);
-        }
-        ICHK(LWARN, r, ll_free(rt->memb));
+
+        //while(rm=ll_next(rt->conn, &iter)){
+        //    ICHK(LWARN, r, ll_rem(rt->conn, rm));
+        //    //elem_rem_from_grp(rm);
+        //    free(rm);
+        //}
+
+        //router_unlock_membs(rt);
+
+        ICHK(LWARN, r, ll_free(rt->conn));
     }
 
+    /*
     if(rt->in_cmd){
         ICHK(LWARN, r, que_free(rt->in_cmd));
     }
@@ -117,6 +125,7 @@ int router_free(struct nn_router *rt)
     if(rt->in_data){
         ICHK(LWARN, r, que_free(rt->in_data));
     }
+    */
 
     mutex_unlock(&rt->mutex);
     mutex_destroy(&rt->mutex);
@@ -138,7 +147,7 @@ int router_unlock(struct nn_router *rt)
     return 0;
 }
 
-int router_add_memb(struct nn_router *rt, struct nn_node *n)
+int router_add_memb(struct nn_router *rt, struct nn_conn_node_router *cn)
 {
     int r = 1;
     struct nn_router_memb *nm;
@@ -149,20 +158,20 @@ int router_add_memb(struct nn_router *rt, struct nn_node *n)
         goto err;
     }
 
-    nm->memb = n;
-    ICHK(LWARN, r, ll_add_front(rt->memb, (void **)&nm));
+    nm->conn = cn;
+    ICHK(LWARN, r, ll_add_front(rt->conn, (void **)&nm));
 
 err:
     return r;
 }
 
-int router_rem_memb(struct nn_router *rt, struct nn_node *n)
+int router_rem_memb(struct nn_router *rt, struct nn_conn_node_router *cn)
 {
     int r;
 
     router_isvalid(rt);
 
-    ICHK(LWARN, r, ll_rem(rt->memb, n));
+    ICHK(LWARN, r, ll_rem(rt->conn, cn));
 
     return r;
 }
@@ -176,8 +185,8 @@ int router_ismemb(struct nn_router *rt, struct nn_node *n)
     assert(rt);
 
     iter = NULL;
-    while((nm=ll_next(rt->memb, &iter))){
-        if(nm->memb == n){
+    while((nm=ll_next(rt->conn, &iter))){
+        if(nm->conn->n == n){
             r = 0;
             break;
         }
@@ -199,10 +208,10 @@ int router_print(struct nn_router *rt)
     c = 0;
 
     iter = NULL;
-    //ll_each(rt->memb, nm, iter){
-    while((nm = ll_next(rt->memb, &iter))){
+    //ll_each(rt->conn, nm, iter){
+    while((nm = ll_next(rt->conn, &iter))){
         printf("zee\rt");
-        printf("p:%p\rt", nm->memb);
+        printf("p:%p\rt", nm->conn);
         c++;
     }
 
@@ -226,6 +235,7 @@ int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
     return 0;
 }
 
+#if 0
 int router_add_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 {
     return que_add(rt->in_cmd, cmd);
@@ -235,6 +245,7 @@ struct nn_cmd *router_get_cmd(struct nn_router *rt, struct timespec *ts)
 {
     return que_get(rt->in_cmd, ts);
 }
+#endif
 
 //int router_add_in_data(struct nn_router *rt, struct nn_data *data)
 //{
@@ -250,10 +261,10 @@ struct nn_node *router_memb_iter(struct nn_router *rt, void **iter)
 
     assert(rt);
 
-    m = ll_next(rt->memb, iter);
+    m = ll_next(rt->conn, iter);
 
-    if(m){
-        return m->memb;
+    if(m && m->conn){
+        return m->conn->n;
     }else{
         return NULL;
     }

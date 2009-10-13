@@ -9,6 +9,8 @@ struct nn_grp_memb;
 struct nn_cmd;
 struct nn_io_data;
 
+struct nn_conn_node_router;
+
 enum nn_node_driver {
     NN_NODE_TYPE_THREAD,
     NN_NODE_TYPE_LPROC,

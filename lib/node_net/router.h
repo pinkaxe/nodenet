@@ -10,8 +10,8 @@ int router_run(struct nn_router *h);
 int router_lock(struct nn_router *rt);
 int router_unlock(struct nn_router *rt);
 
-int router_add_memb(struct nn_router *h, struct nn_node *n);
-int router_rem_memb(struct nn_router *h, struct nn_node *n);
+int router_add_memb(struct nn_router *rt, struct nn_conn_node_router *cn);
+int router_rem_memb(struct nn_router *h, struct nn_conn_node_router *n);
 int router_ismemb(struct nn_router *rt, struct nn_node *n);
 struct nn_node *router_memb_iter(struct nn_router *rt, void **iter);
 

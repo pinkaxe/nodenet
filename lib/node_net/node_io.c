@@ -62,7 +62,8 @@ static void *node_io_thread(void *arg)
 
         /* incoming commands */
         node_lock(n);
-        cmd_buf = node_get_cmd(n, &cmd_check_timespec);
+        //cmd_buf = node_get_cmd(n, &cmd_check_timespec);
+        cmd_buf = conn_node_rx_cmd(n, &cmd_check_timespec);
         node_unlock(n);
 
         if(cmd_buf){

@@ -7,6 +7,7 @@
 
 #include "types.h"
 #include "cmd.h"
+#include "conn.h"
 #include "router.h"
 
 /* main io route threads */
@@ -24,12 +25,14 @@ static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
     iter = NULL;
     while((n=router_memb_iter(rt, &iter))){
         clone = cmd_clone(cmd);
+        printf("!!! router_tx_cmd\n");
 
-        node_lock(n);
-        while((r=node_add_cmd(n, clone))){
-            usleep(100);
-        }
-        node_unlock(n);
+        //node_lock(n);
+        //while((r=node_add_cmd(n, clone))){
+       // while((r=conn_router_tx_cmd(n, clone))){
+       //     usleep(100);
+       // }
+        //node_unlock(n);
 
         if(r){
             goto err;
@@ -88,11 +91,13 @@ static void *route_cmd_thread(void *arg)
     struct nn_cmd *cmd;
 
     for(;;){
-        cmd = router_get_cmd(rt, NULL);
-        if(cmd){
-            //rt->io_cmd_req_cb(rt, cmd);
-            route_cmd(rt, cmd);
-        }
+        //cmd = router_get_cmd(rt, NULL);
+        //cmd = conn_router_rx_cmd(rt, NULL);
+        //if(cmd){
+        //    //rt->io_cmd_req_cb(rt, cmd);
+        //    route_cmd(rt, cmd);
+        //}
+        sleep(1);
 
     }
 }

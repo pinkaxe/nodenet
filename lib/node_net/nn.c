@@ -59,11 +59,11 @@ int nn_router_free(struct nn_router *rt)
    //     // unlock node
    // }
 
-    rel_lock();
+    //rel_lock();
 
     ICHK(LWARN, r, router_free(rt));
 
-    rel_unlock();
+    //rel_unlock();
 
     return r;
 }
@@ -72,11 +72,11 @@ int nn_router_run(struct nn_router *rt)
 {
     int r;
 
-    router_lock(rt);
+    //router_lock(rt);
 
     ICHK(LWARN, r, router_run(rt));
 
-    router_unlock(rt);
+    //router_unlock(rt);
 
     return r;
 }
@@ -115,11 +115,11 @@ int nn_node_free(struct nn_node *n)
    //     grp_rem_memb(g, n);
    // }
 
-    rel_lock();
+    //rel_lock();
 
     ICHK(LWARN, r, node_free(n));
 
-    rel_unlock();
+    //rel_unlock();
 
     return r;
 }
@@ -128,11 +128,11 @@ int nn_node_run(struct nn_node *n)
 {
     int r;
 
-    node_lock(n);
+    //node_lock(n);
 
     ICHK(LWARN, r, node_start(n));
 
-    node_unlock(n);
+    //node_unlock(n);
 
     return r;
 }
@@ -166,11 +166,11 @@ int nn_grp_free(struct nn_grp *g)
 
     //unlock_grp();
 
-    rel_lock();
+    //rel_lock();
 
     ICHK(LWARN, r, grp_free(g));
 
-    rel_unlock();
+    //rel_unlock();
 
     return r;
 }
@@ -179,27 +179,9 @@ int nn_add_node_to_router(struct nn_node *n, struct nn_router *rt)
 {
     int r;
 
-    rel_lock();
-    router_lock(rt);
-    node_lock(n);
-
-    ICHK(LWARN, r, node_add_to_router(n, rt));
-    if(r){
-        goto err;
-    }
-
-    ICHK(LWARN, r, router_add_memb(rt, n));
-    if(r){
-        int rr;
-        ICHK(LWARN, rr, node_rem_from_router(n, rt));
-        if(rr){
-        }
-    }
+    conn_create_node_router(n, rt);
 
 err:
-    node_unlock(n);
-    router_unlock(rt);
-    rel_unlock();
 
     return r;
 }
@@ -208,24 +190,15 @@ int nn_rem_node_from_router(struct nn_node *n, struct nn_router *rt)
 {
     int r;
 
-    rel_lock();
-    router_lock(rt);
-    node_lock(n);
+    //rel_lock();
+    //router_lock(rt);
+    //node_lock(n);
 
-    ICHK(LWARN, r, router_rem_memb(rt, n));
-    if(r){
-        goto err;
-    }
-
-    ICHK(LWARN, r, node_rem_from_router(n, rt));
-    if(r){
-        goto err;
-    }
-
+    conn_break_node_router(n, rt);
 err:
-    node_unlock(n);
-    router_unlock(rt);
-    rel_lock();
+    //node_unlock(n);
+    //router_unlock(rt);
+    //rel_lock();
 
     return r;
 }
@@ -235,9 +208,9 @@ int nn_add_node_to_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
 
-    rel_lock();
-    grp_lock(g);
-    node_lock(n);
+    //rel_lock();
+    //grp_lock(g);
+    //node_lock(n);
 
     ICHK(LWARN, r, node_add_to_grp(n, g));
     if(r){
@@ -252,9 +225,9 @@ int nn_add_node_to_grp(struct nn_node *n, struct nn_grp *g)
     }
 
 err:
-    node_unlock(n);
-    grp_unlock(g);
-    rel_unlock();
+    //node_unlock(n);
+    //grp_unlock(g);
+    //rel_unlock();
 
     return r;
 }
@@ -263,9 +236,9 @@ int nn_rem_node_from_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
 
-    rel_lock();
-    grp_lock(g);
-    node_lock(n);
+    //rel_lock();
+    //grp_lock(g);
+    //node_lock(n);
 
     ICHK(LWARN, r, grp_rem_memb(g, n));
     if(r){
@@ -278,9 +251,9 @@ int nn_rem_node_from_grp(struct nn_node *n, struct nn_grp *g)
     }
 
 err:
-    node_unlock(n);
-    grp_unlock(g);
-    rel_unlock();
+    //node_unlock(n);
+    //grp_unlock(g);
+    //rel_unlock();
 
     return r;
 
@@ -290,11 +263,11 @@ int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
 {
     int r;
 
-    router_lock(rt);
+    //router_lock(rt);
 
     ICHK(LWARN, r, router_set_cmd_cb(rt, cb));
 
-    router_unlock(rt);
+    //router_unlock(rt);
 
     return r;
 }
@@ -303,11 +276,11 @@ int nn_router_add_cmd_req(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r;
 
-    router_lock(rt);
+    //router_lock(rt);
 
-    r = router_add_cmd(rt, cmd);
+    r = conn_router_tx_cmd(rt, cmd);
 
-    router_unlock(rt);
+    //router_unlock(rt);
 
     return r;
 }

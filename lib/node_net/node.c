@@ -29,22 +29,8 @@ struct nn_node {
     enum nn_node_attr attr;
 
     /* rel */
-    struct ll *grps;     /* all groups this node belongs to */
-    struct ll *routers;  /* all routers this node belongs to */
-
-    /* bufp's for app */
-    struct que *in_data;         /* input for code node */
-    struct que *in_cmd;          /* input cmds for code node */
-
-    struct que *out_data;        /* output to other code node's */
-    struct que *out_cmd;         /* output cmds for code node*/
-
-    /* notifications from driver to router */
-    struct que *out_notify;
-
-    /* internal commands, between node_io and router_io */
-    struct que *in_int_cmd; /* only for control node */
-    struct que *out_int_cmd;
+    struct ll *grp_conns;     /* all groups connected to via conn's */
+    struct ll *router_conns;      /* all router_conns connected to via conn's */
 
     /* funcp's to communicate with this node type */
     struct node_driver_ops *ops;
@@ -62,14 +48,14 @@ struct nn_node {
 };
 
 
-/* for nn_node->grps ll */
+/* for nn_node->grp_conns ll */
 struct nn_node_grp {
     struct nn_grp *grp;
 };
 
-/* for nn_node->routers ll */
+/* for nn_node->router_conns ll */
 struct nn_node_router {
-    struct nn_router *router;
+    struct nn_conn_node_router *conn;
 };
 
 
@@ -91,6 +77,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     n->ops = node_driver_get_ops(n->type);
     assert(n->ops);
 
+    /*
     PCHK(LWARN, n->in_data, que_init(8));
     if(!n->in_data){
         PCHK(LWARN, r, node_free(n));
@@ -102,15 +89,16 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         PCHK(LWARN, r, node_free(n));
         goto err;
     }
+    */
 
-    PCHK(LWARN, n->grps, ll_init());
-    if(!n->grps){
+    PCHK(LWARN, n->grp_conns, ll_init());
+    if(!n->grp_conns){
         PCHK(LWARN, r, node_free(n));
         goto err;
     }
 
-    PCHK(LWARN, n->routers, ll_init());
-    if(!n->routers){
+    PCHK(LWARN, n->router_conns, ll_init());
+    if(!n->router_conns){
         PCHK(LWARN, r, node_free(n));
         goto err;
     }
@@ -142,27 +130,28 @@ int node_free(struct nn_node *n)
 
     mutex_lock(&n->mutex);
 
-    if(n->routers){
+    if(n->router_conns){
         // rem and free first
         iter = NULL;
-        while(nr=ll_next(n->routers, &iter)){
-            ICHK(LWARN, r, ll_rem(n->routers, nr));
+        while(nr=ll_next(n->router_conns, &iter)){
+            ICHK(LWARN, r, ll_rem(n->router_conns, nr));
             free(nr);
         }
-        ICHK(LWARN, r, ll_free(n->routers));
+        ICHK(LWARN, r, ll_free(n->router_conns));
         if(r) fail++;
     }
 
-    if(n->grps){
+    if(n->grp_conns){
         iter = NULL;
-        while(ng=ll_next(n->grps, &iter)){
-            ICHK(LWARN, r, ll_rem(n->grps, ng));
+        while(ng=ll_next(n->grp_conns, &iter)){
+            ICHK(LWARN, r, ll_rem(n->grp_conns, ng));
             free(ng);
         }
-        ICHK(LWARN, r, ll_free(n->grps));
+        ICHK(LWARN, r, ll_free(n->grp_conns));
         if(r) fail++;
     }
 
+    /*
     if(n->in_data){
         ICHK(LWARN, r, que_free(n->in_data));
         if(r) fail++;
@@ -172,6 +161,7 @@ int node_free(struct nn_node *n)
         ICHK(LWARN, r, que_free(n->in_cmd));
         if(r) fail++;
     }
+    */
 
     mutex_unlock(&n->mutex);
     mutex_destroy(&n->mutex);
@@ -203,8 +193,9 @@ int node_unlock(struct nn_node *n)
     return 0;
 }
 
+/* the stuff ??? */
 
-int node_add_to_router(struct nn_node *n, struct nn_router *rt)
+int node_add_to_router(struct nn_node *n, struct nn_conn_node_router *cn)
 {
     int r = 1;
     struct nn_node_router *en;
@@ -214,20 +205,20 @@ int node_add_to_router(struct nn_node *n, struct nn_router *rt)
         goto err;
     }
 
-    en->router = rt;
-    ICHK(LWARN, r, ll_add_front(n->routers, (void **)&en));
+    en->conn = cn;
+    ICHK(LWARN, r, ll_add_front(n->router_conns, (void **)&en));
 
 err:
     return r;
 }
 
-int node_rem_from_router(struct nn_node *n, struct nn_router *rt)
+int node_rem_from_router(struct nn_node *n, struct nn_conn_node_router *cn)
 {
     int r;
 
     node_isok(n);
 
-    ICHK(LWARN, r, ll_rem(n->routers, rt));
+    ICHK(LWARN, r, ll_rem(n->router_conns, cn));
     //TODO:
     return 0;
 }
@@ -243,7 +234,7 @@ int node_add_to_grp(struct nn_node *n, struct nn_grp *g)
     }
 
     eg->grp = g;
-    ICHK(LWARN, r, ll_add_front(n->grps, (void **)&eg));
+    ICHK(LWARN, r, ll_add_front(n->grp_conns, (void **)&eg));
 
 err:
     return r;
@@ -255,7 +246,7 @@ int node_rem_from_grp(struct nn_node *n, struct nn_grp *g)
 
     node_isok(n);
 
-    ICHK(LWARN, r, ll_rem(n->grps, g));
+    ICHK(LWARN, r, ll_rem(n->grp_conns, g));
     return 0;
 }
 
@@ -318,6 +309,7 @@ void *node_get_codep(struct nn_node *n)
     return n->code;
 }
 
+/*
 int  node_add_cmd(struct nn_node *n, struct nn_cmd *cmd)
 {
     return que_add(n->in_cmd, cmd);
@@ -343,6 +335,7 @@ void *node_get_buf(struct nn_node *n, struct timespec *ts)
     buf = que_get(n->in_data, ts);
     return buf;
 }
+*/
 
 
 /*
@@ -367,7 +360,7 @@ void *node_write_in_buf(struct nn_node *n)
 
 /** debug functions **/
 
-/* check that the router's it points to points back */
+/* check that the conn's it points to points back */
 int node_router_isok(struct nn_node *n)
 {
     void *track;
@@ -376,10 +369,10 @@ int node_router_isok(struct nn_node *n)
     void *iter;
 
     iter = NULL;
-    while((rt=ll_next(n->routers, &iter))){
+    while((rt=ll_next(n->router_conns, &iter))){
         /* make sure we are a member */
-        r = router_ismemb(rt->router, n);
-        //r = router_print(rt->router);
+        r = router_ismemb(rt->conn, n);
+        //r = router_print(rt->conn);
         assert(r == 0);
         if(r){
             break;
@@ -398,7 +391,7 @@ int node_grp_isok(struct nn_node *n)
     void *iter;
 
     iter = NULL;
-    while((g=ll_next(n->grps, &iter))){
+    while((g=ll_next(n->grp_conns, &iter))){
         r = grp_ismemb(g->grp, n);
         assert(r == 0);
         //r = grp_print(g->grp);
@@ -421,15 +414,15 @@ int node_isok(struct nn_node *n)
     assert(n->code);
     //assert(n->out_links_llh);
     //assert(n->in_links_llh);
-    //assert(n->grps);
-    //assert(n->routers);
-    assert(n->in_data);
-    assert(n->in_cmd);
+    //assert(n->grp_conns);
+    //assert(n->router_conns);
+    //assert(n->in_data);
+    //assert(n->in_cmd);
     //assert(n->out_data);
     //assert(n->out_cmd);
 
-    node_router_isok(n);
-    node_grp_isok(n);
+    //node_router_isok(n);
+    //node_grp_isok(n);
     //node_print(n);
 
     return 0;
@@ -444,13 +437,13 @@ int node_print(struct nn_node *n)
     int c;
     void *iter;
 
-    puts("\rt-- node->router --\rt");
+    puts("\rt-- node->conn --\rt");
 
     c = 0;
 
     iter = NULL;
-    while((rt=ll_next(n->routers, &iter))){
-        printf("p:%p\rt", rt->router);
+    while((rt=ll_next(n->router_conns, &iter))){
+        printf("p:%p\rt", rt->conn);
         c++;
     }
 
@@ -458,7 +451,7 @@ int node_print(struct nn_node *n)
 
     c = 0;
     iter = NULL;
-    while((g=ll_next(n->grps, &iter))){
+    while((g=ll_next(n->grp_conns, &iter))){
         printf("p:%p\rt", g->grp);
         c++;
     }
