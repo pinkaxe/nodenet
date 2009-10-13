@@ -7,6 +7,7 @@
 #include <time.h>
 #include <assert.h>
 
+#include "sys/thread.h"
 #include "util/log.h"
 #include "util/dbg.h"
 #include "util/que.h"
@@ -54,6 +55,8 @@ struct nn_node {
     /* maximum time a node exe is allowed to run on one buffer processing */
     uint32_t max_exe_usec;
 
+    mutex_t mutex;
+
     DBG_STRUCT_END
 };
 
@@ -67,7 +70,6 @@ struct nn_node_grp {
 struct nn_node_router {
     struct nn_router *router;
 };
-
 
 
 /** node type **/
@@ -179,6 +181,17 @@ int node_start(struct nn_node *n)
 
     return r;
 }
+
+int node_lock(struct nn_node *n)
+{
+    mutex_lock(&n->mutex);
+}
+
+int node_unlock(struct nn_node *n)
+{
+    mutex_unlock(&n->mutex);
+}
+
 
 int node_add_to_router(struct nn_node *n, struct nn_router *rt)
 {

@@ -88,8 +88,14 @@ int router_free(struct nn_router *rt)
 
     if(rt->memb){
         iter = NULL;
+//
+//        if(rm=ll_next(rt->memb, &iter)){
+//                assert(0 == 1);
+//        }
+
         while(rm=ll_next(rt->memb, &iter)){
             ICHK(LWARN, r, ll_rem(rt->memb, rm));
+            //elem_rem_from_grp(rm);
             free(rm);
         }
         ICHK(LWARN, r, ll_free(rt->memb));

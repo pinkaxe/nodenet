@@ -58,7 +58,7 @@ int main(int argc, char *argv)
         }
 
         /* create input nodes */
-        for(i=0; i < 10; i++){
+        for(i=0; i < 100; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT, input_node, NULL);
             nn_add_node_to_router(n[i], rt[0]);
             nn_add_node_to_grp(n[i], g[0]);
@@ -66,30 +66,31 @@ int main(int argc, char *argv)
         }
 
         /* create process nodes */
-        for(;i < 20; i++){
+        for(;i < 200; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, 0, process_node, NULL);
             nn_add_node_to_router(n[i], rt[0]);
             nn_add_node_to_grp(n[i], g[1]);
         }
 
         /* create output nodes */
-        for(;i < 30; i++){
+        for(;i < 300; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, 0, output_node, NULL);
             nn_add_node_to_router(n[i], rt[0]);
             nn_add_node_to_grp(n[i], g[2]);
         }
 
+        nn_router_run(rt[0]);
+
         /*
-        for(i = 0; i < 30; i++){
+        for(i = 0; i < 300; i++){
             nn_node_run(n[i]);
         }
 
         //nn_router_set_cmd_cb(rt[0], io_cmd_req_cb);
         //nn_router_set_data_cb(rt[0], io_data_req_cb);
-        nn_router_run(rt[0]);
 
-        for(;;){
-        //for(i = 0; i < 128; i++){
+        //for(;;){
+        for(i = 0; i < 1; i++){
 
             cmd = cmd_init(6, NULL, 0, 1, NN_SENDTO_ALL, 0);
             //printf("malloced %p\rt", cmd);
@@ -106,21 +107,20 @@ int main(int argc, char *argv)
             //nn_router_add_data_req(rt[0], data);
 
             //usleep(10000);
-            //sleep(1);
         }
+        sleep(5);
         */
 
-        for(i=0; i < 30; i++){
+        for(i=0; i < 300; i++){
             nn_node_free(n[i]);
         }
-        //nn_node_free(n[0]);
-        //nn_node_free(n1);
+
         nn_grp_free(g[0]);
         nn_grp_free(g[1]);
         nn_grp_free(g[2]);
 
         nn_router_free(rt[0]);
-        usleep(100000);
+        usleep(1);
     }
 
     return 0;

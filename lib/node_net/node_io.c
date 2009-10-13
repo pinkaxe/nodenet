@@ -64,6 +64,7 @@ static void *node_io_thread(void *arg)
             handle_int_cmd(cmd);
 
             cmd_free(cmd);
+            goto end;
 
             //switch(cmdid){
             //    case NN_NODE_STATE_RUN:

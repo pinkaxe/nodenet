@@ -21,12 +21,28 @@ struct nn_router *nn_router_init(void)
     struct nn_router *rt;
 
     PCHK(LWARN, rt, router_init());
+
     return rt;
 }
 
 int nn_router_free(struct nn_router *rt)
 {
+    void *iter;
     int r;
+    struct nn_node *n;
+
+    //lock router
+
+    /* remove pointers from nodes */
+   // iter = NULL;
+   // while((n=router_nodes_iter(rt, &iter))){
+   //     // unlock router
+   //     // shit change state
+   //     // lock node
+   //     // lock router
+   //     node_rem_from_router(n, rt);
+   //     // unlock node
+   // }
 
     ICHK(LWARN, r, router_free(rt));
     return r;
@@ -53,9 +69,24 @@ struct nn_node *nn_node_init(enum nn_node_driver type, enum nn_node_attr attr,
 
 int nn_node_free(struct nn_node *n)
 {
+    void *iter = NULL;
     int r;
 
+    struct nn_router *rt;
+
+    /* remove pointers from routers */
+   // while((rt=node_routers_iter(n, &iter))){
+   //     router_rem_memb(rt, n);
+   // }
+
+   // /* remove pointers from groups */
+   // iter = NULL;
+   // while((g=node_grps_iter(n, &iter))){
+   //     grp_rem_memb(g, n);
+   // }
+
     ICHK(LWARN, r, node_free(n));
+
     return r;
 }
 
@@ -77,9 +108,26 @@ struct nn_grp *nn_grp_init(int id)
 
 int nn_grp_free(struct nn_grp *g)
 {
+    void *iter;
     int r;
+    struct nn_node *node;
+
+    // lock grp
+
+    //while((n=grp_nodes_iter(g, &iter))){
+    //    // unlock grp
+    //    // lock n
+    //    // lock grp
+    //    // make sure still pointed at, grp_ismemb(g, n);
+    //    ICHK(LWARN, r, node_rem_from_grp(n, g));
+    //    // unlock n
+    //    /* remove pointers from nodes to this grp */
+    //}
+
+    //unlock_grp();
 
     ICHK(LWARN, r, grp_free(g));
+
     return r;
 }
 
