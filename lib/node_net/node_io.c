@@ -41,11 +41,17 @@ static void *node_io_thread(void *arg)
     struct nn_node *n = arg;
     struct timespec buf_check_timespec;
     struct timespec cmd_check_timespec;
+    void (*user_func)(struct nn_node *n, void *buf, int len, void *pdata);
+    void *pdata;
+    int attr;
 
-    void (*user_func)(struct nn_node *n, void *buf, int len, void *pdata) =
-        node_get_codep(n);
-    void *pdata = node_get_pdatap(n);
-    int attr = node_get_attr(n);
+    node_lock(n);
+
+    user_func = node_get_codep(n);
+    pdata = node_get_pdatap(n);
+    attr = node_get_attr(n);
+
+    node_unlock(n);
 
     for(;;){
 
@@ -55,7 +61,10 @@ static void *node_io_thread(void *arg)
         cmd_check_timespec.tv_nsec = 1000000;
 
         /* incoming commands */
+        node_lock(n);
         cmd_buf = node_get_cmd(n, &cmd_check_timespec);
+        node_unlock(n);
+
         if(cmd_buf){
             printf("!!! Got a cmd_buf\n");
             struct nn_cmd *cmd = cmd_buf;

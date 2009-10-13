@@ -19,18 +19,25 @@ static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
 
     assert(rt);
 
+    router_lock(rt);
+
     iter = NULL;
     while((n=router_memb_iter(rt, &iter))){
         clone = cmd_clone(cmd);
+
+        node_lock(n);
         while((r=node_add_cmd(n, clone))){
             usleep(100);
         }
+        node_unlock(n);
+
         if(r){
             goto err;
         }
    }
 
 err:
+    router_unlock(rt);
     return r;
 }
 

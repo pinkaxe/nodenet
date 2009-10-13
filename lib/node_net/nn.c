@@ -5,6 +5,8 @@
 #include <time.h>
 #include <stdint.h>
 
+#include "sys/thread.h"
+
 #include "util/log.h"
 
 #include "types.h"
@@ -15,6 +17,19 @@
 
 #include "nn.h"
 
+/* serialize the calls that change the relationships between the router's,
+ * grps, node's */
+static mutex_t rel_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void rel_lock()
+{
+    mutex_lock(&rel_mutex);
+}
+
+void rel_unlock()
+{
+    mutex_unlock(&rel_mutex);
+}
 
 struct nn_router *nn_router_init(void)
 {
@@ -44,7 +59,12 @@ int nn_router_free(struct nn_router *rt)
    //     // unlock node
    // }
 
+    rel_lock();
+
     ICHK(LWARN, r, router_free(rt));
+
+    rel_unlock();
+
     return r;
 }
 
@@ -52,11 +72,11 @@ int nn_router_run(struct nn_router *rt)
 {
     int r;
 
-    ICHK(LWARN, r, router_lock(rt));
+    router_lock(rt);
 
     ICHK(LWARN, r, router_run(rt));
 
-    ICHK(LWARN, r, router_unlock(rt));
+    router_unlock(rt);
 
     return r;
 }
@@ -80,10 +100,14 @@ int nn_node_free(struct nn_node *n)
 
     struct nn_router *rt;
 
+  //  mutex_lock(n);
+
     /* remove pointers from routers */
-   // while((rt=node_routers_iter(n, &iter))){
-   //     router_rem_memb(rt, n);
-   // }
+  //  while((rt=node_routers_iter(n, &iter))){
+  //      mutex_lock(rt);
+  //      mutex_unlock(n);
+  //      router_rem_memb(rt, n);
+  //  }
 
    // /* remove pointers from groups */
    // iter = NULL;
@@ -91,7 +115,11 @@ int nn_node_free(struct nn_node *n)
    //     grp_rem_memb(g, n);
    // }
 
+    rel_lock();
+
     ICHK(LWARN, r, node_free(n));
+
+    rel_unlock();
 
     return r;
 }
@@ -138,7 +166,11 @@ int nn_grp_free(struct nn_grp *g)
 
     //unlock_grp();
 
+    rel_lock();
+
     ICHK(LWARN, r, grp_free(g));
+
+    rel_unlock();
 
     return r;
 }
@@ -147,6 +179,7 @@ int nn_add_node_to_router(struct nn_node *n, struct nn_router *rt)
 {
     int r;
 
+    rel_lock();
     router_lock(rt);
     node_lock(n);
 
@@ -166,6 +199,7 @@ int nn_add_node_to_router(struct nn_node *n, struct nn_router *rt)
 err:
     node_unlock(n);
     router_unlock(rt);
+    rel_unlock();
 
     return r;
 }
@@ -174,6 +208,7 @@ int nn_rem_node_from_router(struct nn_node *n, struct nn_router *rt)
 {
     int r;
 
+    rel_lock();
     router_lock(rt);
     node_lock(n);
 
@@ -190,6 +225,7 @@ int nn_rem_node_from_router(struct nn_node *n, struct nn_router *rt)
 err:
     node_unlock(n);
     router_unlock(rt);
+    rel_lock();
 
     return r;
 }
@@ -199,6 +235,7 @@ int nn_add_node_to_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
 
+    rel_lock();
     grp_lock(g);
     node_lock(n);
 
@@ -217,6 +254,7 @@ int nn_add_node_to_grp(struct nn_node *n, struct nn_grp *g)
 err:
     node_unlock(n);
     grp_unlock(g);
+    rel_unlock();
 
     return r;
 }
@@ -225,6 +263,7 @@ int nn_rem_node_from_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
 
+    rel_lock();
     grp_lock(g);
     node_lock(n);
 
@@ -241,6 +280,7 @@ int nn_rem_node_from_grp(struct nn_node *n, struct nn_grp *g)
 err:
     node_unlock(n);
     grp_unlock(g);
+    rel_unlock();
 
     return r;
 

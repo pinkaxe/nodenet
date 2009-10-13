@@ -7,6 +7,9 @@ int router_free(struct nn_router *h);
 
 int router_run(struct nn_router *h);
 
+int router_lock(struct nn_router *rt);
+int router_unlock(struct nn_router *rt);
+
 int router_add_memb(struct nn_router *h, struct nn_node *n);
 int router_rem_memb(struct nn_router *h, struct nn_node *n);
 int router_ismemb(struct nn_router *rt, struct nn_node *n);
