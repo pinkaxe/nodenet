@@ -124,7 +124,6 @@ int node_free(struct nn_node *n)
     int fail = 0;
     int r = 0;
 
-    struct nn_node_router *nr;
     struct nn_node_grp *ng;
 
     node_isok(n);
@@ -132,12 +131,6 @@ int node_free(struct nn_node *n)
     mutex_lock(&n->mutex);
 
     if(n->router_links){
-        // rem and free first
-        iter = NULL;
-        while(nr=ll_next(n->router_links, &iter)){
-            ICHK(LWARN, r, ll_rem(n->router_links, nr));
-            free(nr);
-        }
         ICHK(LWARN, r, ll_free(n->router_links));
         if(r) fail++;
     }

@@ -4,8 +4,14 @@
 struct nn_link *link_init();
 int link_free(struct nn_link *l);
 
-int link_link(struct nn_link *l, struct nn_node *n, struct nn_router *rt);
-int link_unlink(struct nn_node *n, struct nn_router *rt);
+int link_set_node(struct nn_link *l, struct nn_node *n);
+int link_set_router(struct nn_link *l, struct nn_router *rt);
+
+struct nn_node *link_get_node(struct nn_link *l);
+struct nn_router *link_get_router(struct nn_link *l);
+
+//int link_link(struct nn_link *l, struct nn_node *n, struct nn_router *rt);
+//int link_unlink(struct nn_node *n, struct nn_router *rt);
 
 /* router -> node cmd */
 int link_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd);

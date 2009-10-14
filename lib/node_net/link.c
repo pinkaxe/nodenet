@@ -74,6 +74,16 @@ int link_set_router(struct nn_link *l, struct nn_router *rt)
     return 0;
 }
 
+struct nn_node *link_get_node(struct nn_link *l)
+{
+    return l->n;
+}
+
+struct nn_router *link_get_router(struct nn_link *l)
+{
+    return l->rt;
+}
+
 //    link_set_router(l, rt){
 //        l->rt = rt;
 //    }
