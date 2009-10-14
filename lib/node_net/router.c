@@ -147,7 +147,7 @@ int router_unlock(struct nn_router *rt)
     return 0;
 }
 
-int router_conn(struct nn_router *rt, struct nn_link *l)
+int router_link(struct nn_router *rt, struct nn_link *l)
 {
     int r = 1;
     struct nn_router_link *nm;
@@ -165,7 +165,7 @@ err:
     return r;
 }
 
-int router_dconn(struct nn_router *rt, struct nn_link *l)
+int router_unlink(struct nn_router *rt, struct nn_link *l)
 {
     int r;
 
@@ -237,7 +237,7 @@ int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
 }
 
 
-struct nn_link *router_conn_iter(struct nn_router *rt, void **iter)
+struct nn_link *router_link_iter(struct nn_router *rt, void **iter)
 {
     int r = 0;
     struct nn_router_link *m;

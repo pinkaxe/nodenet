@@ -196,7 +196,7 @@ int node_unlock(struct nn_node *n)
 
 /* the stuff ??? */
 
-int node_conn(struct nn_node *n, struct nn_link *l)
+int node_link(struct nn_node *n, struct nn_link *l)
 {
     int r = 1;
     struct nn_node_router *en;
@@ -213,7 +213,7 @@ err:
     return r;
 }
 
-int node_dconn(struct nn_node *n, struct nn_link *l)
+int node_unlink(struct nn_node *n, struct nn_link *l)
 {
     int r;
 

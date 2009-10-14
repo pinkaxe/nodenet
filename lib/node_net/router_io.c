@@ -23,7 +23,7 @@ static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
     router_lock(rt);
 
    // iter = NULL;
-   // while((l=router_conn(rt, &iter))){
+   // while((l=router_link_iter(rt, &iter))){
 
    //     link_lock(l);
    //     //clone = cmd_clone(cmd);
