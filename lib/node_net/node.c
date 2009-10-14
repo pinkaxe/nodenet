@@ -463,3 +463,19 @@ int node_print(struct nn_node *n)
 }
 
 /** debug functions ends **/
+
+struct nn_link *node_link_iter(struct nn_node *n, void **iter)
+{
+    int r = 0;
+    struct nn_link *l;
+
+    assert(n);
+
+    l = ll_next(n->router_links, iter);
+
+    if(l){
+        return l;
+    }else{
+        return NULL;
+    }
+}

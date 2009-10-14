@@ -61,7 +61,7 @@ int main(int argc, char *argv)
         /* create input nodes */
         for(i=0; i < 100; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT, input_node, NULL);
-            l[i] = nn_link(n[i], rt[0]);
+            //l[i] = nn_link(n[i], rt[0]);
             //nn_node_join_grp(n[i], rt[0]);
 
             //link_link(n[i], rt[0]);
@@ -72,14 +72,14 @@ int main(int argc, char *argv)
         /* create process nodes */
         for(;i < 200; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, 0, process_node, NULL);
-            link_link(n[i], rt[0]);
+            //link_link(n[i], rt[0]);
             //nn_join_grp(n[i], g[1]);
         }
 
         /* create output nodes */
         for(;i < 300; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, 0, output_node, NULL);
-            link_link(n[i], rt[0]);
+            //link_link(n[i], rt[0]);
             //nn_join_grp(n[i], g[2]);
         }
 

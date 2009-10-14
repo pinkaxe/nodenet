@@ -5,9 +5,11 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata);
 int node_free(struct nn_node *node);
 
+
 /* conn to routers via links */
 int node_link(struct nn_node *n, struct nn_link *l);
 int node_unlink(struct nn_node *n, struct nn_link *l);
+struct nn_link *node_link_iter(struct nn_node *n, void **iter);
 
 /* grp memb. */
 int node_join_grp(struct nn_node *n, struct nn_grp *g);

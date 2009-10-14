@@ -13,6 +13,7 @@
 #include "cmd.h"
 #include "router.h"
 #include "node.h"
+#include "link.h"
 #include "grp.h"
 
 #include "nn.h"
@@ -94,37 +95,6 @@ struct nn_node *nn_node_init(enum nn_node_driver type, enum nn_node_attr attr,
 }
 
 //int nn_node_setname(struct nn_node *n, char *name);
-
-int nn_node_free(struct nn_node *n)
-{
-    void *iter = NULL;
-    int r;
-
-    struct nn_router *rt;
-
-  //  mutex_lock(n);
-
-    /* remove pointers from routers */
-  //  while((rt=node_routers_iter(n, &iter))){
-  //      mutex_lock(rt);
-  //      mutex_unlock(n);
-  //      router_rem_memb(rt, n);
-  //  }
-
-   // /* remove pointers from groups */
-   // iter = NULL;
-   // while((g=node_grps_iter(n, &iter))){
-   //     grp_rem_memb(g, n);
-   // }
-
-    //rel_lock();
-
-    ICHK(LWARN, r, node_free(n));
-
-    //rel_unlock();
-
-    return r;
-}
 
 int nn_node_run(struct nn_node *n)
 {
@@ -295,7 +265,7 @@ int nn_link(struct nn_node *n, struct nn_router *rt)
     struct nn_link *l;
 
     l = link_init();
-    link_link(l, n, rt);
+    //link_link(l, n, rt);
 
     /* lock router and link */
     router_lock(rt);
@@ -326,6 +296,46 @@ err:
     return r;
 }
 
+struct nn_link {
+    struct nn_node *n;
+    struct nn_router *rt;
+    mutex_t mutex;
+
+    /* router(output) -> node(input) */
+    struct que *rt_n_cmd;   /* router write node cmd */
+    struct que *rt_n_data;  /* router write node data */
+
+    /* node(output) -> router(input) */
+    struct que *n_rt_notify; /* always used */
+    struct que *n_rt_cmd;    /* only master node */
+    struct que *n_rt_data;   /* n write data */
+
+    /* internal going to and from router commands */
+    struct que *n_rt_int_cmd;
+    struct que *rt_n_int_cmd;
+};
+
+
+static int _node_link_unlink(struct nn_node *n, struct nn_link *l)
+{
+    int r = 0;
+
+    node_unlink(n, l);
+    link_set_node(l, NULL);
+
+    return r;
+}
+
+static int _router_link_unlink(struct nn_router *rt, struct nn_link *l)
+{
+    int r = 0;
+
+    router_unlink(rt, l);
+    link_set_node(l, NULL);
+
+    return r;
+}
+
 
 int nn_unlink(struct nn_node *n, struct nn_router *rt)
 {
@@ -336,27 +346,27 @@ int nn_unlink(struct nn_node *n, struct nn_router *rt)
     router_lock(rt);
 
     iter = NULL;
-    while((l=router_link(rt, &iter))){
+    while((l=router_link_iter(rt, &iter))){
         link_lock(l);
         /* router and link now locked */
 
-        router_unlink(rt, l);
-        link_set_router(l, NULL);
+        _router_link_unlink(rt, l);
 
         link_unlock(l);
         router_unlock(rt);
         /* router and link now unlocked */
 
-        //node_lock(l->n);
-        //link_lock(l);
-        ///* node and link now locked */
+        node_lock(l->n);
+        link_lock(l);
+        /* node and link now locked */
 
-        //node_unlink(l->n, l);
-        //link_set_node(l, NULL);
+        _node_link_unlink(l->n, l);
 
-        //link_unlock(l);
-        //node_unlock(l->n);
+        link_unlock(l);
+        node_unlock(l->n);
         /* node and link now unlocked */
+
+        link_free(l);
 
         router_lock(rt);
     }
@@ -367,3 +377,50 @@ err:
     return r;
 }
 
+int nn_node_free(struct nn_node *n)
+{
+    void *iter = NULL;
+    int r;
+
+    struct nn_link *l;
+
+    node_lock(n);
+
+    /* remove in link */
+    while((l=node_link_iter(n, &iter))){
+
+        link_lock(l);
+
+        _node_link_unlink(n, l);
+
+        link_unlock(l);
+        node_unlock(n);
+
+        /* router side */
+        router_lock(l->rt);
+        link_lock(l);
+
+        _router_link_unlink(l->rt, l);
+
+        link_unlock(l);
+        router_unlock(l->rt);
+
+        link_free(l);
+        node_lock(n);
+    }
+
+    node_unlock(n);
+
+   // /* remove pointers from groups */
+   // iter = NULL;
+   // while((g=node_grps_iter(n, &iter))){
+   //     grp_rem_memb(g, n);
+   // }
+
+
+    ICHK(LWARN, r, node_free(n));
+
+    //rel_unlock();
+
+    return r;
+}
