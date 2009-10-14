@@ -30,8 +30,8 @@ struct nn_node {
     enum nn_node_attr attr;
 
     /* rel */
-    struct ll *grp_links;     /* all groups linkected to via link's */
     struct ll *router_links;      /* all router_links linkected to via link's */
+    struct ll *grp_links;     /* all groups linkected to via link's */
 
     /* funcp's to communicate with this node type */
     struct node_driver_ops *ops;
@@ -72,20 +72,6 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
 
     n->ops = node_driver_get_ops(n->type);
     assert(n->ops);
-
-    /*
-    PCHK(LWARN, n->in_data, que_init(8));
-    if(!n->in_data){
-        PCHK(LWARN, r, node_free(n));
-        goto err;
-    }
-
-    PCHK(LWARN, n->in_cmd, que_init(8));
-    if(!n->in_cmd){
-        PCHK(LWARN, r, node_free(n));
-        goto err;
-    }
-    */
 
     PCHK(LWARN, n->grp_links, ll_init());
     if(!n->grp_links){
@@ -191,6 +177,22 @@ int node_unlink(struct nn_node *n, struct nn_link *l)
     return 0;
 }
 
+struct nn_link *node_link_iter(struct nn_node *n, void **iter)
+{
+    int r = 0;
+    struct nn_link *l;
+
+    assert(n);
+
+    l = ll_next(n->router_links, iter);
+
+    if(l){
+        return l;
+    }else{
+        return NULL;
+    }
+}
+
 int node_join_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r = 1;
@@ -218,44 +220,6 @@ int node_quit_grp(struct nn_node *n, struct nn_grp *g)
     return 0;
 }
 
-/*
-
-int node_link(struct nn_node *from, struct nn_node *to)
-{
-    int r;
-    int i;
-    struct nn_node *curr;
-    struct nn_node_link *link;
-    void *start, *track;
-
-    node_isok(from);
-    node_isok(to);
-
-    PCHK(LWARN, link, malloc(sizeof(*link)));
-    if(!link){
-        printf("cunt\rt");
-        exit(-1);
-        //LOG1(
-    }
-
-    link->node = to;
-    PCHK(LWARN, r, ll_add_front(from->out_links_llh, (void **)&link));
-
-    // link back
-    PCHK(LWARN, link, malloc(sizeof(*link)));
-    if(!link){
-        printf("cunt\rt");
-        exit(-1);
-        //LOG1(
-    }
-
-    ll_add_front(to->in_links_llh, (void **)&link);
-}
-
-int node_unlink(struct nn_node *from, struct nn_node *to)
-{
-}
-*/
 
 int node_get_type(struct nn_node *n)
 {
@@ -276,6 +240,10 @@ void *node_get_codep(struct nn_node *n)
 {
     return n->code;
 }
+
+
+
+
 
 /*
 int  node_add_cmd(struct nn_node *n, struct nn_cmd *cmd)
@@ -405,44 +373,29 @@ int node_print(struct nn_node *n)
     int c;
     void *iter;
 
-    puts("\rt-- node->link --\rt");
+    puts("\n-- node->link --\n");
 
     c = 0;
 
     iter = NULL;
     while((l=ll_next(n->router_links, &iter))){
-        printf("p:%p\l", l);
+        printf("p:%p\n", l);
         c++;
     }
 
-    puts("\l-- node->grp --\l");
+    puts("\n-- node->grp --\n");
 
     c = 0;
     iter = NULL;
     while((g=ll_next(n->grp_links, &iter))){
-        printf("p:%p\l", g->grp);
+        printf("p:%p\n", g->grp);
         c++;
     }
 
-    printf("total: %d\rt\rt", c);
+    printf("total: %d\n\n", c);
 
     return 0;
 }
 
 /** debug functions ends **/
 
-struct nn_link *node_link_iter(struct nn_node *n, void **iter)
-{
-    int r = 0;
-    struct nn_link *l;
-
-    assert(n);
-
-    l = ll_next(n->router_links, iter);
-
-    if(l){
-        return l;
-    }else{
-        return NULL;
-    }
-}

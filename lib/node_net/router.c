@@ -78,39 +78,20 @@ int router_free(struct nn_router *rt)
     void *iter;
     struct nn_link *l;
     int r = 0;
+
     router_isvalid(rt);
 
     mutex_lock(&rt->mutex);
 
     if(rt->link){
-        iter = NULL;
-        //
-        //        if(l=ll_next(rt->link, &iter)){
-        //                assert(0 == 1);
-        //        }
-        //while(l=ll_next(rt->link, &iter)){
-        //    ICHK(LWARN, r, ll_rem(rt->link, rm));
-        //    //elem_rem_from_grp(rm);
-        //    free(rm);
-        //}
-        //router_unlock_membs(rt);
         ICHK(LWARN, r, ll_free(rt->link));
     }
-
-    /*
-    if(rt->in_cmd){
-        ICHK(LWARN, r, que_free(rt->in_cmd));
-    }
-
-    if(rt->in_data){
-        ICHK(LWARN, r, que_free(rt->in_data));
-    }
-    */
 
     mutex_unlock(&rt->mutex);
     mutex_destroy(&rt->mutex);
 
     free(rt);
+
     return r;
 }
 
@@ -132,14 +113,6 @@ int router_link(struct nn_router *rt, struct nn_link *l)
     int r = 1;
     router_isvalid(rt);
 
-   // struct nn_*nm;
-   // PCHK(LWARN, nm, malloc(sizeof(*nm)));
-   // if(!nm){
-   //     goto err;
-   // }
-
-    //nm->link = l;
-    printf("!! adding: %p\n", l);
     ICHK(LWARN, r, ll_add_front(rt->link, (void **)&l));
 
 err:
@@ -152,31 +125,35 @@ int router_unlink(struct nn_router *rt, struct nn_link *l)
 
     router_isvalid(rt);
 
-    printf("!! rem: %p\n", l);
     ICHK(LWARN, r, ll_rem(rt->link, l));
 
     return r;
 }
 
-int router_isconn(struct nn_router *rt, struct nn_node *n)
-{
-    int r = 1;
-    struct nn_link *l;
-    void *iter;
-
-    assert(rt);
-
-    iter = NULL;
-    while((l=ll_next(rt->link, &iter))){
-        // FIXME:
-        //if(l->link->n == n){
-        //    r = 0;
-        //    break;
-        //}
-    }
-
-    return r;
-}
+// FIXME: make this link_exist(n, rt);
+//int router_isconn(struct nn_router *rt, struct nn_node *n)
+//{
+//    int r = 1;
+//    struct nn_link *l;
+//    void *iter;
+//
+//    assert(rt);
+//
+//    iter = NULL;
+//    while((l=ll_next(rt->link, &iter))){
+//        if(l->n == n){
+//            r = 0;
+//            break;
+//        }
+//        // FIXME:
+//        //if(l->link->n == n){
+//        //    r = 0;
+//        //    break;
+//        //}
+//    }
+//
+//    return r;
+//}
 
 
 
