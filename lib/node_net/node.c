@@ -196,7 +196,7 @@ int node_unlock(struct nn_node *n)
 
 /* the stuff ??? */
 
-int node_add_link(struct nn_node *n, struct nn_link *l)
+int node_conn_link(struct nn_node *n, struct nn_link *l)
 {
     int r = 1;
     struct nn_node_router *en;
@@ -213,7 +213,7 @@ err:
     return r;
 }
 
-int node_rem_link(struct nn_node *n, struct nn_link *l)
+int node_dconn_link(struct nn_node *n, struct nn_link *l)
 {
     int r;
 
@@ -224,7 +224,7 @@ int node_rem_link(struct nn_node *n, struct nn_link *l)
     return 0;
 }
 
-int node_add_to_grp(struct nn_node *n, struct nn_grp *g)
+int node_join_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r = 1;
     struct nn_node_grp *eg;
@@ -241,7 +241,7 @@ err:
     return r;
 }
 
-int node_rem_from_grp(struct nn_node *n, struct nn_grp *g)
+int node_quit_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
 

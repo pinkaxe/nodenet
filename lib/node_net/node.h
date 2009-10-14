@@ -6,16 +6,12 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
 int node_free(struct nn_node *node);
 
 /* link to routers */
-int node_add_link(struct nn_node *n, struct nn_link *l);
-int node_rem_link(struct nn_node *n, struct nn_link *l);
+int node_conn_link(struct nn_node *n, struct nn_link *l);
+int node_dconn_link(struct nn_node *n, struct nn_link *l);
 
 /* grp memb. */
-int node_add_to_grp(struct nn_node *n, struct nn_grp *g);
-int node_rem_from_grp(struct nn_node *n, struct nn_grp *g);
-
-/* links */
-int node_link(struct nn_node *from, struct nn_node *to);
-int node_unlink(struct nn_node *from, struct nn_node *to);
+int node_join_grp(struct nn_node *n, struct nn_grp *g);
+int node_quit_grp(struct nn_node *n, struct nn_grp *g);
 
 /* getters */
 int node_get_type(struct nn_node *n);

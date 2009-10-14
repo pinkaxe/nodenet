@@ -40,9 +40,10 @@ int output_node(struct nn_node *n, void *buf, int len, void *pdata)
 int main(int argc, char *argv)
 {
     int i;
-    struct nn_router *rt[1];
+    struct nn_router *rt[1024];
     struct nn_node *n[1024];
     struct nn_grp *g[1024];
+    struct nn_link *l[1024];
     struct nn_cmd *cmd;
     //struct nn_io_data *data;
     //struct nn_io_conf *conf;
@@ -60,7 +61,10 @@ int main(int argc, char *argv)
         /* create input nodes */
         for(i=0; i < 100; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT, input_node, NULL);
-            link_create_node_router(n[i], rt[0]);
+            l[i] = nn_link_conn(n[i], rt[0]);
+            //nn_node_join_grp(n[i], rt[0]);
+
+            //link_create_node_router(n[i], rt[0]);
             //nn_add_node_to_grp(n[i], g[1]);
             ok(n[i]);
         }
