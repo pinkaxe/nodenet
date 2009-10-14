@@ -127,7 +127,7 @@ int link_create_node_router(struct nn_node *n, struct nn_router *rt)
     link_lock(l);
 
     l->rt = rt;
-    //router_add_link(rt, l);
+    //router_conn(rt, l);
 
     link_unlock(l);
     router_unlock(rt);
@@ -158,11 +158,11 @@ int link_break_node_router(struct nn_node *n, struct nn_router *rt)
     router_lock(rt);
 
     iter = NULL;
-    while((l=router_link_iter(rt, &iter))){
+    while((l=router_conn(rt, &iter))){
 
         link_lock(l);
         l->rt = NULL;
-        //router_rem_link(rt, l);
+        //router_dconn(rt, l);
         link_unlock(l);
         router_unlock(rt);
 

@@ -9,7 +9,7 @@ struct nn_grp_memb;
 struct nn_cmd;
 struct nn_io_data;
 
-struct nn_link_node_router;
+struct nn_link;
 
 enum nn_node_driver {
     NN_NODE_TYPE_THREAD,

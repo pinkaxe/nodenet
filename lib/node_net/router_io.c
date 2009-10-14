@@ -14,7 +14,7 @@
 static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r = 0;
-    struct nn_link_node_router *l;
+    struct nn_link *l;
     void *iter;
     struct nn_cmd *clone;
 
@@ -23,7 +23,7 @@ static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
     router_lock(rt);
 
    // iter = NULL;
-   // while((l=router_link_iter(rt, &iter))){
+   // while((l=router_conn(rt, &iter))){
 
    //     link_lock(l);
    //     //clone = cmd_clone(cmd);

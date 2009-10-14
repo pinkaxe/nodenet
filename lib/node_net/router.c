@@ -39,7 +39,7 @@ struct nn_router {
 
 /* for nn_router->link */
 struct nn_router_link {
-    struct nn_link_node_router *link;
+    struct nn_link *link;
 };
 
 int router_isvalid(struct nn_router *rt)
@@ -147,7 +147,7 @@ int router_unlock(struct nn_router *rt)
     return 0;
 }
 
-int router_add_link(struct nn_router *rt, struct nn_link_node_router *l)
+int router_conn(struct nn_router *rt, struct nn_link *l)
 {
     int r = 1;
     struct nn_router_link *nm;
@@ -165,7 +165,7 @@ err:
     return r;
 }
 
-int router_rem_link(struct nn_router *rt, struct nn_link_node_router *l)
+int router_dconn(struct nn_router *rt, struct nn_link *l)
 {
     int r;
 
@@ -176,7 +176,7 @@ int router_rem_link(struct nn_router *rt, struct nn_link_node_router *l)
     return r;
 }
 
-int router_ismemb(struct nn_router *rt, struct nn_node *n)
+int router_isconn(struct nn_router *rt, struct nn_node *n)
 {
     int r = 1;
     struct nn_router_link *nm;
@@ -236,6 +236,24 @@ int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
     return 0;
 }
 
+
+struct nn_link *router_conn_iter(struct nn_router *rt, void **iter)
+{
+    int r = 0;
+    struct nn_router_link *m;
+    struct nn_cmd *clone;
+
+    assert(rt);
+
+    m = ll_next(rt->link, iter);
+
+    if(m && m->link){
+        return m->link;
+    }else{
+        return NULL;
+    }
+}
+
 #if 0
 int router_add_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 {
@@ -253,20 +271,3 @@ struct nn_cmd *router_get_cmd(struct nn_router *rt, struct timespec *ts)
 //    return que_add(rt->in_data, data);
 //}
 
-
-struct nn_link_node_router *router_link_iter(struct nn_router *rt, void **iter)
-{
-    int r = 0;
-    struct nn_router_link *m;
-    struct nn_cmd *clone;
-
-    assert(rt);
-
-    m = ll_next(rt->link, iter);
-
-    if(m && m->link){
-        return m->link;
-    }else{
-        return NULL;
-    }
-}

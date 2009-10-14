@@ -196,7 +196,7 @@ int node_unlock(struct nn_node *n)
 
 /* the stuff ??? */
 
-int node_conn_link(struct nn_node *n, struct nn_link *l)
+int node_conn(struct nn_node *n, struct nn_link *l)
 {
     int r = 1;
     struct nn_node_router *en;
@@ -213,7 +213,7 @@ err:
     return r;
 }
 
-int node_dconn_link(struct nn_node *n, struct nn_link *l)
+int node_dconn(struct nn_node *n, struct nn_link *l)
 {
     int r;
 
@@ -372,7 +372,7 @@ int node_router_isok(struct nn_node *n)
     iter = NULL;
     while((rt=ll_next(n->router_links, &iter))){
         /* make sure we are a member */
-        r = router_ismemb(rt->link, n);
+        r = router_isconn(rt->link, n);
         //r = router_print(rt->link);
         assert(r == 0);
         if(r){
