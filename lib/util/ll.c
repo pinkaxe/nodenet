@@ -34,11 +34,36 @@ err:
 
 }
 
+static int _ll_rem(struct ll *h, struct ll_node *n);
+static struct ll_node *ll_next_node(struct ll *h,  void **iter);
+
+/* free's all the nodes, not what they point to though */
+static int ll_free_nodes(struct ll *h)
+{
+    void *iter;
+    int r;
+    int fail = 0;
+    struct ll_node *n;
+
+    iter = NULL;
+    while(n=ll_next_node(h, &iter)){
+        ICHK(LWARN, r, _ll_rem(h, n));
+        if(r) fail++;
+    }
+
+    return fail;
+}
+
 int ll_free(struct ll *h)
 {
+    int r = 0;
     assert(h);
+
+    ICHK(LWARN, r, ll_free_nodes(h));
+
     free(h);
-    return 0;
+
+    return r;
 }
 
 int ll_add_front(struct ll *h, void **data)
@@ -115,6 +140,33 @@ int ll_rem(struct ll *h, void *data)
 
 
 void *ll_next(struct ll *h,  void **iter)
+{
+    void *r = NULL;
+    struct ll_node *_iter;
+
+    if(!(*iter)){
+        /* first */
+        *iter = h->start;
+        _iter = *iter;
+        if(_iter){
+            r = _iter->data;
+        }
+        goto end;
+    }
+
+    _iter = *iter;
+    if(_iter->next){
+        /* got next */
+        r = _iter->next->data;
+        *iter = _iter->next;
+    }
+
+end:
+    return r;
+}
+
+/* return ll_node */
+static struct ll_node *ll_next_node(struct ll *h,  void **iter)
 {
     void *r = NULL;
     struct ll_node *_iter;
