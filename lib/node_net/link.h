@@ -17,7 +17,7 @@ enum nn_link_state link_get_state(struct nn_link *l);
 
 
 /* router -> node cmd */
-int link_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd);
+int link_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd *cmd);
 int link_node_rx_cmd(struct nn_router *rt, struct nn_cmd **cmd);
 
 /* node -> router cmd */

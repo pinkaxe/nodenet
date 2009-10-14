@@ -53,20 +53,22 @@ static void *node_io_thread(void *arg)
 
     node_unlock(n);
 
-    for(;;){
+    buf_check_timespec.tv_sec = 0;
+    buf_check_timespec.tv_nsec = 10000000;
+    cmd_check_timespec.tv_sec = 0;
+    cmd_check_timespec.tv_nsec = 1000000;
 
-        buf_check_timespec.tv_sec = 0;
-        buf_check_timespec.tv_nsec = 10000000;
-        cmd_check_timespec.tv_sec = 0;
-        cmd_check_timespec.tv_nsec = 1000000;
+    for(;;){
         sleep(1);
         printf("node_io_loop\n");
 
+        node_lock(n);
+
         /* incoming commands */
-       // node_lock(n);
-       // //cmd_buf = node_get_cmd(n, &cmd_check_timespec);
-       // cmd_buf = link_node_rx_cmd(n, &cmd_check_timespec);
-       // node_unlock(n);
+        // node_lock(n);
+        //cmd_buf = node_get_cmd(n, &cmd_check_timespec);
+        //cmd_buf = link_node_rx_cmd(n, &cmd_check_timespec);
+        // node_unlock(n);
 
        // if(cmd_buf){
        //     printf("!!! Got a cmd_buf\n");
@@ -123,6 +125,7 @@ static void *node_io_thread(void *arg)
         //}
 #endif
 
+        node_unlock(n);
 
     }
 end:

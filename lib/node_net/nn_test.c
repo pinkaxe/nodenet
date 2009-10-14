@@ -35,7 +35,10 @@ int process_node(struct nn_node *n, void *buf, int len, void *pdata)
 int output_node(struct nn_node *n, void *buf, int len, void *pdata)
 {
     int i;
-    struct nn_router *rt[1024];
+
+    //n->tx_cmd(n, );
+    //nn_node_tx_cmd(n, buf, len, destiny);
+    //nn_node_tx(n, );
 }
 
 #if 0
@@ -115,14 +118,17 @@ int main(int argc, char *argv)
         }
 
         /* create output nodes */
+        /*
         for(;i < 300; i++){
             ok = nn_node_isok(n[i]);
             if(!ok){
                 printf("!! bad shit, n[i]\n");
             }
         }
+        */
 
-        //nn_router_run(rt[0]);
+        nn_router_run(rt[0]);
+        sleep(5);
 
         /*
         for(i = 0; i < 300; i++){

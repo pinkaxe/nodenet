@@ -10,39 +10,39 @@
 #include "link.h"
 #include "router.h"
 
-/* main io route threads */
-static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
+/* rt should be locked before calling this */
+static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r = 0;
     struct nn_link *l;
     void *iter;
-    struct nn_cmd *clone;
 
     assert(rt);
 
-    router_lock(rt);
+    iter = NULL;
+    while((l=router_link_iter(rt, &iter))){
 
-   // iter = NULL;
-   // while((l=router_link_iter(rt, &iter))){
+        link_lock(l);
+        //clone = cmd_clone(cmd);
+        printf("!!! router_tx_cmd\n");
+        if(link_get_state(l) != NN_LINK_STATE_DEAD){
+           /* link, can send */
+            while((r=link_router_tx_cmd(l, cmd))){
+                usleep(100);
+            }
+            link_unlock(l);
+            if(r){
+                goto err;
+            }
+        }else{
+            L(LINFO, "Freeing dead link");
+            link_unlock(l);
+            link_free(l);
+        }
 
-   //     link_lock(l);
-   //     //clone = cmd_clone(cmd);
-   //     printf("!!! router_tx_cmd\n");
-   //     if(l->n){
-   //        /* still linkected, can send */
-   //        while((r=link_router_tx_cmd(l, cmd))){
-   //            usleep(100);
-   //        }
-   //        if(r){
-   //            link_unlock(l);
-   //            goto err;
-   //        }
-   //     }
-
-   //}
+   }
 
 err:
-    router_unlock(rt);
     return r;
 }
 
@@ -51,7 +51,7 @@ static int route_to_grp(struct nn_grp *g, struct nn_cmd *cmd)
 {
 }
 
-static int route_to_node(struct nn_router *rt, struct nn_cmd *cmd)
+static int route_to_node(struct nn_node *n, struct nn_cmd *cmd)
 {
 }
 
@@ -73,7 +73,7 @@ static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
             //send_cmd_to_node(e1, cmd);
             break;
         case NN_SENDTO_ALL:
-            route_to_router(rt, cmd);
+            route_to_all(rt, cmd);
             //printf("freeing %p\rt", cmd);
             cmd_free(cmd);
             break;
@@ -85,26 +85,45 @@ static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 }
 
 
-/* pick up cmds coming from router, and call router */
+/* pick up cmds coming from router, and router to other node's */
 static void *route_cmd_thread(void *arg)
 {
+    void *iter;
     struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
+    struct nn_link *l;
     struct nn_cmd *cmd;
 
     for(;;){
         printf("!! running route \n");
 
         router_lock(rt);
-        //cmd = router_get_cmd(rt, NULL);
-        cmd = link_router_rx_cmd(rt, NULL);
+
+        // get iter for links
+        // unlock router
+        iter = NULL;
+        while((l=router_link_iter(rt, &iter))){
+
+            link_lock(l);
+
+            // router and one link is locked but still all the nodes
+            // can write to the other links
+
+            cmd = link_router_rx_cmd(rt, NULL);
+
+            link_unlock(l);
+
+            if(cmd){
+                //rt->io_cmd_req_cb(rt, cmd);
+                printf("routing cmd\n");
+                route_cmd(rt, cmd);
+            }
+        }
+
         router_unlock(rt);
 
-        if(cmd){
-            //rt->io_cmd_req_cb(rt, cmd);
-            route_cmd(rt, cmd);
-        }
         sleep(1);
+        //return NULL;
 
     }
 }

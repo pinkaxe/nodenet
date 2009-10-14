@@ -263,14 +263,15 @@ int link_unlock(struct nn_link *l)
 
 
 /* router -> node cmd */
-int link_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd)
+int link_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd *cmd)
 {
     // add to rt_n_cmd
 }
 
-int link_node_rx_cmd(struct nn_router *rt, struct nn_cmd **cmd)
+int link_node_rx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd **cmd)
 {
     // add to rt_n_cmd
+    // loop through all n->links, and check
 }
 
 /* router -> node data */
@@ -279,13 +280,13 @@ int link_router_tx_data(struct nn_router *rt, struct nn_data *data)
     // add to rt_n_data
 }
 
-int link_node_rx_data(struct nn_router *rt, struct nn_data **data)
+int link_node_rx_data(struct nn_node *rt, struct nn_data **data)
 {
     // remove from rt_n_data
 }
 
 /* node -> router cmd */
-int link_node_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd)
+int link_node_tx_cmd(struct nn_node *rt, struct nn_cmd *cmd)
 {
     // add to n_rt_cmd
 }
