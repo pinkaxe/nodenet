@@ -7,14 +7,14 @@
 
 #include "types.h"
 #include "cmd.h"
-#include "conn.h"
+#include "link.h"
 #include "router.h"
 
 /* main io route threads */
 static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r = 0;
-    struct nn_conn_node_router *cn;
+    struct nn_link_node_router *cn;
     void *iter;
     struct nn_cmd *clone;
 
@@ -23,18 +23,18 @@ static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
     router_lock(rt);
 
    // iter = NULL;
-   // while((cn=router_conn_iter(rt, &iter))){
+   // while((cn=router_link_iter(rt, &iter))){
 
-   //     conn_lock(cn);
+   //     link_lock(cn);
    //     //clone = cmd_clone(cmd);
    //     printf("!!! router_tx_cmd\n");
    //     if(cn->n){
-   //        /* still connected, can send */
-   //        while((r=conn_router_tx_cmd(cn, cmd))){
+   //        /* still linkected, can send */
+   //        while((r=link_router_tx_cmd(cn, cmd))){
    //            usleep(100);
    //        }
    //        if(r){
-   //            conn_unlock(cn);
+   //            link_unlock(cn);
    //            goto err;
    //        }
    //     }
@@ -97,7 +97,7 @@ static void *route_cmd_thread(void *arg)
 
         router_lock(rt);
         //cmd = router_get_cmd(rt, NULL);
-        cmd = conn_router_rx_cmd(rt, NULL);
+        cmd = link_router_rx_cmd(rt, NULL);
         router_unlock(rt);
 
         if(cmd){

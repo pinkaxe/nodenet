@@ -10,10 +10,10 @@ int router_run(struct nn_router *h);
 int router_lock(struct nn_router *rt);
 int router_unlock(struct nn_router *rt);
 
-int router_add_conn(struct nn_router *rt, struct nn_conn_node_router *cn);
-int router_rem_conn(struct nn_router *h, struct nn_conn_node_router *n);
+int router_add_link(struct nn_router *rt, struct nn_link_node_router *cn);
+int router_rem_link(struct nn_router *h, struct nn_link_node_router *n);
 int router_ismemb(struct nn_router *rt, struct nn_node *n);
-struct nn_conn_node_router *router_conn_iter(struct nn_router *rt, void **iter);
+struct nn_link_node_router *router_link_iter(struct nn_router *rt, void **iter);
 
 int router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb);
 

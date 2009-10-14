@@ -44,12 +44,12 @@ int nn_router_free(struct nn_router *rt)
 {
     void *iter;
     int r;
-    struct nn_conn_node_router *cn;
+    struct nn_link_node_router *cn;
 
     //router_lock(rt);
 
     //while((cn=router_nodes_iter(rt, &iter))){
-    //conn_break_node_router(struct nn_node *n, struct nn_router *rt)
+    //link_break_node_router(struct nn_node *n, struct nn_router *rt)
     /* remove pointers from nodes */
    // iter = NULL;
    // while((n=router_nodes_iter(rt, &iter))){
@@ -180,33 +180,33 @@ int nn_grp_free(struct nn_grp *g)
 int nn_add_node_to_router(struct nn_node *n, struct nn_router *rt)
 {
     int r;
-    struct nn_conn_node_router *cn;
+    struct nn_link_node_router *cn;
 
-    cn = conn_create_node_router(n, rt);
+    cn = link_create_node_router(n, rt);
 
-    /* lock router and conn */
+    /* lock router and link */
     router_lock(rt);
-    conn_lock(cn);
+    link_lock(cn);
 
     /* set router side pointers */
-    router_add_conn(rt, cn);
-    conn_set_router(cn, rt);
+    router_add_link(rt, cn);
+    link_set_router(cn, rt);
 
-    /* unlock router and conn */
-    conn_unlock(cn);
+    /* unlock router and link */
+    link_unlock(cn);
     router_unlock(rt);
 
-    /* lock node and conn */
+    /* lock node and link */
     node_lock(n);
-    conn_lock(cn);
+    link_lock(cn);
 
     /* set node side pointers */
-    node_add_conn(n, cn);
-    conn_set_node(cn, rt);
+    node_add_link(n, cn);
+    link_set_node(cn, rt);
 
-    /* unlock node and conn */
+    /* unlock node and link */
     node_unlock(n);
-    conn_unlock(cn);
+    link_unlock(cn);
 
 err:
 
@@ -217,33 +217,33 @@ int nn_rem_node_from_router(struct nn_node *n, struct nn_router *rt)
 {
     void *iter;
     int r;
-    struct nn_conn_node_router *cn;
+    struct nn_link_node_router *cn;
 
     router_lock(rt);
 
     iter = NULL;
-    while((cn=router_conn_iter(rt, &iter))){
-        conn_lock(cn);
-        /* router and conn now locked */
+    while((cn=router_link_iter(rt, &iter))){
+        link_lock(cn);
+        /* router and link now locked */
 
-        router_rem_conn(rt, cn);
-        conn_set_router(cn, NULL);
+        router_rem_link(rt, cn);
+        link_set_router(cn, NULL);
 
-        conn_unlock(cn);
+        link_unlock(cn);
         router_unlock(rt);
-        /* router and conn now unlocked */
+        /* router and link now unlocked */
 
 
         //node_lock(cn->n);
-        //conn_lock(cn);
-        ///* node and conn now locked */
+        //link_lock(cn);
+        ///* node and link now locked */
 
-        //node_rem_conn(cn->n, cn);
-        //conn_set_node(cn, NULL);
+        //node_rem_link(cn->n, cn);
+        //link_set_node(cn, NULL);
 
-        //conn_unlock(cn);
+        //link_unlock(cn);
         //node_unlock(cn->n);
-        /* node and conn now unlocked */
+        /* node and link now unlocked */
 
         router_lock(rt);
     }
@@ -329,7 +329,7 @@ int nn_router_add_cmd_req(struct nn_router *rt, struct nn_cmd *cmd)
 
     //router_lock(rt);
 
-    r = conn_router_tx_cmd(rt, cmd);
+    r = link_router_tx_cmd(rt, cmd);
 
     //router_unlock(rt);
 
