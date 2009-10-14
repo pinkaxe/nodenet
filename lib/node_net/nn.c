@@ -19,19 +19,6 @@
 
 #include "nn.h"
 
-/* serialize the calls that change the relationships between the router's,
- * grps, node's */
-static mutex_t rel_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-void rel_lock()
-{
-    mutex_lock(&rel_mutex);
-}
-
-void rel_unlock()
-{
-    mutex_unlock(&rel_mutex);
-}
 
 struct nn_router *nn_router_init(void)
 {
@@ -47,11 +34,11 @@ int nn_router_run(struct nn_router *rt)
 {
     int r;
 
-    //router_lock(rt);
+    router_lock(rt);
 
     ICHK(LWARN, r, router_run(rt));
 
-    //router_unlock(rt);
+    router_unlock(rt);
 
     return r;
 }
@@ -72,11 +59,11 @@ int nn_node_run(struct nn_node *n)
 {
     int r;
 
-    //node_lock(n);
+    node_lock(n);
 
     ICHK(LWARN, r, node_start(n));
 
-    //node_unlock(n);
+    node_unlock(n);
 
     return r;
 }
@@ -95,9 +82,8 @@ int nn_join_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
 
-    //rel_lock();
-    //grp_lock(g);
-    //node_lock(n);
+    grp_lock(g);
+    node_lock(n);
 
     ICHK(LWARN, r, node_join_grp(n, g));
     if(r){
@@ -245,6 +231,7 @@ static int _node_link_unlink(struct nn_node *n, struct nn_link *l)
     int r = 0;
 
     node_unlink(n, l);
+    /* set to NULL for validation */
     link_set_node(l, NULL);
 
     return r;
@@ -256,49 +243,6 @@ static int _router_link_unlink(struct nn_router *rt, struct nn_link *l)
 
     router_unlink(rt, l);
     link_set_node(l, NULL);
-
-    return r;
-}
-
-
-int nn_unlink(struct nn_node *n, struct nn_router *rt)
-{
-    void *iter;
-    int r;
-    struct nn_link *l;
-
-    assert(1 == 0);
-
-    /* lock node and each link it point to in turn */
-    node_lock(n);
-
-    iter = NULL;
-    while((l=node_link_iter(n, &iter))){
-        link_lock(l);
-
-        _node_link_unlink(n, l);
-
-        /* unlock node and link */
-        link_unlock(l);
-        node_unlock(n);
-
-        /* lock router and link */
-        router_lock(rt);
-        link_lock(l);
-
-        _router_link_unlink(rt, l);
-
-        /* unlock router and link */
-        link_unlock(l);
-        router_unlock(rt);
-
-        link_free(l);
-
-        node_lock(n);
-    }
-
-err:
-    node_unlock(n);
 
     return r;
 }
@@ -317,6 +261,62 @@ static bool _link_mark_dead(struct nn_link *l)
         return false;
     }
 }
+
+int nn_unlink(struct nn_node *n, struct nn_router *rt)
+{
+    void *iter;
+    int r;
+    struct nn_link *l;
+    bool f;
+
+    /* lock node and each link it point to in turn */
+    node_lock(n);
+
+    iter = NULL;
+    while((l=node_link_iter(n, &iter))){
+        link_lock(l);
+
+        /* disconnect the node <-> link link */
+        _node_link_unlink(n, l);
+
+        f = _link_mark_dead(l);
+
+        /* unlock node and link */
+        link_unlock(l);
+        node_unlock(n);
+
+        if(f){
+            link_free(l);
+            continue;
+        }
+
+        /* lock router and link */
+        router_lock(rt);
+        link_lock(l);
+
+        /* disconnect the router <-> link link */
+        _router_link_unlink(rt, l);
+
+        f = _link_mark_dead(l);
+
+        /* unlock router and link */
+        link_unlock(l);
+        router_unlock(rt);
+
+        if(f){
+            link_free(l);
+            continue;
+        }
+
+        node_lock(n);
+    }
+
+err:
+    node_unlock(n);
+
+    return r;
+}
+
 
 int nn_grp_free(struct nn_grp *g)
 {
@@ -341,8 +341,6 @@ int nn_grp_free(struct nn_grp *g)
     //rel_lock();
 
     ICHK(LWARN, r, grp_free(g));
-
-    //rel_unlock();
 
     return r;
 }
