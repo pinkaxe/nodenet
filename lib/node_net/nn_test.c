@@ -34,8 +34,39 @@ int process_node(struct nn_node *n, void *buf, int len, void *pdata)
 
 int output_node(struct nn_node *n, void *buf, int len, void *pdata)
 {
+    int i;
+    struct nn_router *rt[1024];
 }
 
+#if 0
+//int adder_node(struct nn_node *n, void *buf, int len, void *pdata)
+//{
+//    uint8_t *val = buf;
+//
+//    malloc
+//}
+
+
+int xmain(int argc, char *argv)
+{
+    int i;
+    struct nn_router *rt[1024];
+    struct nn_node *n[1024];
+    struct nn_grp *g[1024];
+    struct nn_link *l[1024];
+    struct nn_cmd *cmd;
+
+    rt[0] = nn_router_init();
+    ok(rt[0]);
+
+    for(i=0; i < 3; i++){
+        n[0] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
+                adder_node, NULL);
+    }
+
+    return 0;
+}
+#endif
 
 int main(int argc, char *argv)
 {
@@ -83,6 +114,14 @@ int main(int argc, char *argv)
             //nn_join_grp(n[i], g[2]);
         }
 
+        /* create output nodes */
+        for(;i < 300; i++){
+            ok = nn_node_isok(n[i]);
+            if(!ok){
+                printf("!! bad shit, n[i]\n");
+            }
+        }
+
         //nn_router_run(rt[0]);
 
         /*
@@ -115,7 +154,10 @@ int main(int argc, char *argv)
         sleep(5);
         */
 
+        nn_router_free(rt[0]);
+
         for(i=0; i < 300; i++){
+            /* unlink not needed but ok */
             nn_unlink(n[i], rt[0]);
             nn_node_free(n[i]);
         }
@@ -124,7 +166,7 @@ int main(int argc, char *argv)
         nn_grp_free(g[1]);
         nn_grp_free(g[2]);
 
-        nn_router_free(rt[0]);
+        //nn_router_free(rt[0]);
         usleep(1);
     }
 
