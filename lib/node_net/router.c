@@ -147,7 +147,7 @@ int router_unlock(struct nn_router *rt)
     return 0;
 }
 
-int router_add_link(struct nn_router *rt, struct nn_link_node_router *cn)
+int router_add_link(struct nn_router *rt, struct nn_link_node_router *l)
 {
     int r = 1;
     struct nn_router_link *nm;
@@ -158,20 +158,20 @@ int router_add_link(struct nn_router *rt, struct nn_link_node_router *cn)
         goto err;
     }
 
-    nm->link = cn;
+    nm->link = l;
     ICHK(LWARN, r, ll_add_front(rt->link, (void **)&nm));
 
 err:
     return r;
 }
 
-int router_rem_link(struct nn_router *rt, struct nn_link_node_router *cn)
+int router_rem_link(struct nn_router *rt, struct nn_link_node_router *l)
 {
     int r;
 
     router_isvalid(rt);
 
-    ICHK(LWARN, r, ll_rem(rt->link, cn));
+    ICHK(LWARN, r, ll_rem(rt->link, l));
 
     return r;
 }

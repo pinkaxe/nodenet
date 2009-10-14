@@ -14,7 +14,7 @@
 static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r = 0;
-    struct nn_link_node_router *cn;
+    struct nn_link_node_router *l;
     void *iter;
     struct nn_cmd *clone;
 
@@ -23,18 +23,18 @@ static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
     router_lock(rt);
 
    // iter = NULL;
-   // while((cn=router_link_iter(rt, &iter))){
+   // while((l=router_link_iter(rt, &iter))){
 
-   //     link_lock(cn);
+   //     link_lock(l);
    //     //clone = cmd_clone(cmd);
    //     printf("!!! router_tx_cmd\n");
-   //     if(cn->n){
+   //     if(l->n){
    //        /* still linkected, can send */
-   //        while((r=link_router_tx_cmd(cn, cmd))){
+   //        while((r=link_router_tx_cmd(l, cmd))){
    //            usleep(100);
    //        }
    //        if(r){
-   //            link_unlock(cn);
+   //            link_unlock(l);
    //            goto err;
    //        }
    //     }

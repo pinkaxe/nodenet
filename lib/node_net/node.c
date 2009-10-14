@@ -196,7 +196,7 @@ int node_unlock(struct nn_node *n)
 
 /* the stuff ??? */
 
-int node_add_link(struct nn_node *n, struct nn_link *cn)
+int node_add_link(struct nn_node *n, struct nn_link *l)
 {
     int r = 1;
     struct nn_node_router *en;
@@ -206,20 +206,20 @@ int node_add_link(struct nn_node *n, struct nn_link *cn)
         goto err;
     }
 
-    en->link = cn;
+    en->link = l;
     ICHK(LWARN, r, ll_add_front(n->router_links, (void **)&en));
 
 err:
     return r;
 }
 
-int node_rem_link(struct nn_node *n, struct nn_link *cn)
+int node_rem_link(struct nn_node *n, struct nn_link *l)
 {
     int r;
 
     node_isok(n);
 
-    ICHK(LWARN, r, ll_rem(n->router_links, cn));
+    ICHK(LWARN, r, ll_rem(n->router_links, l));
     //TODO:
     return 0;
 }
