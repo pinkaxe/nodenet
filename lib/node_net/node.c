@@ -16,6 +16,7 @@
 
 #include "types.h"
 #include "cmd.h"
+#include "conn.h"
 
 #include "node.h"
 #include "node_drivers/node_driver.h"
@@ -55,7 +56,7 @@ struct nn_node_grp {
 
 /* for nn_node->router_conns ll */
 struct nn_node_router {
-    struct nn_conn_node_router *conn;
+    struct nn_conn *conn;
 };
 
 
@@ -195,7 +196,7 @@ int node_unlock(struct nn_node *n)
 
 /* the stuff ??? */
 
-int node_add_to_router(struct nn_node *n, struct nn_conn_node_router *cn)
+int node_add_conn(struct nn_node *n, struct nn_conn *cn)
 {
     int r = 1;
     struct nn_node_router *en;
@@ -212,7 +213,7 @@ err:
     return r;
 }
 
-int node_rem_from_router(struct nn_node *n, struct nn_conn_node_router *cn)
+int node_rem_conn(struct nn_node *n, struct nn_conn *cn)
 {
     int r;
 

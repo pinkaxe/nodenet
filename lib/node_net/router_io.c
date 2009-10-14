@@ -14,7 +14,7 @@
 static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r = 0;
-    struct nn_node *n;
+    struct nn_conn_node_router *cn;
     void *iter;
     struct nn_cmd *clone;
 
@@ -22,22 +22,24 @@ static int route_to_router(struct nn_router *rt, struct nn_cmd *cmd)
 
     router_lock(rt);
 
-    iter = NULL;
-    while((n=router_memb_iter(rt, &iter))){
-        clone = cmd_clone(cmd);
-        printf("!!! router_tx_cmd\n");
+   // iter = NULL;
+   // while((cn=router_conn_iter(rt, &iter))){
 
-        //node_lock(n);
-        //while((r=node_add_cmd(n, clone))){
-       // while((r=conn_router_tx_cmd(n, clone))){
-       //     usleep(100);
-       // }
-        //node_unlock(n);
+   //     conn_lock(cn);
+   //     //clone = cmd_clone(cmd);
+   //     printf("!!! router_tx_cmd\n");
+   //     if(cn->n){
+   //        /* still connected, can send */
+   //        while((r=conn_router_tx_cmd(cn, cmd))){
+   //            usleep(100);
+   //        }
+   //        if(r){
+   //            conn_unlock(cn);
+   //            goto err;
+   //        }
+   //     }
 
-        if(r){
-            goto err;
-        }
-   }
+   //}
 
 err:
     router_unlock(rt);
@@ -91,12 +93,17 @@ static void *route_cmd_thread(void *arg)
     struct nn_cmd *cmd;
 
     for(;;){
+        printf("!! running route \n");
+
+        router_lock(rt);
         //cmd = router_get_cmd(rt, NULL);
-        //cmd = conn_router_rx_cmd(rt, NULL);
-        //if(cmd){
-        //    //rt->io_cmd_req_cb(rt, cmd);
-        //    route_cmd(rt, cmd);
-        //}
+        cmd = conn_router_rx_cmd(rt, NULL);
+        router_unlock(rt);
+
+        if(cmd){
+            //rt->io_cmd_req_cb(rt, cmd);
+            route_cmd(rt, cmd);
+        }
         sleep(1);
 
     }

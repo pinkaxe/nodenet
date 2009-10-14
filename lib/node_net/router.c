@@ -38,7 +38,7 @@ struct nn_router {
 };
 
 /* for nn_router->conn */
-struct nn_router_memb {
+struct nn_router_conn {
     struct nn_conn_node_router *conn;
 };
 
@@ -92,7 +92,7 @@ err:
 int router_free(struct nn_router *rt)
 {
     void *iter;
-    struct nn_router_memb *rm;
+    struct nn_router_conn *rm;
     int r = 0;
     router_isvalid(rt);
 
@@ -147,10 +147,10 @@ int router_unlock(struct nn_router *rt)
     return 0;
 }
 
-int router_add_memb(struct nn_router *rt, struct nn_conn_node_router *cn)
+int router_add_conn(struct nn_router *rt, struct nn_conn_node_router *cn)
 {
     int r = 1;
-    struct nn_router_memb *nm;
+    struct nn_router_conn *nm;
     router_isvalid(rt);
 
     PCHK(LWARN, nm, malloc(sizeof(*nm)));
@@ -165,7 +165,7 @@ err:
     return r;
 }
 
-int router_rem_memb(struct nn_router *rt, struct nn_conn_node_router *cn)
+int router_rem_conn(struct nn_router *rt, struct nn_conn_node_router *cn)
 {
     int r;
 
@@ -179,17 +179,18 @@ int router_rem_memb(struct nn_router *rt, struct nn_conn_node_router *cn)
 int router_ismemb(struct nn_router *rt, struct nn_node *n)
 {
     int r = 1;
-    struct nn_router_memb *nm;
+    struct nn_router_conn *nm;
     void *iter;
 
     assert(rt);
 
     iter = NULL;
     while((nm=ll_next(rt->conn, &iter))){
-        if(nm->conn->n == n){
-            r = 0;
-            break;
-        }
+        // FIXME:
+        //if(nm->conn->n == n){
+        //    r = 0;
+        //    break;
+        //}
     }
 
     return r;
@@ -199,7 +200,7 @@ int router_ismemb(struct nn_router *rt, struct nn_node *n)
 
 int router_print(struct nn_router *rt)
 {
-    struct nn_router_memb *nm;
+    struct nn_router_conn *nm;
     int r = 0;
     int c;
     void *iter;
@@ -253,10 +254,10 @@ struct nn_cmd *router_get_cmd(struct nn_router *rt, struct timespec *ts)
 //}
 
 
-struct nn_node *router_memb_iter(struct nn_router *rt, void **iter)
+struct nn_conn_node_router *router_conn_iter(struct nn_router *rt, void **iter)
 {
     int r = 0;
-    struct nn_router_memb *m;
+    struct nn_router_conn *m;
     struct nn_cmd *clone;
 
     assert(rt);
@@ -264,7 +265,7 @@ struct nn_node *router_memb_iter(struct nn_router *rt, void **iter)
     m = ll_next(rt->conn, iter);
 
     if(m && m->conn){
-        return m->conn->n;
+        return m->conn;
     }else{
         return NULL;
     }
