@@ -12,28 +12,27 @@
 #include "cmd.h"
 #include "router.h"
 
-//struct nn_link {
-//    struct nn_node *n;
-//    struct nn_router *rt;
-//    mutex_t mutex;
-//
-//    /* router(output) -> node(input) */
-//    struct que *rt_n_cmd;   /* router write node cmd */
-//    struct que *rt_n_data;  /* router write node data */
-//
-//    /* node(output) -> router(input) */
-//    struct que *n_rt_notify; /* always used */
-//    struct que *n_rt_cmd;    /* only master node */
-//    struct que *n_rt_data;   /* n write data */
-//
-//    /* internal going to and from router commands */
-//    struct que *n_rt_int_cmd;
-//    struct que *rt_n_int_cmd;
-//};
+struct nn_link {
+    struct nn_node *n;
+    struct nn_router *rt;
+    mutex_t mutex;
+
+    /* router(output) -> node(input) */
+    struct que *rt_n_cmd;   /* router write node cmd */
+    struct que *rt_n_data;  /* router write node data */
+
+    /* node(output) -> router(input) */
+    struct que *n_rt_notify; /* always used */
+    struct que *n_rt_cmd;    /* only master node */
+    struct que *n_rt_data;   /* n write data */
+
+    /* internal going to and from router commands */
+    struct que *n_rt_int_cmd;
+    struct que *rt_n_int_cmd;
+};
 
 struct nn_data; // FIXME:
 
-static int link_free(struct nn_link *l);
 
 struct nn_link *link_init()
 {
@@ -79,7 +78,7 @@ int link_set_router(struct nn_link *l, struct nn_router *rt)
 //        l->rt = rt;
 //    }
 //
-static int link_free(struct nn_link *l)
+int link_free(struct nn_link *l)
 {
     int r = 0;
     int fail = 0;
@@ -99,28 +98,15 @@ static int link_free(struct nn_link *l)
     return fail;
 }
 
-int link_lock(struct nn_link *l)
-{
-    mutex_lock(&l->mutex);
-}
-
-int link_unlock(struct nn_link *l)
-{
-    mutex_unlock(&l->mutex);
-}
-
-
-int link_create_node_router(struct nn_node *n, struct nn_router *rt)
+int link_link(struct nn_link *l, struct nn_node *n, struct nn_router *rt)
 {
     int r = 0;
     printf("!! create\n");
     return 0;
 
     // FIXME: put in nn.c
-    struct nn_link *l;
-
-    l = link_init();
-
+    //struct nn_link *l;
+    //l = link_init();
 
     /* set router side */
     router_lock(rt);
@@ -148,7 +134,7 @@ err:
     return r;
 }
 
-int link_break_node_router(struct nn_node *n, struct nn_router *rt)
+int link_unlink(struct nn_node *n, struct nn_router *rt)
 {
     void *iter;
     int r = 0;
@@ -158,7 +144,7 @@ int link_break_node_router(struct nn_node *n, struct nn_router *rt)
     router_lock(rt);
 
     iter = NULL;
-    while((l=router_link(rt, &iter))){
+    while((l=router_link_iter(rt, &iter))){
 
         link_lock(l);
         l->rt = NULL;
@@ -223,6 +209,18 @@ int link_break_node_router(struct nn_node *n, struct nn_router *rt)
 err:
     return r;
 }
+
+int link_lock(struct nn_link *l)
+{
+    mutex_lock(&l->mutex);
+}
+
+int link_unlock(struct nn_link *l)
+{
+    mutex_unlock(&l->mutex);
+}
+
+
 
 /* router -> node cmd */
 int link_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd)

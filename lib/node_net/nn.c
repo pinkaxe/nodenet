@@ -49,7 +49,7 @@ int nn_router_free(struct nn_router *rt)
     //router_lock(rt);
 
     //while((l=router_nodes_iter(rt, &iter))){
-    //link_break_node_router(struct nn_node *n, struct nn_router *rt)
+    //link_unlink(struct nn_node *n, struct nn_router *rt)
     /* remove pointers from nodes */
    // iter = NULL;
    // while((n=router_nodes_iter(rt, &iter))){
@@ -177,7 +177,7 @@ int nn_grp_free(struct nn_grp *g)
     return r;
 }
 
-int nn_add_node_to_grp(struct nn_node *n, struct nn_grp *g)
+int nn_join_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
 
@@ -205,7 +205,7 @@ err:
     return r;
 }
 
-int nn_rem_node_from_grp(struct nn_node *n, struct nn_grp *g)
+int nn_quit_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
 
@@ -289,12 +289,13 @@ int nn_unlink_node(struct nn_node *from, struct nn_node *to)
 */
 
 
-int nn_link_conn(struct nn_node *n, struct nn_router *rt)
+int nn_link(struct nn_node *n, struct nn_router *rt)
 {
     int r;
     struct nn_link *l;
 
-    l = link_create_node_router(n, rt);
+    l = link_init();
+    link_link(l, n, rt);
 
     /* lock router and link */
     router_lock(rt);
@@ -326,7 +327,7 @@ err:
 }
 
 
-int nn_link_dconn(struct nn_node *n, struct nn_router *rt)
+int nn_unlink(struct nn_node *n, struct nn_router *rt)
 {
     void *iter;
     int r;
