@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <time.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include "sys/thread.h"
 
@@ -89,34 +90,6 @@ struct nn_grp *nn_grp_init(int id)
     return g;
 }
 
-int nn_grp_free(struct nn_grp *g)
-{
-    void *iter;
-    int r;
-    struct nn_node *node;
-
-    // lock grp
-
-    //while((n=grp_nodes_iter(g, &iter))){
-    //    // unlock grp
-    //    // lock n
-    //    // lock grp
-    //    // make sure still pointed at, grp_ismemb(g, n);
-    //    ICHK(LWARN, r, node_quit_grp(n, g));
-    //    // unlock n
-    //    /* remove pointers from nodes to this grp */
-    //}
-
-    //unlock_grp();
-
-    //rel_lock();
-
-    ICHK(LWARN, r, grp_free(g));
-
-    //rel_unlock();
-
-    return r;
-}
 
 int nn_join_grp(struct nn_node *n, struct nn_grp *g)
 {
@@ -255,7 +228,7 @@ int nn_link(struct nn_node *n, struct nn_router *rt)
 
     /* set node side pointers */
     node_link(n, l);
-    link_set_node(l, rt);
+    link_set_node(l, n);
 
     /* unlock node and link */
     node_unlock(n);
@@ -287,7 +260,6 @@ static int _router_link_unlink(struct nn_router *rt, struct nn_link *l)
     return r;
 }
 
-#include <assert.h>
 
 int nn_unlink(struct nn_node *n, struct nn_router *rt)
 {
@@ -297,41 +269,84 @@ int nn_unlink(struct nn_node *n, struct nn_router *rt)
 
     assert(1 == 0);
 
-    router_lock(rt);
+    /* lock node and each link it point to in turn */
+    node_lock(n);
 
     iter = NULL;
-    while((l=router_link_iter(rt, &iter))){
+    while((l=node_link_iter(n, &iter))){
         link_lock(l);
-        /* router and link now locked */
-
-        _router_link_unlink(rt, l);
-
-        link_unlock(l);
-        router_unlock(rt);
-        /* router and link now unlocked */
-
-        node_lock(n);
-        link_lock(l);
-        /* node and link now locked */
 
         _node_link_unlink(n, l);
 
+        /* unlock node and link */
         link_unlock(l);
         node_unlock(n);
-        /* node and link now unlocked */
+
+        /* lock router and link */
+        router_lock(rt);
+        link_lock(l);
+
+        _router_link_unlink(rt, l);
+
+        /* unlock router and link */
+        link_unlock(l);
+        router_unlock(rt);
 
         link_free(l);
 
-        router_lock(rt);
+        node_lock(n);
     }
 
 err:
-    router_unlock(rt);
+    node_unlock(n);
 
     return r;
 }
 
-#include <assert.h>
+/* if the link was already disconnected, on return true, call
+ * link_free(l) when locks unlocked */
+static bool _link_mark_dead(struct nn_link *l)
+{
+    enum nn_link_state state;
+    state = link_get_state(l);
+
+    if(state == NN_LINK_STATE_DEAD){
+        return true;
+    }else{
+        link_set_state(l, NN_LINK_STATE_DEAD);
+        return false;
+    }
+}
+
+int nn_grp_free(struct nn_grp *g)
+{
+    void *iter;
+    int r;
+    struct nn_node *node;
+
+    // lock grp
+
+    //while((n=grp_nodes_iter(g, &iter))){
+    //    // unlock grp
+    //    // lock n
+    //    // lock grp
+    //    // make sure still pointed at, grp_ismemb(g, n);
+    //    ICHK(LWARN, r, node_quit_grp(n, g));
+    //    // unlock n
+    //    /* remove pointers from nodes to this grp */
+    //}
+
+    //unlock_grp();
+
+    //rel_lock();
+
+    ICHK(LWARN, r, grp_free(g));
+
+    //rel_unlock();
+
+    return r;
+}
+
 int nn_node_free(struct nn_node *n)
 {
     void *iter = NULL;
@@ -342,43 +357,24 @@ int nn_node_free(struct nn_node *n)
 
     node_lock(n);
 
-    /* remove in link */
+    /* remove the links to routers */
     while((l=node_link_iter(n, &iter))){
 
         link_lock(l);
 
         _node_link_unlink(n, l);
 
-        /* check if router pointer is NULL */
-        rt = link_get_router(l);
-        if(!rt){
-            f = true;
-        }
+        f = _link_mark_dead(l);
+
         link_unlock(l);
         node_unlock(n);
 
         if(f){
-            assert(1 == 0);
             link_free(l);
-            f = false;
         }
-
-        /* router side */
-       // rt = link_get_router(l);
-       // if(NULL){
-       // router_lock(rt);
-       // link_lock(l);
-
-       // _router_link_unlink(rt, l);
-
-       // link_unlock(l);
-       // router_unlock(rt);
-
 
         node_lock(n);
     }
-
-    node_unlock(n);
 
    // /* remove pointers from groups */
    // iter = NULL;
@@ -386,13 +382,13 @@ int nn_node_free(struct nn_node *n)
    //     grp_rem_memb(g, n);
    // }
 
+    node_unlock(n);
 
     ICHK(LWARN, r, node_free(n));
 
-    //rel_unlock();
-
     return r;
 }
+
 
 int nn_router_free(struct nn_router *rt)
 {
@@ -404,77 +400,27 @@ int nn_router_free(struct nn_router *rt)
 
     router_lock(rt);
 
-    /* remove in link */
     while((l=router_link_iter(rt, &iter))){
-        printf("p %p\n", l);
 
         link_lock(l);
 
         _router_link_unlink(rt, l);
 
-        /* check if router pointer is NULL */
-        n = link_get_node(l);
-        if(!n){
-            assert(1 == 0);
-            f = true;
-        }
+        f = _link_mark_dead(l);
+
         link_unlock(l);
         router_unlock(rt);
 
         if(f){
-            assert(1 == 0);
             link_free(l);
-            f = false;
         }
-
-        /* router side */
-       // rt = link_get_router(l);
-       // if(NULL){
-       // router_lock(rt);
-       // link_lock(l);
-
-       // _router_link_unlink(rt, l);
-
-       // link_unlock(l);
-       // router_unlock(rt);
-
 
         router_lock(rt);
     }
 
     router_unlock(rt);
 
-    //if(n->router_links){
-    //    // rem and free first
-    //    iter = NULL;
-    //    while(nr=ll_next(n->router_links, &iter)){
-    //        ICHK(LWARN, r, ll_rem(n->router_links, nr));
-    //        free(nr);
-    //    }
-    //    ICHK(LWARN, r, ll_free(n->router_links));
-    //    if(r) fail++;
-    //}
-    //
-    //router_lock(rt);
-
-    //while((l=router_nodes_iter(rt, &iter))){
-    //link_unlink(struct nn_node *n, struct nn_router *rt)
-    /* remove pointers from nodes */
-   // iter = NULL;
-   // while((n=router_nodes_iter(rt, &iter))){
-   //     // unlock router
-   //     // shit change state
-   //     // lock node
-   //     // lock router
-   //     node_rem_from_router(n, rt);
-   //     // unlock node
-   // }
-
-    //rel_lock();
-
     ICHK(LWARN, r, router_free(rt));
-
-    //rel_unlock();
 
     return r;
 }

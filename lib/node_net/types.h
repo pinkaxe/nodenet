@@ -31,4 +31,9 @@ enum nn_cmd_cmd {
     NN_CMD_CMD_STOP
 };
 
+enum nn_link_state {
+    NN_LINK_STATE_ALIVE,
+    NN_LINK_STATE_DEAD
+};
+
 #endif

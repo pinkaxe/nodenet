@@ -12,9 +12,11 @@
 #include "cmd.h"
 #include "router.h"
 
+
 struct nn_link {
     struct nn_node *n;
     struct nn_router *rt;
+    enum nn_link_state state;
     mutex_t mutex;
 
     /* router(output) -> node(input) */
@@ -58,6 +60,8 @@ struct nn_link *link_init()
         goto err;
     }
 
+    l->state = NN_LINK_STATE_ALIVE;
+
 err:
     return l;
 }
@@ -74,6 +78,12 @@ int link_set_router(struct nn_link *l, struct nn_router *rt)
     return 0;
 }
 
+int link_set_state(struct nn_link *l, enum nn_link_state state)
+{
+    l->state = state;
+    return 0;
+}
+
 struct nn_node *link_get_node(struct nn_link *l)
 {
     return l->n;
@@ -82,6 +92,11 @@ struct nn_node *link_get_node(struct nn_link *l)
 struct nn_router *link_get_router(struct nn_link *l)
 {
     return l->rt;
+}
+
+enum nn_link_state link_get_state(struct nn_link *l)
+{
+    return l->state;
 }
 
 //    link_set_router(l, rt){
