@@ -15,84 +15,84 @@ struct link {
 struct link *link_init()
 {
     int r = 0;
-    struct link *cn;
+    struct link *l;
 
-    PCHK(LWARN, cn, calloc(1, sizeof(*cn)));
-    if(!cn){
+    PCHK(LWARN, l, calloc(1, sizeof(*l)));
+    if(!l){
         goto err;
     }
 
 
 err:
-    return cn;
+    return l;
 }
 
 /* p -> pointer to free */
-static _link_free(struct link *cn, void **p)
+static _link_free(struct link *l, void **p)
 {
     int r = 0;
 
     if(*p){
-        cn->state = LINK_STATE_DEAD;
+        l->state = LINK_STATE_DEAD;
     }
     *p = NULL;
 
-    if(!cn->to && !cn->from){
-        free(cn);
+    if(!l->to && !l->from){
+        free(l);
         r = 1;
     }
 
     return r;
 }
 
-int link_free_from(struct link *cn)
+int link_free_from(struct link *l)
 {
-    return _link_free(cn, &cn->from);
+    return _link_free(l, &l->from);
 
 }
 
-int link_free_to(struct link *cn)
+int link_free_to(struct link *l)
 {
-    return _link_free(cn, &cn->to);
+    return _link_free(l, &l->to);
 }
 
-void *link_get_from(struct link *cn)
+void *link_get_from(struct link *l)
 {
-    return cn->from;
+    return l->from;
 }
 
-void *link_get_to(struct link *cn)
+void *link_get_to(struct link *l)
 {
-    return cn->to;
+    return l->to;
 }
 
-enum link_state link_get_state(struct link *cn)
+enum link_state link_get_state(struct link *l)
 {
-    return cn->state;
+    return l->state;
 }
 
-int link_set_from(struct link *cn, void *from)
+int link_set_from(struct link *l, void *from)
 {
     assert(from);
 
-    cn->from = from;
+    l->from = from;
     return 0;
 }
 
-int link_set_to(struct link *cn, void *to)
+int link_set_to(struct link *l, void *to)
 {
     assert(to);
 
-    cn->to = to;
+    l->to = to;
     if(!to){
-        cn->state = LINK_STATE_DEAD;
+        l->state = LINK_STATE_DEAD;
     }
     return 0;
 }
 
-int link_set_state(struct link *cn, enum link_state state)
+int link_set_state(struct link *l, enum link_state state)
 {
-    cn->state = state;
+    l->state = state;
     return 0;
 }
 
@@ -100,20 +100,20 @@ int link_set_state(struct link *cn, enum link_state state)
 /*
 int main(int argc, char const* argv[])
 {
-    struct link *cn;
+    struct link *l;
     int from, to;
 
     while(1){
 
-        cn = link_init();
-        link_set_from(cn, &from);
-        link_set_to(cn, &to);
+        l = link_init();
+        link_set_from(l, &from);
+        link_set_to(l, &to);
 
-        assert(link_get_from(cn) == &from);
-        assert(link_get_to(cn) == &to);
+        assert(link_get_from(l) == &from);
+        assert(link_get_to(l) == &to);
 
-        link_free_to(cn);
-        link_free_from(cn);
+        link_free_to(l);
+        link_free_from(l);
     }
 
     return 0;

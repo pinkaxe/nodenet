@@ -278,6 +278,7 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
             continue;
         }
 
+#if 0
         /* lock router and conn */
         router_lock(rt);
         conn_lock(cn);
@@ -290,6 +291,7 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
         router_unlock(rt);
 
         conn_free_router(cn);
+#endif
 
         node_lock(n);
     }

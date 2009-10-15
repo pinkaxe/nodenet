@@ -14,6 +14,9 @@
 #include "conn.h"
 #include "cmd.h"
 
+/* rename functions for this file */
+#define link_free_node link_free_from
+#define link_free_router link_free_to
 
 struct nn_conn {
     struct link *link;
@@ -75,8 +78,8 @@ struct nn_conn *conn_init()
     struct ques_to_init qs[] = {
         {cn->rt_n_icmd, 8},
         {cn->n_rt_icmd, 8},
-      //  {cn->rt_n_cmd, 8},
-       // {cn->n_rt_cmd, 8},
+        {cn->rt_n_cmd, 8},
+        {cn->n_rt_cmd, 8},
         {NULL, NULL},
     };
 
@@ -118,10 +121,6 @@ static int conn_free(struct nn_conn *cn)
         if(r) fail++;
     }
 
-    if(cn->link){
-        free(cn->link);
-    }
-
     if(&cn->mutex){
         mutex_destroy(&cn->mutex);
     }
@@ -135,7 +134,7 @@ int conn_free_node(struct nn_conn *cn)
 {
     int r;
 
-    r = link_free_from(cn->link);
+    r = link_free_node(cn->link);
     if(r == 1){
         conn_free(cn);
     }
@@ -147,7 +146,7 @@ int conn_free_router(struct nn_conn *cn)
 {
     int r;
 
-    r = link_free_to(cn->link);
+    r = link_free_router(cn->link);
     if(r == 1){
         conn_free(cn);
     }
