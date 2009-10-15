@@ -127,8 +127,8 @@ int main(int argc, char *argv)
         }
         */
 
-        nn_router_run(rt[0]);
-        sleep(5);
+       // nn_router_run(rt[0]);
+       // sleep(5);
 
         /*
         for(i = 0; i < 300; i++){
@@ -160,8 +160,6 @@ int main(int argc, char *argv)
         sleep(5);
         */
 
-        nn_router_free(rt[0]);
-
         for(i=0; i < 300; i++){
             /* unconn not needed but ok */
             nn_unconn(n[i], rt[0]);
@@ -172,7 +170,7 @@ int main(int argc, char *argv)
         nn_grp_free(g[1]);
         nn_grp_free(g[2]);
 
-        //nn_router_free(rt[0]);
+        nn_router_free(rt[0]);
         usleep(1);
     }
 

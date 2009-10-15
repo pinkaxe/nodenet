@@ -28,14 +28,14 @@ err:
 }
 
 /* p -> pointer to free */
-static _link_free(struct link *cn, void *p)
+static _link_free(struct link *cn, void **p)
 {
     int r = 0;
 
-    if(p){
+    if(*p){
         cn->state = LINK_STATE_DEAD;
     }
-    p = NULL;
+    *p = NULL;
 
     if(!cn->to && !cn->from){
         free(cn);
@@ -47,13 +47,13 @@ static _link_free(struct link *cn, void *p)
 
 int link_free_from(struct link *cn)
 {
-    return _link_free(cn, cn->from);
+    return _link_free(cn, &cn->from);
 
 }
 
 int link_free_to(struct link *cn)
 {
-    return _link_free(cn, cn->to);
+    return _link_free(cn, &cn->to);
 }
 
 void *link_get_from(struct link *cn)

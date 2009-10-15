@@ -198,7 +198,7 @@ static int _node_conn_unconn(struct nn_node *n, struct nn_conn *cn)
 
     node_unconn(n, cn);
     /* set to NULL for validation */
-    conn_set_node(cn, NULL);
+    //conn_set_node(cn, NULL);
 
     return r;
 }
@@ -208,7 +208,7 @@ static int _router_conn_unconn(struct nn_router *rt, struct nn_conn *cn)
     int r = 0;
 
     router_unconn(rt, cn);
-    conn_set_node(cn, NULL);
+    //conn_set_node(cn, NULL);
 
     return r;
 }

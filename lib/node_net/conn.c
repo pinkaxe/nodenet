@@ -75,8 +75,8 @@ struct nn_conn *conn_init()
     struct ques_to_init qs[] = {
         {cn->rt_n_icmd, 8},
         {cn->n_rt_icmd, 8},
-        {cn->rt_n_cmd, 8},
-        {cn->n_rt_cmd, 8},
+      //  {cn->rt_n_cmd, 8},
+       // {cn->n_rt_cmd, 8},
         {NULL, NULL},
     };
 
@@ -140,6 +140,7 @@ int conn_free_node(struct nn_conn *cn)
         conn_free(cn);
     }
 
+    return r;
 }
 
 int conn_free_router(struct nn_conn *cn)
@@ -151,7 +152,7 @@ int conn_free_router(struct nn_conn *cn)
         conn_free(cn);
     }
 
-    return 0;
+    return r;
 }
 
 
