@@ -90,7 +90,7 @@ int nn_join_grp(struct nn_node *n, struct nn_grp *g)
         goto err;
     }
 
-    ICHK(LWARN, r, grp_add_memb(g, n));
+    ICHK(LWARN, r, grp_add_node(g, n));
     if(r){
         int rr;
         ICHK(LWARN, rr, node_quit_grp(n, g));
@@ -113,7 +113,7 @@ int nn_quit_grp(struct nn_node *n, struct nn_grp *g)
     //grp_lock(g);
     //node_lock(n);
 
-    ICHK(LWARN, r, grp_rem_memb(g, n));
+    ICHK(LWARN, r, grp_rem_node(g, n));
     if(r){
         goto err;
     }
@@ -374,7 +374,7 @@ int nn_node_free(struct nn_node *n)
    // /* remove pointers from groups */
    // iter = NULL;
    // while((g=node_grps_iter(n, &iter))){
-   //     grp_rem_memb(g, n);
+   //     grp_rem_node(g, n);
    // }
 
     node_unlock(n);
