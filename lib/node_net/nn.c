@@ -139,7 +139,7 @@ int nn_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 
     //router_lock(rt);
 
-    r = conn_router_tx_cmd(rt, cmd);
+    //r = conn_router_tx_cmd(rt, cmd);
 
     //router_unlock(rt);
 
@@ -269,15 +269,12 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
         /* disconnect the node <-> conn conn */
         _node_conn_unconn(n, cn);
 
-        link_free_from(n);
-        //f = _conn_mark_dead(cn);
-
         /* unlock node and conn */
         conn_unlock(cn);
         node_unlock(n);
 
-        if(f){
-            conn_free(cn);
+        if(conn_free_node(cn) == 1){
+            node_lock(n);
             continue;
         }
 
@@ -288,17 +285,11 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
         /* disconnect the router <-> conn conn */
         _router_conn_unconn(rt, cn);
 
-        //f = _conn_mark_dead(cn);
-        link_free_from(n);
-
         /* unlock router and conn */
         conn_unlock(cn);
         router_unlock(rt);
 
-        if(f){
-            conn_free(cn);
-            continue;
-        }
+        conn_free_router(cn);
 
         node_lock(n);
     }
@@ -354,14 +345,10 @@ int nn_node_free(struct nn_node *n)
 
         _node_conn_unconn(n, cn);
 
-        f = _conn_mark_dead(cn);
-
         conn_unlock(cn);
         node_unlock(n);
 
-        if(f){
-            conn_free(cn);
-        }
+        conn_free_node(cn);
 
         node_lock(n);
     }
@@ -396,14 +383,10 @@ int nn_router_free(struct nn_router *rt)
 
         _router_conn_unconn(rt, cn);
 
-        f = _conn_mark_dead(cn);
-
         conn_unlock(cn);
         router_unlock(rt);
 
-        if(f){
-            conn_free(cn);
-        }
+        conn_free_router(cn);
 
         router_lock(rt);
     }

@@ -66,6 +66,11 @@ void *link_get_to(struct link *cn)
     return cn->to;
 }
 
+enum link_state link_get_state(struct link *cn)
+{
+    return cn->state;
+}
+
 int link_set_from(struct link *cn, void *from)
 {
     assert(from);
@@ -85,6 +90,11 @@ int link_set_to(struct link *cn, void *to)
     return 0;
 }
 
+int link_set_state(struct link *cn, enum link_state state)
+{
+    cn->state = state;
+    return 0;
+}
 
 
 /*

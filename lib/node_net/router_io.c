@@ -38,10 +38,10 @@ static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
         }else{
             L(LINFO, "Freeing dead conn");
             conn_unlock(cn);
-            conn_free(cn);
         }
 
    }
+            //conn_free_router(cn);
 
 err:
     return r;
@@ -76,7 +76,7 @@ static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
         case NN_SENDTO_ALL:
             route_to_all(rt, cmd);
             //printf("freeing %p\rt", cmd);
-            cmd_free(cmd);
+            //cmd_free(cmd);
             break;
         default:
             break;
