@@ -17,11 +17,11 @@ enum nn_link_state link_get_state(struct nn_link *l);
 
 
 /* router -> node cmd */
-int link_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd *cmd);
-int link_node_rx_cmd(struct nn_router *rt, struct nn_cmd **cmd);
+int link_router_tx_cmd(struct nn_router *rt, struct nn_node *n);
+int link_node_rx_cmd(struct nn_node *n, struct nn_router *rt);
 
 /* node -> router cmd */
-int link_node_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd);
+int link_node_tx_cmd(struct nn_node *rt, struct nn_cmd *cmd);
 int link_router_rx_cmd(struct nn_router *rt, struct nn_cmd **cmd);
 
 /* router -> node data */

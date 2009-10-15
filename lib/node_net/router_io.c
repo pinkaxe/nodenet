@@ -27,11 +27,11 @@ static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
         printf("!!! router_tx_cmd\n");
         if(link_get_state(l) != NN_LINK_STATE_DEAD){
            /* link, can send */
-            while((r=link_router_tx_cmd(l, cmd))){
-                usleep(100);
-            }
+            //while((l=link_router_tx_cmd(l, cmd))){
+            //    usleep(100);
+            //}
             link_unlock(l);
-            if(r){
+            if(l){
                 goto err;
             }
         }else{
@@ -109,7 +109,7 @@ static void *route_cmd_thread(void *arg)
             // router and one link is locked but still all the nodes
             // can write to the other links
 
-            cmd = link_router_rx_cmd(rt, NULL);
+            //cmd = link_router_rx_cmd(rt, NULL);
 
             link_unlock(l);
 

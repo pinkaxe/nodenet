@@ -174,56 +174,17 @@ int nn_router_add_data_req(struct nn_router *rt, struct nn_io_data *data)
     return r;
 }
 
-//route_route()
-
-/*
-int nn_link_node(struct nn_node *from, struct nn_node *to)
-{
-    nn_node_add_out_link(from);
-    nn_node_add_in_link(to);
-}
-
-int nn_unlink_node(struct nn_node *from, struct nn_node *to)
-{
-}
-*/
 
 
-int nn_link(struct nn_node *n, struct nn_router *rt)
-{
-    int r;
-    struct nn_link *l;
+/* relationship between routers, nodes and grps */
 
-    l = link_init();
-
-    /* lock router and link */
-    router_lock(rt);
-    link_lock(l);
-
-    /* set router side pointers */
-    router_link(rt, l);
-    link_set_router(l, rt);
-
-    /* unlock router and link */
-    link_unlock(l);
-    router_unlock(rt);
-
-    /* lock node and link */
-    node_lock(n);
-    link_lock(l);
-
-    /* set node side pointers */
-    node_link(n, l);
-    link_set_node(l, n);
-
-    /* unlock node and link */
-    node_unlock(n);
-    link_unlock(l);
-
-err:
-
-    return r;
-}
+/* when working with links between nodes and routers
+ * - a connected router and node must never be locked simulatiously
+ *   in the same thread(deadlock).
+ * - to change a link, just change it on the side(router/node) that
+ *   you have the link for. The link status etc. can be changed and
+ *   can then be picked up by the other side when it accesses the
+ *   link. */
 
 
 static int _node_link_unlink(struct nn_node *n, struct nn_link *l)
@@ -260,6 +221,42 @@ static bool _link_mark_dead(struct nn_link *l)
         link_set_state(l, NN_LINK_STATE_DEAD);
         return false;
     }
+}
+
+int nn_link(struct nn_node *n, struct nn_router *rt)
+{
+    int r;
+    struct nn_link *l;
+
+    l = link_init();
+
+    /* lock router and link */
+    router_lock(rt);
+    link_lock(l);
+
+    /* set router side pointers */
+    router_link(rt, l);
+    link_set_router(l, rt);
+
+    /* unlock router and link */
+    link_unlock(l);
+    router_unlock(rt);
+
+    /* lock node and link */
+    node_lock(n);
+    link_lock(l);
+
+    /* set node side pointers */
+    node_link(n, l);
+    link_set_node(l, n);
+
+    /* unlock node and link */
+    node_unlock(n);
+    link_unlock(l);
+
+err:
+
+    return r;
 }
 
 int nn_unlink(struct nn_node *n, struct nn_router *rt)

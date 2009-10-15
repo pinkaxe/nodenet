@@ -263,12 +263,12 @@ int link_unlock(struct nn_link *l)
 
 
 /* router -> node cmd */
-int link_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd *cmd)
+int link_router_tx_cmd(struct nn_router *rt, struct nn_node *n)
 {
     // add to rt_n_cmd
 }
 
-int link_node_rx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd **cmd)
+int link_node_rx_cmd(struct nn_node *n, struct nn_router *rt)
 {
     // add to rt_n_cmd
     // loop through all n->links, and check
