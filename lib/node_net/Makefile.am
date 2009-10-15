@@ -6,7 +6,7 @@ libnode_net_la_SOURCES = \
 			 node_io.c \
 			 router.c \
 			 router_io.c \
-			 link.c \
+			 conn.c \
 			 grp.c \
 			 cmd.c \
 			 nn.c \

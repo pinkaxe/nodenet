@@ -6,10 +6,10 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
 int node_free(struct nn_node *node);
 
 
-/* conn to routers via links */
-int node_link(struct nn_node *n, struct nn_link *l);
-int node_unlink(struct nn_node *n, struct nn_link *l);
-struct nn_link *node_link_iter(struct nn_node *n, void **iter);
+/* conn to routers via conns */
+int node_conn(struct nn_node *n, struct nn_conn *cn);
+int node_unconn(struct nn_node *n, struct nn_conn *cn);
+struct nn_conn *node_conn_iter(struct nn_node *n, void **iter);
 
 /* grp memb. */
 int node_join_grp(struct nn_node *n, struct nn_grp *g);

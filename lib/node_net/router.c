@@ -14,12 +14,12 @@
 
 #include "types.h"
 #include "cmd.h"
-#include "link.h"
+#include "conn.h"
 #include "router.h"
 
 
 struct nn_router {
-    struct ll *link;
+    struct ll *conn;
     io_cmd_req_cb_t io_in_cmd_cb;
     io_data_req_cb_t io_in_data_cb;
 
@@ -28,7 +28,7 @@ struct nn_router {
 
 int router_isvalid(struct nn_router *rt)
 {
-    assert(rt->link);
+    assert(rt->conn);
 }
 
 struct nn_router *router_init()
@@ -41,8 +41,8 @@ struct nn_router *router_init()
         goto err;
     }
 
-    PCHK(LWARN, rt->link, ll_init());
-    if(!rt->link){
+    PCHK(LWARN, rt->conn, ll_init());
+    if(!rt->conn){
         router_free(rt);
         rt = NULL;
         goto err;
@@ -76,15 +76,15 @@ err:
 int router_free(struct nn_router *rt)
 {
     void *iter;
-    struct nn_link *l;
+    struct nn_conn *cn;
     int r = 0;
 
     router_isvalid(rt);
 
     mutex_lock(&rt->mutex);
 
-    if(rt->link){
-        ICHK(LWARN, r, ll_free(rt->link));
+    if(rt->conn){
+        ICHK(LWARN, r, ll_free(rt->conn));
     }
 
     mutex_unlock(&rt->mutex);
@@ -108,45 +108,45 @@ int router_unlock(struct nn_router *rt)
     return 0;
 }
 
-int router_link(struct nn_router *rt, struct nn_link *l)
+int router_conn(struct nn_router *rt, struct nn_conn *cn)
 {
     int r = 1;
     router_isvalid(rt);
 
-    ICHK(LWARN, r, ll_add_front(rt->link, (void **)&l));
+    ICHK(LWARN, r, ll_add_front(rt->conn, (void **)&cn));
 
 err:
     return r;
 }
 
-int router_unlink(struct nn_router *rt, struct nn_link *l)
+int router_unconn(struct nn_router *rt, struct nn_conn *cn)
 {
     int r;
 
     router_isvalid(rt);
 
-    ICHK(LWARN, r, ll_rem(rt->link, l));
+    ICHK(LWARN, r, ll_rem(rt->conn, cn));
 
     return r;
 }
 
-// FIXME: make this link_exist(n, rt);
+// FIXME: make this conn_exist(n, rt);
 //int router_isconn(struct nn_router *rt, struct nn_node *n)
 //{
 //    int r = 1;
-//    struct nn_link *l;
+//    struct nn_conn *cn;
 //    void *iter;
 //
 //    assert(rt);
 //
 //    iter = NULL;
-//    while((l=ll_next(rt->link, &iter))){
-//        if(l->n == n){
+//    while((cn=ll_next(rt->conn, &iter))){
+//        if(cn->n == n){
 //            r = 0;
 //            break;
 //        }
 //        // FIXME:
-//        //if(l->link->n == n){
+//        //if(cn->conn->n == n){
 //        //    r = 0;
 //        //    break;
 //        //}
@@ -159,7 +159,7 @@ int router_unlink(struct nn_router *rt, struct nn_link *l)
 
 int router_print(struct nn_router *rt)
 {
-    struct nn_link *l;
+    struct nn_conn *cn;
     int r = 0;
     int c;
     void *iter;
@@ -168,10 +168,10 @@ int router_print(struct nn_router *rt)
     c = 0;
 
     iter = NULL;
-    //ll_each(rt->link, l, iter){
-    while((l = ll_next(rt->link, &iter))){
+    //ll_each(rt->conn, cn, iter){
+    while((cn = ll_next(rt->conn, &iter))){
         printf("zee\rt");
-        printf("p:%p\rt", l);
+        printf("p:%p\rt", cn);
         c++;
     }
 
@@ -196,18 +196,18 @@ int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
 }
 
 
-struct nn_link *router_link_iter(struct nn_router *rt, void **iter)
+struct nn_conn *router_conn_iter(struct nn_router *rt, void **iter)
 {
     int r = 0;
-    struct nn_link *l;
+    struct nn_conn *cn;
     struct nn_cmd *clone;
 
     assert(rt);
 
-    l = ll_next(rt->link, iter);
+    cn = ll_next(rt->conn, iter);
 
-    if(l){
-        return l;
+    if(cn){
+        return cn;
     }else{
         return NULL;
     }

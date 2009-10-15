@@ -139,13 +139,13 @@ int nn_io_ctrl_default(struct code_io_data_req *req)
     // check req and send appropriately
     switch(req->type){
         case ALL:
-            ll_foreach(req->from->out_link_queh, curr, track){
-                code_tx_data(curr->link, buf, len);
+            ll_foreach(req->from->out_conn_queh, curr, track){
+                code_tx_data(curr->conn, buf, len);
             }
             break;
         case NO:
-            ll_foreach(req->from->out_link_queh, curr, track){
-                code_tx_data(curr->link, buf, len);
+            ll_foreach(req->from->out_conn_queh, curr, track){
+                code_tx_data(curr->conn, buf, len);
                 c++;
             }
             break;

@@ -63,8 +63,8 @@ void *ll_next(struct ll *h, void *curr);
             curr=track)
 
 //#define ll_foreach(start, curr, track) \
-//	for(curr=start,track=curr->link.next; \
-//			curr && ((track=curr->link.next) || 1) ; \
+//	for(curr=start,track=curr->conn.next; \
+//			curr && ((track=curr->conn.next) || 1) ; \
 //            curr=track)
 #endif
 

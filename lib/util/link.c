@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -23,79 +22,79 @@ struct nn_link {
 struct nn_link *link_init()
 {
     int r = 0;
-    struct nn_link *l;
+    struct nn_link *cn;
 
-    PCHK(LWARN, l, calloc(1, sizeof(*l)));
-    if(!l){
+    PCHK(LWARN, cn, calloc(1, sizeof(*cn)));
+    if(!cn){
         goto err;
     }
 
-    mutex_init(&l->mutex, NULL);
+    mutex_init(&cn->mutex, NULL);
 
 err:
-    return l;
+    return cn;
 }
 
 /* both link_free_from and link_free_to have to be called for
  * it to be free'd */
-static int link_free(struct nn_link *l)
+static int link_free(struct nn_link *cn)
 {
     /* free only if both from and to points to nothing */
-    mutex_destroy(&l->mutex);
-    free(l);
+    mutex_destroy(&cn->mutex);
+    free(cn);
 }
 
-int link_free_to(struct nn_link *l)
+int link_free_to(struct nn_link *cn)
 {
-    l->to = NULL;
+    cn->to = NULL;
 
-    if(!l->to && !l->from){
-        link_free(l);
+    if(!cn->to && !cn->from){
+        link_free(cn);
     }else{
-        l->state = NN_LINK_STATE_DEAD;
+        cn->state = NN_LINK_STATE_DEAD;
     }
 
     return 0;
 }
 
-int link_free_from(struct nn_link *l)
+int link_free_from(struct nn_link *cn)
 {
-    l->from = NULL;
+    cn->from = NULL;
 
-    if(!l->to && !l->from){
-        link_free(l);
+    if(!cn->to && !cn->from){
+        link_free(cn);
     }else{
-        l->state = NN_LINK_STATE_DEAD;
+        cn->state = NN_LINK_STATE_DEAD;
     }
 
     return 0;
 }
 
-void *link_get_from(struct nn_link *l)
+void *link_get_from(struct nn_link *cn)
 {
-    return l->from;
+    return cn->from;
 }
 
-void *link_get_to(struct nn_link *l)
+void *link_get_to(struct nn_link *cn)
 {
-    return l->to;
+    return cn->to;
 }
 
-int link_set_from(struct nn_link *l, void *from)
+int link_set_from(struct nn_link *cn, void *from)
 {
     assert(from);
 
-    l->from = from;
+    cn->from = from;
     return 0;
 }
 
-int link_set_to(struct nn_link *l, void *to)
+int link_set_to(struct nn_link *cn, void *to)
 {
     assert(to);
 
-    l->to = to;
+    cn->to = to;
     if(!to){
-        l->state = NN_LINK_STATE_DEAD;
+        cn->state = NN_LINK_STATE_DEAD;
     }
     return 0;
 }
@@ -105,20 +104,20 @@ int link_set_to(struct nn_link *l, void *to)
 /*
 int main(int argc, char const* argv[])
 {
-    struct nn_link *l;
+    struct nn_link *cn;
     int from, to;
 
     while(1){
 
-        l = link_init();
-        link_set_from(l, &from);
-        link_set_to(l, &to);
+        cn = link_init();
+        link_set_from(cn, &from);
+        link_set_to(cn, &to);
 
-        assert(link_get_from(l) == &from);
-        assert(link_get_to(l) == &to);
+        assert(link_get_from(cn) == &from);
+        assert(link_get_to(cn) == &to);
 
-        link_free_to(l);
-        link_free_from(l);
+        link_free_to(cn);
+        link_free_from(cn);
     }
 
     return 0;

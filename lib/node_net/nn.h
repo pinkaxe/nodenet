@@ -22,8 +22,8 @@ struct nn_grp *nn_grp_init(int id);
 int nn_grp_free(struct nn_grp *g);
 
 /* rel */
-int nn_link(struct nn_node *n, struct nn_router *rt);
-int nn_unlink(struct nn_node *n, struct nn_router *rt);
+int nn_conn(struct nn_node *n, struct nn_router *rt);
+int nn_unconn(struct nn_node *n, struct nn_router *rt);
 
 int nn_join_grp(struct nn_node *n, struct nn_grp *g);
 int nn_quit_grp(struct nn_node *n, struct nn_grp *g);

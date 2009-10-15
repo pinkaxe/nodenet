@@ -56,7 +56,7 @@ int xmain(int argc, char *argv)
     struct nn_router *rt[1024];
     struct nn_node *n[1024];
     struct nn_grp *g[1024];
-    struct nn_link *l[1024];
+    struct nn_conn *cn[1024];
     struct nn_cmd *cmd;
 
     rt[0] = nn_router_init();
@@ -77,7 +77,7 @@ int main(int argc, char *argv)
     struct nn_router *rt[1024];
     struct nn_node *n[1024];
     struct nn_grp *g[1024];
-    struct nn_link *l[1024];
+    struct nn_conn *cn[1024];
     struct nn_cmd *cmd;
     //struct nn_io_data *data;
     //struct nn_io_conf *conf;
@@ -95,10 +95,10 @@ int main(int argc, char *argv)
         /* create input nodes */
         for(i=0; i < 100; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT, input_node, NULL);
-            nn_link(n[i], rt[0]);
+            nn_conn(n[i], rt[0]);
             //nn_node_join_grp(n[i], rt[0]);
 
-            //link_link(n[i], rt[0]);
+            //conn_conn(n[i], rt[0]);
             //nn_join_grp(n[i], g[1]);
             ok(n[i]);
         }
@@ -106,14 +106,14 @@ int main(int argc, char *argv)
         /* create process nodes */
         for(;i < 200; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, 0, process_node, NULL);
-            nn_link(n[i], rt[0]);
+            nn_conn(n[i], rt[0]);
             //nn_join_grp(n[i], g[1]);
         }
 
         /* create output nodes */
         for(;i < 300; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, 0, output_node, NULL);
-            nn_link(n[i], rt[0]);
+            nn_conn(n[i], rt[0]);
             //nn_join_grp(n[i], g[2]);
         }
 
@@ -163,8 +163,8 @@ int main(int argc, char *argv)
         nn_router_free(rt[0]);
 
         for(i=0; i < 300; i++){
-            /* unlink not needed but ok */
-            nn_unlink(n[i], rt[0]);
+            /* unconn not needed but ok */
+            nn_unconn(n[i], rt[0]);
             nn_node_free(n[i]);
         }
 

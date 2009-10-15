@@ -9,7 +9,7 @@ struct nn_grp_memb;
 struct nn_cmd;
 struct nn_io_data;
 
-struct nn_link;
+struct nn_conn;
 
 enum nn_node_driver {
     NN_NODE_TYPE_THREAD,
@@ -31,7 +31,7 @@ enum nn_cmd_cmd {
     NN_CMD_CMD_STOP
 };
 
-enum nn_link_state {
+enum nn_conn_state {
     NN_LINK_STATE_ALIVE,
     NN_LINK_STATE_DEAD
 };

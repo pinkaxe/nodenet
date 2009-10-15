@@ -7,37 +7,37 @@
 
 #include "types.h"
 #include "cmd.h"
-#include "link.h"
+#include "conn.h"
 #include "router.h"
 
 /* rt should be locked before calling this */
 static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r = 0;
-    struct nn_link *l;
+    struct nn_conn *cn;
     void *iter;
 
     assert(rt);
 
     iter = NULL;
-    while((l=router_link_iter(rt, &iter))){
+    while((cn=router_conn_iter(rt, &iter))){
 
-        link_lock(l);
+        conn_lock(cn);
         //clone = cmd_clone(cmd);
         printf("!!! router_tx_cmd\n");
-        if(link_get_state(l) != NN_LINK_STATE_DEAD){
-           /* link, can send */
-            //while((l=link_router_tx_cmd(l, cmd))){
+        if(conn_get_state(cn) != NN_LINK_STATE_DEAD){
+           /* conn, can send */
+            //while((cn=conn_router_tx_cmd(cn, cmd))){
             //    usleep(100);
             //}
-            link_unlock(l);
-            if(l){
+            conn_unlock(cn);
+            if(cn){
                 goto err;
             }
         }else{
-            L(LINFO, "Freeing dead link");
-            link_unlock(l);
-            link_free(l);
+            L(LINFO, "Freeing dead conn");
+            conn_unlock(cn);
+            conn_free(cn);
         }
 
    }
@@ -91,7 +91,7 @@ static void *route_cmd_thread(void *arg)
     void *iter;
     struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
-    struct nn_link *l;
+    struct nn_conn *cn;
     struct nn_cmd *cmd;
 
     for(;;){
@@ -99,19 +99,19 @@ static void *route_cmd_thread(void *arg)
 
         router_lock(rt);
 
-        // get iter for links
+        // get iter for conns
         // unlock router
         iter = NULL;
-        while((l=router_link_iter(rt, &iter))){
+        while((cn=router_conn_iter(rt, &iter))){
 
-            link_lock(l);
+            conn_lock(cn);
 
-            // router and one link is locked but still all the nodes
-            // can write to the other links
+            // router and one conn is locked but still all the nodes
+            // can write to the other conns
 
-            //cmd = link_router_rx_cmd(rt, NULL);
+            //cmd = conn_router_rx_cmd(rt, NULL);
 
-            link_unlock(l);
+            conn_unlock(cn);
 
             if(cmd){
                 //rt->io_cmd_req_cb(rt, cmd);

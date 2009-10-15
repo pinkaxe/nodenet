@@ -8,7 +8,7 @@
 
 #include "types.h"
 #include "node.h"
-#include "link.h"
+#include "conn.h"
 #include "node_io.h"
 #include "node_drivers/node_driver.h"
 #include "node_drivers/thread.h"
@@ -33,7 +33,7 @@ int node_io_run(struct nn_node *n)
 }
 
 
-/* rx input from link, call user functions, tx output to link  */
+/* rx input from conn, call user functions, tx output to conn  */
 static void *node_io_thread(void *arg)
 {
     void *buf = NULL;
@@ -67,7 +67,7 @@ static void *node_io_thread(void *arg)
         /* incoming commands */
         // node_lock(n);
         //cmd_buf = node_get_cmd(n, &cmd_check_timespec);
-        //cmd_buf = link_node_rx_cmd(n, &cmd_check_timespec);
+        //cmd_buf = conn_node_rx_cmd(n, &cmd_check_timespec);
         // node_unlock(n);
 
        // if(cmd_buf){

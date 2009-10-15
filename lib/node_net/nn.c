@@ -14,7 +14,7 @@
 #include "cmd.h"
 #include "router.h"
 #include "node.h"
-#include "link.h"
+#include "conn.h"
 #include "grp.h"
 
 #include "nn.h"
@@ -151,7 +151,7 @@ int nn_router_add_cmd_req(struct nn_router *rt, struct nn_cmd *cmd)
 
     //router_lock(rt);
 
-    r = link_router_tx_cmd(rt, cmd);
+    r = conn_router_tx_cmd(rt, cmd);
 
     //router_unlock(rt);
 
@@ -179,133 +179,133 @@ int nn_router_add_data_req(struct nn_router *rt, struct nn_io_data *data)
 /* relationship between routers, nodes and grps, locking is intricate, work
  * with care */
 
-/* when working with links between nodes and routers
+/* when working with conns between nodes and routers
  * - a connected router and node must never be locked simulatiously
  *   in the same thread(deadlock).
- * - to change a link, just change it on the side(router/node) that
- *   you have the link for. The link status etc. can be changed and
+ * - to change a conn, just change it on the side(router/node) that
+ *   you have the conn for. The conn status etc. can be changed and
  *   can then be picked up by the other side when it accesses the
- *   link. 
- * - order of locking for node side - node, link. For router
- *   side router, link
+ *   conn. 
+ * - order of locking for node side - node, conn. For router
+ *   side router, conn
  *   */
 
 
-static int _node_link_unlink(struct nn_node *n, struct nn_link *l)
+static int _node_conn_unconn(struct nn_node *n, struct nn_conn *cn)
 {
     int r = 0;
 
-    node_unlink(n, l);
+    node_unconn(n, cn);
     /* set to NULL for validation */
-    link_set_node(l, NULL);
+    conn_set_node(cn, NULL);
 
     return r;
 }
 
-static int _router_link_unlink(struct nn_router *rt, struct nn_link *l)
+static int _router_conn_unconn(struct nn_router *rt, struct nn_conn *cn)
 {
     int r = 0;
 
-    router_unlink(rt, l);
-    link_set_node(l, NULL);
+    router_unconn(rt, cn);
+    conn_set_node(cn, NULL);
 
     return r;
 }
 
-/* if the link was already disconnected, on return true, call
- * link_free(l) when locks unlocked */
-static bool _link_mark_dead(struct nn_link *l)
+/* if the conn was already disconnected, on return true, call
+ * conn_free(cn) when locks unlocked */
+static bool _conn_mark_dead(struct nn_conn *cn)
 {
-    enum nn_link_state state;
-    state = link_get_state(l);
+    enum nn_conn_state state;
+    state = conn_get_state(cn);
 
     if(state == NN_LINK_STATE_DEAD){
         return true;
     }else{
-        link_set_state(l, NN_LINK_STATE_DEAD);
+        conn_set_state(cn, NN_LINK_STATE_DEAD);
         return false;
     }
 }
 
-int nn_link(struct nn_node *n, struct nn_router *rt)
+int nn_conn(struct nn_node *n, struct nn_router *rt)
 {
     int r;
-    struct nn_link *l;
+    struct nn_conn *cn;
 
-    l = link_init();
+    cn = conn_init();
 
-    /* lock router and link */
+    /* lock router and conn */
     router_lock(rt);
-    link_lock(l);
+    conn_lock(cn);
 
     /* set router side pointers */
-    router_link(rt, l);
-    link_set_router(l, rt);
+    router_conn(rt, cn);
+    conn_set_router(cn, rt);
 
-    /* unlock router and link */
-    link_unlock(l);
+    /* unlock router and conn */
+    conn_unlock(cn);
     router_unlock(rt);
 
-    /* lock node and link */
+    /* lock node and conn */
     node_lock(n);
-    link_lock(l);
+    conn_lock(cn);
 
     /* set node side pointers */
-    node_link(n, l);
-    link_set_node(l, n);
+    node_conn(n, cn);
+    conn_set_node(cn, n);
 
-    /* unlock node and link */
+    /* unlock node and conn */
     node_unlock(n);
-    link_unlock(l);
+    conn_unlock(cn);
 
 err:
 
     return r;
 }
 
-int nn_unlink(struct nn_node *n, struct nn_router *rt)
+int nn_unconn(struct nn_node *n, struct nn_router *rt)
 {
     void *iter;
     int r;
-    struct nn_link *l;
+    struct nn_conn *cn;
     bool f;
 
-    /* lock node and each link it point to in turn */
+    /* lock node and each conn it point to in turn */
     node_lock(n);
 
     iter = NULL;
-    while((l=node_link_iter(n, &iter))){
-        link_lock(l);
+    while((cn=node_conn_iter(n, &iter))){
+        conn_lock(cn);
 
-        /* disconnect the node <-> link link */
-        _node_link_unlink(n, l);
+        /* disconnect the node <-> conn conn */
+        _node_conn_unconn(n, cn);
 
-        f = _link_mark_dead(l);
+        f = _conn_mark_dead(cn);
 
-        /* unlock node and link */
-        link_unlock(l);
+        /* unlock node and conn */
+        conn_unlock(cn);
         node_unlock(n);
 
         if(f){
-            link_free(l);
+            conn_free(cn);
             continue;
         }
 
-        /* lock router and link */
+        /* lock router and conn */
         router_lock(rt);
-        link_lock(l);
+        conn_lock(cn);
 
-        /* disconnect the router <-> link link */
-        _router_link_unlink(rt, l);
+        /* disconnect the router <-> conn conn */
+        _router_conn_unconn(rt, cn);
 
-        f = _link_mark_dead(l);
+        f = _conn_mark_dead(cn);
 
-        /* unlock router and link */
-        link_unlock(l);
+        /* unlock router and conn */
+        conn_unlock(cn);
         router_unlock(rt);
 
         if(f){
-            link_free(l);
+            conn_free(cn);
             continue;
         }
 
@@ -350,26 +350,26 @@ int nn_node_free(struct nn_node *n)
 {
     void *iter = NULL;
     int r;
-    struct nn_link *l;
+    struct nn_conn *cn;
     struct nn_router *rt;
     bool f = false; // free or not
 
     node_lock(n);
 
-    /* remove the links to routers */
-    while((l=node_link_iter(n, &iter))){
+    /* remove the conns to routers */
+    while((cn=node_conn_iter(n, &iter))){
 
-        link_lock(l);
+        conn_lock(cn);
 
-        _node_link_unlink(n, l);
+        _node_conn_unconn(n, cn);
 
-        f = _link_mark_dead(l);
+        f = _conn_mark_dead(cn);
 
-        link_unlock(l);
+        conn_unlock(cn);
         node_unlock(n);
 
         if(f){
-            link_free(l);
+            conn_free(cn);
         }
 
         node_lock(n);
@@ -394,24 +394,24 @@ int nn_router_free(struct nn_router *rt)
     void *iter = NULL;
     int r;
     struct nn_node *n;
-    struct nn_link *l;
+    struct nn_conn *cn;
     bool f = false; // free or not
 
     router_lock(rt);
 
-    while((l=router_link_iter(rt, &iter))){
+    while((cn=router_conn_iter(rt, &iter))){
 
-        link_lock(l);
+        conn_lock(cn);
 
-        _router_link_unlink(rt, l);
+        _router_conn_unconn(rt, cn);
 
-        f = _link_mark_dead(l);
+        f = _conn_mark_dead(cn);
 
-        link_unlock(l);
+        conn_unlock(cn);
         router_unlock(rt);
 
         if(f){
-            link_free(l);
+            conn_free(cn);
         }
 
         router_lock(rt);
