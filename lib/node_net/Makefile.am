@@ -8,7 +8,7 @@ libnode_net_la_SOURCES = \
 			 router_io.c \
 			 conn.c \
 			 grp.c \
-			 cmd.c \
+			 icmd.c \
 			 nn.c \
 			 node_drivers/node_driver.c \
 			 node_drivers/thread.c \

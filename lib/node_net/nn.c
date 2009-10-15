@@ -132,20 +132,8 @@ err:
 
 }
 
-int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
-{
-    int r;
 
-    //router_lock(rt);
-
-    ICHK(LWARN, r, router_set_cmd_cb(rt, cb));
-
-    //router_unlock(rt);
-
-    return r;
-}
-
-int nn_router_add_cmd_req(struct nn_router *rt, struct nn_cmd *cmd)
+int nn_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r;
 
@@ -166,7 +154,7 @@ int nn_router_add_cmd_req(struct nn_router *rt, struct nn_cmd *cmd)
 //    return r;
 //}
 
-int nn_router_add_data_req(struct nn_router *rt, struct nn_io_data *data)
+int nn_router_tx_data(struct nn_router *rt, struct nn_io_data *data)
 {
     int r;
 
@@ -174,6 +162,19 @@ int nn_router_add_data_req(struct nn_router *rt, struct nn_io_data *data)
     return r;
 }
 
+
+int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
+{
+    int r;
+
+    //router_lock(rt);
+
+    ICHK(LWARN, r, router_set_cmd_cb(rt, cb));
+
+    //router_unlock(rt);
+
+    return r;
+}
 
 
 /* relationship between routers, nodes and grps, locking is intricate, work
@@ -212,20 +213,8 @@ static int _router_conn_unconn(struct nn_router *rt, struct nn_conn *cn)
     return r;
 }
 
-/* if the conn was already disconnected, on return true, call
- * conn_free(cn) when locks unlocked */
-static bool _conn_mark_dead(struct nn_conn *cn)
-{
-    enum nn_conn_state state;
-    state = conn_get_state(cn);
+#include "util/link.h"
 
-    if(state == NN_LINK_STATE_DEAD){
-        return true;
-    }else{
-        conn_set_state(cn, NN_LINK_STATE_DEAD);
-        return false;
-    }
-}
 
 int nn_conn(struct nn_node *n, struct nn_router *rt)
 {
@@ -280,7 +269,8 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
         /* disconnect the node <-> conn conn */
         _node_conn_unconn(n, cn);
 
-        f = _conn_mark_dead(cn);
+        link_free_from(n);
+        //f = _conn_mark_dead(cn);
 
         /* unlock node and conn */
         conn_unlock(cn);
@@ -298,7 +288,8 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
         /* disconnect the router <-> conn conn */
         _router_conn_unconn(rt, cn);
 
-        f = _conn_mark_dead(cn);
+        //f = _conn_mark_dead(cn);
+        link_free_from(n);
 
         /* unlock router and conn */
         conn_unlock(cn);

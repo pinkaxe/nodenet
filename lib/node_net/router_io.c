@@ -25,7 +25,8 @@ static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
         conn_lock(cn);
         //clone = cmd_clone(cmd);
         printf("!!! router_tx_cmd\n");
-        if(conn_get_state(cn) != NN_LINK_STATE_DEAD){
+        //if(conn_get_state(cn) != LINK_STATE_DEAD){
+        if(0){
            /* conn, can send */
             //while((cn=conn_router_tx_cmd(cn, cmd))){
             //    usleep(100);

@@ -8,7 +8,7 @@ int nn_router_run(struct nn_router *rt);
 int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb);
 // nn_router_get_cmd_req(rt, req, timeout)
 // nn_router_get_data_req(rt, req, timeout)
-int nn_router_add_cmd_req(struct nn_router *rt, struct nn_cmd *cmd);
+int nn_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd);
 
 /* node */
 struct nn_node *nn_node_init(enum nn_node_driver type, enum nn_node_attr attr,

@@ -15,6 +15,6 @@ int router_unconn(struct nn_router *h, struct nn_conn *n);
 int router_isconn(struct nn_router *rt, struct nn_node *n);
 struct nn_conn *router_conn_iter(struct nn_router *rt, void **iter);
 
-int router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb);
+//int router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb);
 
 #endif

@@ -9,15 +9,14 @@
 #include "util/link.h"
 
 #include "types.h"
+#include "router.h"
+#include "node.h"
 #include "conn.h"
 #include "cmd.h"
-#include "router.h"
 
 
 struct nn_conn {
-    struct nn_node *n;
-    struct nn_router *rt;
-    enum nn_conn_state state;
+    struct link *link;
     mutex_t mutex;
 
     /* router(output) -> node(input) */
@@ -30,84 +29,84 @@ struct nn_conn {
     struct que *n_rt_data;   /* n write data */
 
     /* internal going to and from router commands */
-    struct que *n_rt_int_cmd;
-    struct que *rt_n_int_cmd;
+    struct que *n_rt_icmd;
+    struct que *rt_n_icmd;
 };
 
 struct nn_data; // FIXME:
 
+static int conn_free(struct nn_conn *cn);
+
+struct ques_to_init {
+    struct que *q;
+    size_t size;
+};
+
+int ques_init(struct ques_to_init *qs)
+{
+    int r = 0;
+    struct ques_to_init *_qs = qs;
+
+    while((_qs->q)){
+        PCHK(LWARN, _qs->q, que_init(8));
+        if(!_qs->q){
+            //PCHK(LWARN, r, conn_free(cn));
+            //goto err;
+            // FIXME: free?
+            r = 1;
+            break;
+        }
+    }
+
+    return r;
+}
 
 struct nn_conn *conn_init()
 {
     int r = 0;
     struct nn_conn *cn;
+    struct link *l;
 
     PCHK(LWARN, cn, calloc(1, sizeof(*cn)));
     if(!cn){
         goto err;
     }
 
+    struct ques_to_init qs[] = {
+        {cn->rt_n_icmd, 8},
+        {cn->n_rt_icmd, 8},
+        {cn->rt_n_cmd, 8},
+        {cn->n_rt_cmd, 8},
+        {NULL, NULL},
+    };
+
+    r = ques_init(&qs);
+    if(r){
+        conn_free(cn);
+        cn = NULL;
+        goto err;
+    }
+
+    PCHK(LWARN, l, link_init());
+    if(!l){
+        PCHK(LWARN, r, conn_free(cn));
+        goto err;
+    }
+    cn->link = l;
+
     mutex_init(&cn->mutex, NULL);
 
-    PCHK(LWARN, cn->rt_n_cmd, que_init(8));
-    if(!cn->rt_n_cmd){
-        PCHK(LWARN, r, conn_free(cn));
-        goto err;
-    }
-
-    PCHK(LWARN, cn->n_rt_cmd, que_init(8));
-    if(!cn->n_rt_cmd){
-        PCHK(LWARN, r, conn_free(cn));
-        goto err;
-    }
-
-    cn->state = NN_LINK_STATE_ALIVE;
-
+    link_set_state(cn->link, LINK_STATE_ALIVE);
 err:
     return cn;
 }
 
-int conn_set_node(struct nn_conn *cn, struct nn_node *n)
-{
-    cn->n = n;
-    return 0;
-}
-
-int conn_set_router(struct nn_conn *cn, struct nn_router *rt)
-{
-    cn->rt = rt;
-    return 0;
-}
-
-int conn_set_state(struct nn_conn *cn, enum nn_conn_state state)
-{
-    cn->state = state;
-    return 0;
-}
-
-struct nn_node *conn_get_node(struct nn_conn *cn)
-{
-    return cn->n;
-}
-
-struct nn_router *conn_get_router(struct nn_conn *cn)
-{
-    return cn->rt;
-}
-
-enum nn_conn_state conn_get_state(struct nn_conn *cn)
-{
-    return cn->state;
-}
-
-//    conn_set_router(cn, rt){
-//        cn->rt = rt;
-//    }
-//
-int conn_free(struct nn_conn *cn)
+static int conn_free(struct nn_conn *cn)
 {
     int r = 0;
     int fail = 0;
+
+    /* IMPROVE: can save conn state here */
 
     if(cn->rt_n_cmd){
         ICHK(LWARN, r, que_free(cn->rt_n_cmd));
@@ -119,137 +118,73 @@ int conn_free(struct nn_conn *cn)
         if(r) fail++;
     }
 
+    if(cn->link){
+        free(cn->link);
+    }
+
+    if(&cn->mutex){
+        mutex_destroy(&cn->mutex);
+    }
+
     free(cn);
 
     return fail;
 }
 
-//int conn_conn(struct nn_conn *cn, struct nn_node *n, struct nn_router *rt)
-//{
-//    int r = 0;
-//    printf("!! create\n");
-//    return 0;
-//
-//    // FIXME: put in nn.c
-//    //struct nn_conn *cn;
-//    //cn = conn_init();
-//
-//    /* set router side */
-//    router_lock(rt);
-//    conn_lock(cn);
-//
-//    cn->rt = rt;
-//    //router_conn(rt, cn);
-//
-//    conn_unlock(cn);
-//    router_unlock(rt);
-//
-//    /* set elem side */
-//    node_lock(n);
-//    conn_lock(cn);
-//
-//    cn->n = n;
-//    //node_add_to_router(n, cn);
-//
-//    node_unlock(n);
-//    conn_unlock(cn);
-//
-//err:
-//    return r;
-//}
+int conn_free_node(struct nn_conn *cn)
+{
+    int r;
 
-//int conn_unconn(struct nn_node *n, struct nn_router *rt)
-////int conn_unconn(struct nn_conn *cn)
-//{
-//    void *iter;
-//    int r = 0;
-//
-//    router_lock(rt);
-//    conn_lock(cn);
-//
-//    cn->rt = NULL;
-//
-//    conn_unlock(cn);
-//    router_unlock(rt);
-//
-//    node_lock(cn->n);
-//    conn_lock(cn);
-//
-//    cn->n = NULL;
-//
-//    //node_rem_from_router(cn->n, cn);
-//    conn_unlock(cn);
-//    node_unlock(cn->n);
-//
-////    printf("!! break\n");
-////    router_lock(rt);
-////
-////    iter = NULL;
-////    while((cn=router_conn_iter(rt, &iter))){
-////
-////        conn_lock(cn);
-////        cn->rt = NULL;
-////        //router_unconn(rt, cn);
-////        conn_unlock(cn);
-////        router_unlock(rt);
-////
-////        node_lock(cn->n);
-////        conn_lock(cn);
-////        cn->n = NULL;
-////
-////        //node_rem_from_router(cn->n, cn);
-////        conn_unlock(cn);
-////        node_unlock(cn->n);
-////    }
-//
-//    //ICHK(LWARN, r, router_rem_memb(rt, n));
-//    //if(r){
-//    //    goto err;
-//    //}
-//
-//    //node_lock(n);
-//
-//#if 0
-//    iter = NULL;
-//    while(cn=ll_next(n->routers, &iter)){
-//        conn_lock(cn);
-//        if(cn->rt == rt){
-//
-//            /* update with node and conn locked */
-//            node_rem_router_conn(cn->n);
-//            cn->n = NULL;
-//
-//            conn_unlock(cn);
-//            node_unlock(n);
-//            /* everything unlocked again */
-//
-//            /* update router */
-//            router_lock(cn->rt)
-//            conn_lock();
-//
-//            /* update with router and conn locked */
-//            router_rem_node_conn(cn->rt);
-//            rt = cn->rt;
-//            cn->rt = NULL;
-//
-//            conn_unlock(cn);
-//            router_unlock(rt)
-//            /* everything unlocked again */
-//
-//            /* free the conn */
-//            conn_free(cn);
-//            break;
-//        }else{
-//            conn_unlock(cn);
-//        }
-//    }
-//#endif
-//
-//    //node_unlock(n);
-//
-//err:
-//    return r;
-//}
+    r = link_free_from(cn->link);
+    if(r == 1){
+        conn_free(cn);
+    }
+
+}
+
+int conn_free_router(struct nn_conn *cn)
+{
+    int r;
+
+    r = link_free_to(cn->link);
+    if(r == 1){
+        conn_free(cn);
+    }
+
+    return 0;
+}
+
+
+int conn_set_node(struct nn_conn *cn, struct nn_node *n)
+{
+    return link_set_from(cn->link, n);
+}
+
+int conn_set_router(struct nn_conn *cn, struct nn_router *rt)
+{
+    return link_set_to(cn->link, rt);
+}
+
+int conn_set_state(struct nn_conn *cn, int state)
+{
+    return link_set_state(cn->link, state);
+}
+
+struct nn_node *conn_get_node(struct nn_conn *cn)
+{
+    return link_get_from(cn->link);
+}
+
+struct nn_router *conn_get_router(struct nn_conn *cn)
+{
+    return link_get_to(cn->link);
+}
+
+int conn_get_state(struct nn_conn *cn)
+{
+    return link_get_state(cn->link);
+}
+
 
 int conn_lock(struct nn_conn *cn)
 {
@@ -262,19 +197,74 @@ int conn_unlock(struct nn_conn *cn)
 }
 
 
+/* buffer io functions start */
+
+/* n != NULL when this is called, afterwards cn for the
+ matching each matching router is set and can be used */
+#define NODE_CONN_ITER_PRE \
+    assert(n); \
+    void *iter = NULL; \
+    struct nn_conn *cn; \
+    node_lock(n); \
+    while((cn = node_conn_iter(n, &iter))){ \
+        conn_lock(cn);
+
+#define NODE_CONN_ITER_POST \
+        conn_unlock(cn); \
+    } \
+    node_unlock(n);
+
+
+/* rt != NULL when this is called, afterwards cn for the
+ matching each matching node is set and can be used */
+#define ROUTER_CONN_ITER_PRE \
+    assert(rt); \
+    void *iter = NULL; \
+    struct nn_conn *cn; \
+    router_lock(rt); \
+    while((cn = router_conn_iter(n, &iter))){ \
+        conn_lock(cn);
+
+#define ROUTER_CONN_ITER_POST \
+        conn_unlock(cn); \
+    } \
+    router_unlock(n);
+
 
 /* router -> node cmd */
-int conn_router_tx_cmd(struct nn_router *rt, struct nn_node *n)
+int conn_router_tx_icmd(struct nn_router *rt, struct nn_node *n, struct nn_icmd
+        *icmd)
 {
-    // add to rt_n_cmd
+
+    int r = 1;
+
+    NODE_CONN_ITER_PRE
+
+    if(link_get_to(cn->link) == rt){
+        que_add(cn->rt_n_icmd, icmd);
+    }
+
+    NODE_CONN_ITER_POST
+
+    return r;
+
 }
 
-int conn_node_rx_cmd(struct nn_node *n, struct nn_router *rt)
+int conn_node_rx_icmd(struct nn_node *n, struct nn_router *rt, struct nn_icmd
+        **icmd)
 {
-    // add to rt_n_cmd
-    // loop through all n->conns, and check
+
+    NODE_CONN_ITER_PRE
+
+    if(link_get_to(cn->link) == rt){
+        //que_get(cn->rt_n_icmd, icmd);
+    }
+
+    NODE_CONN_ITER_POST
+
 }
 
+#if 0
 /* router -> node data */
 int conn_router_tx_data(struct nn_router *rt, struct nn_data *data)
 {
@@ -321,4 +311,5 @@ int conn_router_rx_notify(struct nn_router *rt, struct nn_notify **notify)
     // remove from n_rt_notify
 }
 
+#endif
 #endif

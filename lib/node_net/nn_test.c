@@ -146,14 +146,14 @@ int main(int argc, char *argv)
             //cmd_free(cmd);
             //printf("leed %p\rt", cmd);
             // make sure to check return value if que is full
-            while(nn_router_add_cmd_req(rt[0], cmd)){
+            while(nn_router_tx_cmd(rt[0], cmd)){
                 //assert(1 == 0);
                 //printf("!! bla\n");
                 usleep(100);
             }
 
             //data = malloc(sizeof(*data));
-            //nn_router_add_data_req(rt[0], data);
+            //nn_router_tx_data(rt[0], data);
 
             //usleep(10000);
         }
