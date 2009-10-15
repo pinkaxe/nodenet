@@ -14,6 +14,8 @@ libutil_la_SOURCES = \
 	que.c \
 	que.h \
 	ll.c \
-	ll.h
+	ll.h \
+	link.c \
+	link.h
 
 libutil_la_LIBADD = -lrt -lpthread

@@ -176,7 +176,8 @@ int nn_router_add_data_req(struct nn_router *rt, struct nn_io_data *data)
 
 
 
-/* relationship between routers, nodes and grps */
+/* relationship between routers, nodes and grps, locking is intricate, work
+ * with care */
 
 /* when working with links between nodes and routers
  * - a connected router and node must never be locked simulatiously
@@ -184,7 +185,10 @@ int nn_router_add_data_req(struct nn_router *rt, struct nn_io_data *data)
  * - to change a link, just change it on the side(router/node) that
  *   you have the link for. The link status etc. can be changed and
  *   can then be picked up by the other side when it accesses the
- *   link. */
+ *   link. 
+ * - order of locking for node side - node, link. For router
+ *   side router, link
+ *   */
 
 
 static int _node_link_unlink(struct nn_node *n, struct nn_link *l)

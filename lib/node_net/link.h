@@ -12,6 +12,7 @@ struct nn_node *link_get_node(struct nn_link *l);
 struct nn_router *link_get_router(struct nn_link *l);
 enum nn_link_state link_get_state(struct nn_link *l);
 
+
 //int link_link(struct nn_link *l, struct nn_node *n, struct nn_router *rt);
 //int link_unlink(struct nn_node *n, struct nn_router *rt);
 
