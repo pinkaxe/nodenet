@@ -32,4 +32,10 @@ enum nn_cmd_cmd {
     NN_CMD_CMD_STOP
 };
 
+enum nn_state {
+    NN_STATE_RUNNING,
+    NN_STATE_PAUSED,
+    NN_STATE_SHUTDOWN,
+};
+
 #endif

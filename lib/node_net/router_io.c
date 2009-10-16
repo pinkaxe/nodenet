@@ -10,6 +10,8 @@
 #include "conn.h"
 #include "router.h"
 
+extern int busy_freeing_no;
+
 /* rt should be locked before calling this */
 static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
 {
@@ -86,8 +88,37 @@ static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 }
 
 
+
+/* called when shutdown is received by router_io_thread */
+static int _router_io_free(struct nn_router *rt)
+{
+    void *iter = NULL;
+    struct nn_conn *cn;
+
+    router_lock(rt);
+
+    while((cn=router_conn_iter(rt, &iter))){
+
+        conn_lock(cn);
+
+        router_unconn(rt, cn);
+
+        conn_unlock(cn);
+        router_unlock(rt);
+
+        conn_free_router(cn);
+
+        router_lock(rt);
+    }
+
+    router_unlock(rt);
+
+    return 0;
+}
+
+
 /* pick up cmds coming from router, and router to other node's */
-static void *route_icmd_thread(void *arg)
+static void *router_icmd_thread(void *arg)
 {
     void *iter;
     struct timespec ts = {0, 0};
@@ -105,10 +136,16 @@ static void *route_icmd_thread(void *arg)
             //route_cmd(rt, icmd);
         }
 
-        if(router_get_status(rt) == NN_ROUTER_STATE_SHUTDOWN){
+        router_lock(rt);
+        if(router_get_state(rt) == NN_STATE_SHUTDOWN){
+            router_unlock(rt);
+            _router_io_free(rt);
+            printf("!!! xxxxxxxxxxxxxxxxxxxx router_io_freed\n");
+            busy_freeing_no--;
             return NULL;
             // quite this thread
         }
+        router_unlock(rt);
 
         sleep(1);
     }
@@ -135,7 +172,7 @@ static void *route_icmd_thread(void *arg)
 int router_run(struct nn_router *rt)
 {
     thread_t tid;
-    thread_create(&tid, NULL, route_icmd_thread, rt);
+    thread_create(&tid, NULL, router_icmd_thread, rt);
     thread_detach(tid);
 
     //thread_create(&tid, NULL, route_data_thread, rt);

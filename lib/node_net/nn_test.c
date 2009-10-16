@@ -128,13 +128,12 @@ int main(int argc, char *argv)
         */
 
         nn_router_run(rt[0]);
-        sleep(1);
 
-        /*
         for(i = 0; i < 300; i++){
             nn_node_run(n[i]);
         }
 
+        /*
         //nn_router_set_cmd_cb(rt[0], io_cmd_req_cb);
         //nn_router_set_data_cb(rt[0], io_data_req_cb);
 
@@ -171,7 +170,8 @@ int main(int argc, char *argv)
         nn_grp_free(g[2]);
 
         nn_router_free(rt[0]);
-        usleep(1);
+
+        nn_wait();
     }
 
     return 0;

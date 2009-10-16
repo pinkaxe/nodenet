@@ -32,6 +32,43 @@ int node_io_run(struct nn_node *n)
     return r;
 }
 
+static int _node_io_free(struct nn_node *n)
+{
+    int r = 0;
+    void *iter = NULL;
+    struct nn_conn *cn;
+    node_lock(n);
+
+    /* remove the conns to routers */
+    while((cn=node_conn_iter(n, &iter))){
+
+        conn_lock(cn);
+
+        node_unconn(n, cn);
+
+        conn_unlock(cn);
+        node_unlock(n);
+
+        conn_free_node(cn);
+
+        node_lock(n);
+    }
+
+   // /* remove pointers from groups */
+   // iter = NULL;
+   // while((g=node_grps_iter(n, &iter))){
+   //     grp_rem_node(g, n);
+   // }
+
+    node_unlock(n);
+
+    ICHK(LWARN, r, node_free(n));
+
+    return r;
+
+}
+
+extern int busy_freeing_no;
 
 /* rx input from conn, call user functions, tx output to conn  */
 static void *node_io_thread(void *arg)
@@ -63,6 +100,16 @@ static void *node_io_thread(void *arg)
         printf("node_io_loop\n");
 
         node_lock(n);
+
+        if(node_get_state(n) == NN_STATE_SHUTDOWN){
+            node_unlock(n);
+            printf("node shutting down..\n");
+            _node_io_free(n);
+            busy_freeing_no--;
+            return NULL;
+        }
+
+        node_unlock(n);
 
         /* incoming commands */
         // node_lock(n);

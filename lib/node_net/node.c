@@ -28,6 +28,7 @@ struct nn_node {
 
     enum nn_node_driver type; /* thread, process etc. */
     enum nn_node_attr attr;
+    enum nn_state state;
 
     /* rel */
     struct ll *router_conns;      /* all router_conns connected to via conn's */
@@ -92,6 +93,8 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
 
     // FIXME: err checking
     mutex_init(&n->mutex, NULL);
+
+    n->state = NN_STATE_PAUSED;
 
     node_isok(n);
 
@@ -241,6 +244,16 @@ void *node_get_codep(struct nn_node *n)
     return n->code;
 }
 
+int node_set_state(struct nn_node *n, enum nn_state state)
+{
+    n->state = state;
+    return 0;
+}
+
+enum nn_state node_get_state(struct nn_node *n)
+{
+    return n->state;
+}
 
 
 
@@ -344,7 +357,7 @@ int node_isok(struct nn_node *n)
 
     DBG_STRUCT_ISOK(n);
 
-    printf("n->type: %d", n->type);
+    //printf("n->type: %d", n->type);
     assert(n->type >= 0 && n->type < 128);
     assert(n->attr >= 0 && n->attr < 128);
     assert(n->code);

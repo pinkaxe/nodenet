@@ -19,6 +19,14 @@
 
 #include "nn.h"
 
+int busy_freeing_no = 0;
+
+int nn_wait()
+{
+    while(busy_freeing_no > 0){
+        usleep(500);
+    }
+}
 
 struct nn_router *nn_router_init(void)
 {
@@ -203,15 +211,14 @@ static int _node_conn_unconn(struct nn_node *n, struct nn_conn *cn)
     return r;
 }
 
-static int _router_conn_unconn(struct nn_router *rt, struct nn_conn *cn)
-{
-    int r = 0;
-
-    router_unconn(rt, cn);
-    //conn_set_node(cn, NULL);
-
-    return r;
-}
+//static int _router_conn_unconn(struct nn_router *rt, struct nn_conn *cn)
+//{
+//    int r = 0;
+//
+//    r= router_unconn(rt, cn);
+//
+//    return r;
+//}
 
 #include "util/link.h"
 
@@ -338,32 +345,8 @@ int nn_node_free(struct nn_node *n)
     struct nn_router *rt;
     bool f = false; // free or not
 
-    node_lock(n);
-
-    /* remove the conns to routers */
-    while((cn=node_conn_iter(n, &iter))){
-
-        conn_lock(cn);
-
-        _node_conn_unconn(n, cn);
-
-        conn_unlock(cn);
-        node_unlock(n);
-
-        conn_free_node(cn);
-
-        node_lock(n);
-    }
-
-   // /* remove pointers from groups */
-   // iter = NULL;
-   // while((g=node_grps_iter(n, &iter))){
-   //     grp_rem_node(g, n);
-   // }
-
-    node_unlock(n);
-
-    ICHK(LWARN, r, node_free(n));
+    busy_freeing_no++;
+    r = node_set_state(n, NN_STATE_SHUTDOWN);
 
     return r;
 }
@@ -371,31 +354,10 @@ int nn_node_free(struct nn_node *n)
 
 int nn_router_free(struct nn_router *rt)
 {
-    void *iter = NULL;
     int r;
-    struct nn_node *n;
-    struct nn_conn *cn;
-    bool f = false; // free or not
 
-    router_lock(rt);
-
-    while((cn=router_conn_iter(rt, &iter))){
-
-        conn_lock(cn);
-
-        _router_conn_unconn(rt, cn);
-
-        conn_unlock(cn);
-        router_unlock(rt);
-
-        conn_free_router(cn);
-
-        router_lock(rt);
-    }
-
-    router_unlock(rt);
-
-    ICHK(LWARN, r, router_free(rt));
+    busy_freeing_no++;
+    r = router_set_state(rt, NN_STATE_SHUTDOWN);
 
     return r;
 }
