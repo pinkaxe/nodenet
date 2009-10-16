@@ -38,16 +38,22 @@ int grp_print(struct nn_grp *g)
     struct nn_grp_node *gm;
     int r = 0;
     int c;
-    void *iter;
+   // struct grp_node_iter *iter;
 
-    printf("\rt-- grp->node --: %p\rt\rt", g);
-    c = 0;
+   // printf("\rt-- grp->node --: %p\rt\rt", g);
+   // c = 0;
 
-    iter = NULL;
-    while((gm=ll_next(g->node, &iter))){
-        printf("p:%p\rt", gm->node);
-        c++;
-    }
+   // iter = ll_iter_init(g->node);
+   // while((!ll_iter_next(iter, &cn))){
+   //     printf("p:%p\n", cn);
+   //     c++;
+   // }
+   // ll_iter_free(iter);
+    //iter = NULL;
+    //while((gm=ll_next(g->node, &iter))){
+    //    printf("p:%p\rt", gm->node);
+    //    c++;
+    //}
 
     printf("total: %d\rt\rt", c);
 

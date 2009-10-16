@@ -17,12 +17,12 @@ static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
 {
     int r = 0;
     struct nn_conn *cn;
-    void *iter;
+    struct router_conn_iter *iter;
 
     assert(rt);
 
-    iter = NULL;
-    while((cn=router_conn_iter(rt, &iter))){
+    iter = router_conn_iter_init(rt);
+    while(!router_conn_iter_next(iter, &cn)){
 
         conn_lock(cn);
         //clone = cmd_clone(cmd);
@@ -92,12 +92,14 @@ static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 /* called when shutdown is received by router_io_thread */
 static int _router_io_free(struct nn_router *rt)
 {
-    void *iter = NULL;
+    struct router_conn_iter *iter;
     struct nn_conn *cn;
 
     router_lock(rt);
 
-    while((cn=router_conn_iter(rt, &iter))){
+    iter = router_conn_iter_init(rt);
+
+    while(!router_conn_iter_next(iter, &cn)){
 
         conn_lock(cn);
 
@@ -111,6 +113,8 @@ static int _router_io_free(struct nn_router *rt)
         router_lock(rt);
     }
 
+    router_conn_iter_free(iter);
+
     router_unlock(rt);
 
     return 0;
@@ -120,7 +124,6 @@ static int _router_io_free(struct nn_router *rt)
 /* pick up cmds coming from router, and router to other node's */
 static void *router_icmd_thread(void *arg)
 {
-    void *iter;
     struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
     struct nn_conn *cn;

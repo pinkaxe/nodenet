@@ -104,7 +104,7 @@ err:
 
 int node_free(struct nn_node *n)
 {
-    void *iter;
+    struct ll_iter *iter;
     int fail = 0;
     int r = 0;
 
@@ -119,15 +119,19 @@ int node_free(struct nn_node *n)
         if(r) fail++;
     }
 
-    if(n->grp_conns){
-        iter = NULL;
-        while(ng=ll_next(n->grp_conns, &iter)){
-            ICHK(LWARN, r, ll_rem(n->grp_conns, ng));
-            free(ng);
-        }
-        ICHK(LWARN, r, ll_free(n->grp_conns));
-        if(r) fail++;
-    }
+//    if(n->grp_conns){
+//        iter = ll_iter_init();
+//
+//        while(ng=ll_next(n->grp_conns, &iter)){
+//            ICHK(LWARN, r, ll_rem(n->grp_conns, ng));
+//            free(ng);
+//        }
+//        ICHK(LWARN, r, ll_free(n->grp_conns));
+//        if(r) fail++;
+//
+//        iter = ll_iter_init();
+//
+//    }
 
     mutex_unlock(&n->mutex);
     mutex_destroy(&n->mutex);
@@ -185,15 +189,15 @@ struct nn_conn *node_conn_iter(struct nn_node *n, void **iter)
     int r = 0;
     struct nn_conn *cn;
 
-    assert(n);
+  //  assert(n);
 
-    cn = ll_next(n->router_conns, iter);
+  //  cn = ll_next(n->router_conns, iter);
 
-    if(cn){
-        return cn;
-    }else{
-        return NULL;
-    }
+  //  if(cn){
+  //      return cn;
+  //  }else{
+  //      return NULL;
+  //  }
 }
 
 int node_join_grp(struct nn_node *n, struct nn_grp *g)
@@ -391,19 +395,19 @@ int node_print(struct nn_node *n)
     c = 0;
 
     iter = NULL;
-    while((cn=ll_next(n->router_conns, &iter))){
-        printf("p:%p\n", cn);
-        c++;
-    }
+    //while((cn=ll_next(n->router_conns, &iter))){
+    //    printf("p:%p\n", cn);
+    //    c++;
+    //}
 
     puts("\n-- node->grp --\n");
 
     c = 0;
     iter = NULL;
-    while((g=ll_next(n->grp_conns, &iter))){
-        printf("p:%p\n", g->grp);
-        c++;
-    }
+    //while((g=ll_next(n->grp_conns, &iter))){
+    //    printf("p:%p\n", g->grp);
+    //    c++;
+    //}
 
     printf("total: %d\n\n", c);
 

@@ -219,10 +219,11 @@ int conn_unlock(struct nn_conn *cn)
  matching each matching node is set and can be used */
 #define ROUTER_CONN_ITER_PRE \
     assert(rt); \
-    void *iter = NULL; \
+    struct router_conn_iter *iter = NULL; \
     struct nn_conn *cn; \
     router_lock(rt); \
-    while((cn = router_conn_iter(rt, &iter))){ \
+    iter = router_conn_iter_init(rt); \
+    while(!router_conn_iter_get(iter, &cn)){ \
         conn_lock(cn);
 
 #define ROUTER_CONN_ITER_POST \

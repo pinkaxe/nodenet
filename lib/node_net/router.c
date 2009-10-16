@@ -49,23 +49,6 @@ struct nn_router *router_init()
         goto err;
     }
 
-    /*
-    PCHK(LWARN, rt->in_cmd, que_init(32));
-    if(!rt->in_cmd){
-        router_free(rt);
-        rt = NULL;
-        goto err;
-    }
-
-
-    PCHK(LWARN, rt->in_data, que_init(32));
-    if(!rt->in_data){
-        router_free(rt);
-        rt = NULL;
-        goto err;
-    }
-    */
-
     // FIXME: err checking
     mutex_init(&rt->mutex, NULL);
 
@@ -176,18 +159,25 @@ int router_print(struct nn_router *rt)
     struct nn_conn *cn;
     int r = 0;
     int c;
-    void *iter;
+    struct ll_iter *iter;
 
     printf("\rt-- router->node --: %p\rt\rt", rt);
     c = 0;
 
-    iter = NULL;
-    //ll_each(rt->conn, cn, iter){
-    while((cn = ll_next(rt->conn, &iter))){
-        printf("zee\rt");
-        printf("p:%p\rt", cn);
+    //iter = NULL;
+    ////ll_each(rt->conn, cn, iter){
+    //while((cn = ll_next(rt->conn, &iter))){
+    //    printf("zee\rt");
+    //    printf("p:%p\rt", cn);
+    //    c++;
+    //}
+
+    iter = ll_iter_init(rt->conn);
+    while((!ll_iter_next(iter, &cn))){
+        printf("p:%p\n", cn);
         c++;
     }
+    ll_iter_free(iter);
 
     printf("total: %d\rt\rt", c);
 
@@ -210,37 +200,17 @@ int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
 }
 
 
-struct nn_conn *router_conn_iter(struct nn_router *rt, void **iter)
+struct router_conn_iter *router_conn_iter_init(struct nn_router *rt)
 {
-    int r = 0;
-    struct nn_conn *cn;
-    struct nn_cmd *clone;
-
-    assert(rt);
-
-    cn = ll_next(rt->conn, iter);
-
-    if(cn){
-        return cn;
-    }else{
-        return NULL;
-    }
+    return (struct router_conn_iter *)ll_iter_init(rt->conn);
 }
 
-#if 0
-int router_add_cmd(struct nn_router *rt, struct nn_cmd *cmd)
+int router_conn_iter_free(struct router_conn_iter *iter)
 {
-    return que_add(rt->in_cmd, cmd);
+    return ll_iter_free((struct ll_iter *)iter);
 }
 
-struct nn_cmd *router_get_cmd(struct nn_router *rt, struct timespec *ts)
+int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn **cn)
 {
-    return que_get(rt->in_cmd, ts);
+    return ll_iter_next((struct ll_iter *)iter, cn);
 }
-#endif
-
-//int router_add_in_data(struct nn_router *rt, struct nn_data *data)
-//{
-//    return que_add(rt->in_data, data);
-//}
-

@@ -127,11 +127,11 @@ int main(int argc, char *argv)
         }
         */
 
-        nn_router_run(rt[0]);
+       // nn_router_run(rt[0]);
 
-        for(i = 0; i < 300; i++){
-            nn_node_run(n[i]);
-        }
+       // for(i = 0; i < 300; i++){
+       //     nn_node_run(n[i]);
+       // }
 
         /*
         //nn_router_set_cmd_cb(rt[0], io_cmd_req_cb);
