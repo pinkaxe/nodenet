@@ -14,17 +14,24 @@ int ll_add_front(struct ll *h, void **data);
 int ll_rem(struct ll *h, void *data);
 
 //void *ll_first(struct ll *h, void **iter);
-void *ll_next(struct ll *h, void **iter);
+int ll_next(struct ll_iter *iter, void **data);
 int ll_next2(struct ll *h, void **res, void **iter);
 
 //void *ll_get_end(struct ll *h);
 void *ll_prev(void **iter);
 
+struct ll_iter *ll_iter_init(struct ll *h);
+int ll_iter_free(struct ll_iter *iter);
 
-#define ll_each(r, h, nm, iter) \
-    for(iter=NULL,r = ll_next2(h, (void **)(&nm), (void **)&iter); \
-        !r; \
-        r = ll_next2(h, (void **)(&nm), (void **)(&iter))) \
+//#define ll_each(r, h, nm, iter) \
+//    for(iter=NULL,r = ll_next2(h, (void **)(&nm), (void **)&iter); \
+//        !r; \
+//        r = ll_next2(h, (void **)(&nm), (void **)(&iter))) \
+
+//#define ll_each(r, h, nm, iter) \
+//    for(iter=NULL,r = ll_next2(h, (void **)(&nm), (void **)&iter); \
+//        !r; \
+//        r = ll_next2(h, (void **)(&nm), (void **)(&iter))) \
 
 
 

@@ -20,6 +20,10 @@ struct ll {
     int c;
 };
 
+struct ll_iter{
+    struct ll_node *curr;
+};
+
 struct ll *ll_init()
 {
 	struct ll *h;
@@ -137,34 +141,69 @@ int ll_rem(struct ll *h, void *data)
     return r;
 }
 
-
-
-void *ll_next(struct ll *h,  void **iter)
+struct ll_iter *ll_iter_init(struct ll *h)
 {
-    void *r = NULL;
-    struct ll_node *_iter;
+    struct ll_iter *iter;
 
-    if(!(*iter)){
-        /* first */
-        *iter = h->start;
-        _iter = *iter;
-        if(_iter){
-            r = _iter->data;
-        }
-        goto end;
+	PCHK(LWARN, iter, calloc(1, sizeof *iter));
+    if(!iter){
+        goto err;
+	}
+
+    iter->curr = h->start;
+
+err:
+    return iter;
+}
+
+int ll_iter_free(struct ll_iter *iter)
+{
+    free(iter);
+}
+
+
+int ll_iter_next(struct ll_iter *iter, void **data)
+{
+    int r;
+
+    if(iter->curr){
+        *data = iter->curr->data;
+        iter->curr = iter->curr->next;
+        r = 0;
+    }else{
+        *data = NULL;
+        r = 1;
     }
-
-    _iter = *iter;
-    if(_iter->next){
-        /* got next */
-        r = _iter->next->data;
-        *iter = _iter->next;
-    }
-
-end:
     return r;
 }
 
+#if 0
+
+int ll_next4(struct ll *h, void **data, void **iter)
+{
+    int r = 0;
+    struct ll_node *n;
+
+    if(*iter){
+        /* middle */
+        n = *iter;
+        *data = n->data;
+        *iter = n->next;
+    }else{
+        /* first */
+        n = h->start;
+        if(n){
+            *data = n->data;
+            *iter = n->next;
+        }
+    }
+
+    return r;
+}
+
+#endif
+
+#if 0
 /* return ll_node */
 static struct ll_node *ll_next_node(struct ll *h,  void **iter)
 {
@@ -191,7 +230,25 @@ static struct ll_node *ll_next_node(struct ll *h,  void **iter)
 end:
     return r;
 }
+#endif
 
+/* return ll_node */
+static struct ll_node *ll_next_node(struct ll *h,  void **iter)
+{
+    void *r = NULL;
+    struct ll_node *_iter;
+
+    if(!(*iter)){
+        /* first */
+        *iter = h->start;
+        _iter = *iter;
+        if(_iter){
+            r = _iter->data;
+        }
+    }
+}
+
+#if 0
 int ll_next2(struct ll *h, void **res, void **iter)
 {
     int r = 1;
@@ -223,6 +280,7 @@ int ll_next2(struct ll *h, void **res, void **iter)
 end:
     return r;
 }
+#endif
 
 void *ll_prev(void **iter)
 {
