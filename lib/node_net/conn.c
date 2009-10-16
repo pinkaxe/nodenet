@@ -36,12 +36,10 @@ struct nn_conn {
     struct que *rt_n_icmd;
 };
 
-struct nn_data; // FIXME:
-
 static int conn_free(struct nn_conn *cn);
 
 struct ques_to_init {
-    struct que *q;
+    struct que **q;
     size_t size;
 };
 
@@ -50,15 +48,16 @@ int ques_init(struct ques_to_init *qs)
     int r = 0;
     struct ques_to_init *_qs = qs;
 
-    while((_qs->q)){
-        PCHK(LWARN, _qs->q, que_init(8));
-        if(!_qs->q){
+    while((_qs->size > 0)){
+        PCHK(LWARN, *(_qs->q), que_init(8));
+        if(!*(_qs->q)){
             //PCHK(LWARN, r, conn_free(cn));
             //goto err;
             // FIXME: free?
             r = 1;
             break;
         }
+        _qs++;
     }
 
     return r;
@@ -76,19 +75,20 @@ struct nn_conn *conn_init()
     }
 
     struct ques_to_init qs[] = {
-        {cn->rt_n_icmd, 8},
-        {cn->n_rt_icmd, 8},
-        {cn->rt_n_cmd, 8},
-        {cn->n_rt_cmd, 8},
-        {NULL, NULL},
+        {&cn->rt_n_icmd, 8},
+        {&cn->n_rt_icmd, 8},
+        //{&cn->rt_n_cmd, 8},
+        //{&cn->n_rt_cmd, 8},
+        {NULL, 0},
     };
 
-    r = ques_init(&qs);
+    r = ques_init(qs);
     if(r){
         conn_free(cn);
         cn = NULL;
         goto err;
     }
+    assert(cn->rt_n_icmd);
 
     PCHK(LWARN, l, link_init());
     if(!l){
@@ -112,12 +112,12 @@ static int conn_free(struct nn_conn *cn)
     /* IMPROVE: can save conn state here */
 
     if(cn->rt_n_cmd){
-        ICHK(LWARN, r, que_free(cn->rt_n_cmd));
+        ICHK(LWARN, r, que_free(cn->rt_n_icmd));
         if(r) fail++;
     }
 
     if(cn->n_rt_cmd){
-        ICHK(LWARN, r, que_free(cn->n_rt_cmd));
+        ICHK(LWARN, r, que_free(cn->n_rt_icmd));
         if(r) fail++;
     }
 
@@ -222,13 +222,13 @@ int conn_unlock(struct nn_conn *cn)
     void *iter = NULL; \
     struct nn_conn *cn; \
     router_lock(rt); \
-    while((cn = router_conn_iter(n, &iter))){ \
+    while((cn = router_conn_iter(rt, &iter))){ \
         conn_lock(cn);
 
 #define ROUTER_CONN_ITER_POST \
         conn_unlock(cn); \
     } \
-    router_unlock(n);
+    router_unlock(rt);
 
 
 /* router -> node cmd */
@@ -250,14 +250,53 @@ int conn_router_tx_icmd(struct nn_router *rt, struct nn_node *n, struct nn_icmd
 
 }
 
+int conn_router_rx_icmd(struct nn_router *rt, struct nn_icmd **icmd)
+{
+    int r = 1;
+    struct timespec ts = {0, 0};
+
+    ROUTER_CONN_ITER_PRE
+
+    if(link_get_state(cn->link) == LINK_STATE_ALIVE){
+        icmd = que_get(cn->n_rt_icmd, &ts);
+    }
+
+    if(icmd){
+        r = 0;
+        conn_unlock(cn);
+        router_unlock(rt);
+        goto end;
+    }
+
+    ROUTER_CONN_ITER_POST
+
+end:
+    return r;
+}
+
 int conn_node_rx_icmd(struct nn_node *n, struct nn_router *rt, struct nn_icmd
         **icmd)
+{
+    struct timespec ts = {0, 0};
+
+    NODE_CONN_ITER_PRE
+
+    if(link_get_to(cn->link) == rt){
+        icmd = que_get(cn->rt_n_icmd, &ts);
+    }
+
+    NODE_CONN_ITER_POST
+
+}
+
+int conn_node_tx_icmd(struct nn_node *n, struct nn_router *rt, struct nn_icmd
+        *icmd)
 {
 
     NODE_CONN_ITER_PRE
 
     if(link_get_to(cn->link) == rt){
-        //que_get(cn->rt_n_icmd, icmd);
+        que_add(cn->n_rt_icmd, icmd);
     }
 
     NODE_CONN_ITER_POST

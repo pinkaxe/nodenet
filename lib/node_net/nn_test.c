@@ -127,8 +127,8 @@ int main(int argc, char *argv)
         }
         */
 
-       // nn_router_run(rt[0]);
-       // sleep(5);
+        nn_router_run(rt[0]);
+        sleep(1);
 
         /*
         for(i = 0; i < 300; i++){

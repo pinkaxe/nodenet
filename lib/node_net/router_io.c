@@ -87,45 +87,30 @@ static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 
 
 /* pick up cmds coming from router, and router to other node's */
-static void *route_cmd_thread(void *arg)
+static void *route_icmd_thread(void *arg)
 {
     void *iter;
     struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
     struct nn_conn *cn;
-    struct nn_cmd *cmd;
+    struct nn_icmd *icmd;
+    int r;
 
     for(;;){
         printf("!! running route \n");
 
-        router_lock(rt);
-
-        // get iter for conns
-        // unlock router
-        iter = NULL;
-        while((cn=router_conn_iter(rt, &iter))){
-
-            conn_lock(cn);
-
-            // router and one conn is locked but still all the nodes
-            // can write to the other conns
-
-            //cmd = conn_router_rx_cmd(rt, NULL);
-
-            conn_unlock(cn);
-
-            if(cmd){
-                //rt->io_cmd_req_cb(rt, cmd);
-                printf("routing cmd\n");
-                route_cmd(rt, cmd);
-            }
+        r = conn_router_rx_icmd(rt, &icmd);
+        if(!r){
+            printf("QQQ route cmd\n");
+            //route_cmd(rt, icmd);
         }
 
-        router_unlock(rt);
+        if(router_get_status(rt) == NN_ROUTER_STATE_SHUTDOWN){
+            return NULL;
+            // quite this thread
+        }
 
         sleep(1);
-        //return NULL;
-
     }
 }
 
@@ -150,7 +135,7 @@ static void *route_cmd_thread(void *arg)
 int router_run(struct nn_router *rt)
 {
     thread_t tid;
-    thread_create(&tid, NULL, route_cmd_thread, rt);
+    thread_create(&tid, NULL, route_icmd_thread, rt);
     thread_detach(tid);
 
     //thread_create(&tid, NULL, route_data_thread, rt);
