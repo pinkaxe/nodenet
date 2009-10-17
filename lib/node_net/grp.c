@@ -102,7 +102,7 @@ int grp_free(struct nn_grp *g)
                 ICHK(LWARN, r, ll_rem(g->node, m));
                 free(m);
             }
-            //ICHK(LWARN, r, ll_free(g->node));
+            ICHK(LWARN, r, ll_free(g->node));
         }
         free(g);
     }
