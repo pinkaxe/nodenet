@@ -25,6 +25,24 @@ struct router_conn_iter *router_conn_iter_init(struct nn_router *rt);
 int router_conn_iter_free(struct router_conn_iter *iter);
 int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn **cn);
 
+/* easy iterator pre/post
+ * rt != NULL when this is called, afterwards cn for the
+ matching each matching node is set and can be used */
+#define ROUTER_CONN_ITER_PRE \
+    assert(rt); \
+    struct router_conn_iter *iter = NULL; \
+    struct nn_conn *cn; \
+    router_lock(rt); \
+    iter = router_conn_iter_init(rt); \
+    while(!router_conn_iter_next(iter, &cn)){ \
+        conn_lock(cn);
+
+#define ROUTER_CONN_ITER_POST \
+        conn_unlock(cn); \
+    } \
+    router_unlock(rt);
+
+
 
 //int router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb);
 

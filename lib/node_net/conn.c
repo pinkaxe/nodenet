@@ -199,38 +199,6 @@ int conn_unlock(struct nn_conn *cn)
 
 /* buffer io functions start */
 
-/* n != NULL when this is called, afterwards cn for the
- matching each matching router is set and can be used */
-#define NODE_CONN_ITER_PRE \
-    assert(n); \
-    struct node_conn_iter *iter; \
-    struct nn_conn *cn; \
-    node_lock(n); \
-    iter = node_conn_iter_init(n); \
-    while(!node_conn_iter_next(iter, &cn)){ \
-        conn_lock(cn);
-
-#define NODE_CONN_ITER_POST \
-        conn_unlock(cn); \
-    } \
-    node_unlock(n);
-
-
-/* rt != NULL when this is called, afterwards cn for the
- matching each matching node is set and can be used */
-#define ROUTER_CONN_ITER_PRE \
-    assert(rt); \
-    struct router_conn_iter *iter = NULL; \
-    struct nn_conn *cn; \
-    router_lock(rt); \
-    iter = router_conn_iter_init(rt); \
-    while(!router_conn_iter_next(iter, &cn)){ \
-        conn_lock(cn);
-
-#define ROUTER_CONN_ITER_POST \
-        conn_unlock(cn); \
-    } \
-    router_unlock(rt);
 
 
 /* router -> node cmd */
