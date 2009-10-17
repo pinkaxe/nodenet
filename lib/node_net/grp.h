@@ -5,6 +5,7 @@
 #include<stdbool.h>
 
 struct nn_grp;
+struct grp_node_iter;
 
 struct nn_grp *grp_init(int id);
 int grp_free(struct nn_grp *h);

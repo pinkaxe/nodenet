@@ -8,7 +8,6 @@ int node_free(struct nn_node *node);
 /* conn to routers via conns */
 int node_conn(struct nn_node *n, struct nn_conn *cn);
 int node_unconn(struct nn_node *n, struct nn_conn *cn);
-struct nn_conn *node_conn_iter(struct nn_node *n, void **iter);
 
 /* grp memb. */
 int node_join_grp(struct nn_node *n, struct nn_grp *g);
@@ -23,5 +22,10 @@ enum nn_state node_get_state(struct nn_node *n);
 
 /* setters */
 int node_set_state(struct nn_node *n, enum nn_state state);
+
+/* iter */
+struct node_conn_iter *node_conn_iter_init(struct nn_node *rt);
+int node_conn_iter_free(struct node_conn_iter *iter);
+int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn);
 
 #endif

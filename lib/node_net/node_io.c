@@ -35,12 +35,13 @@ int node_io_run(struct nn_node *n)
 static int _node_io_free(struct nn_node *n)
 {
     int r = 0;
-    void *iter = NULL;
+    struct node_conn_iter *iter;
     struct nn_conn *cn;
     node_lock(n);
 
+    iter = node_conn_iter_init(n);
     /* remove the conns to routers */
-    while((cn=node_conn_iter(n, &iter))){
+    while(!node_conn_iter_next(iter, &cn)){
 
         conn_lock(cn);
 
@@ -53,6 +54,7 @@ static int _node_io_free(struct nn_node *n)
 
         node_lock(n);
     }
+    node_conn_iter_free(iter);
 
    // /* remove pointers from groups */
    // iter = NULL;

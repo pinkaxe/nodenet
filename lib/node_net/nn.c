@@ -261,7 +261,7 @@ err:
 
 int nn_unconn(struct nn_node *n, struct nn_router *rt)
 {
-    void *iter;
+    struct node_conn_iter *iter;
     int r;
     struct nn_conn *cn;
     bool f;
@@ -269,8 +269,8 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
     /* lock node and each conn it point to in turn */
     node_lock(n);
 
-    iter = NULL;
-    while((cn=node_conn_iter(n, &iter))){
+    iter = node_conn_iter_init(n);
+    while(!node_conn_iter(iter, &cn)){
         conn_lock(cn);
 
         /* disconnect the node <-> conn conn */
@@ -302,6 +302,7 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
 
         node_lock(n);
     }
+    node_conn_iter_free(iter);
 
 err:
     node_unlock(n);

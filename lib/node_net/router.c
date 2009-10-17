@@ -137,7 +137,7 @@ int router_unconn(struct nn_router *rt, struct nn_conn *cn)
 //    assert(rt);
 //
 //    iter = NULL;
-//    while((cn=ll_next(rt->conn, &iter))){
+//    while((cn=ll_iter_next(rt->conn, &iter))){
 //        if(cn->n == n){
 //            r = 0;
 //            break;
@@ -166,7 +166,7 @@ int router_print(struct nn_router *rt)
 
     //iter = NULL;
     ////ll_each(rt->conn, cn, iter){
-    //while((cn = ll_next(rt->conn, &iter))){
+    //while((cn = ll_iter_next(rt->conn, &iter))){
     //    printf("zee\rt");
     //    printf("p:%p\rt", cn);
     //    c++;

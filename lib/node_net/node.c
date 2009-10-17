@@ -31,7 +31,7 @@ struct nn_node {
     enum nn_state state;
 
     /* rel */
-    struct ll *router_conns;      /* all router_conns connected to via conn's */
+    struct ll *conn;      /* all conn connected to via conn's */
     struct ll *grp_conns;     /* all groups connected to via conn's */
 
     /* funcp's to communicate with this node type */
@@ -80,8 +80,8 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         goto err;
     }
 
-    PCHK(LWARN, n->router_conns, ll_init());
-    if(!n->router_conns){
+    PCHK(LWARN, n->conn, ll_init());
+    if(!n->conn){
         PCHK(LWARN, r, node_free(n));
         goto err;
     }
@@ -114,15 +114,15 @@ int node_free(struct nn_node *n)
 
     mutex_lock(&n->mutex);
 
-    if(n->router_conns){
-        ICHK(LWARN, r, ll_free(n->router_conns));
+    if(n->conn){
+        ICHK(LWARN, r, ll_free(n->conn));
         if(r) fail++;
     }
 
 //    if(n->grp_conns){
 //        iter = ll_iter_init();
 //
-//        while(ng=ll_next(n->grp_conns, &iter)){
+//        while(ng=ll_iter_next(n->grp_conns, &iter)){
 //            ICHK(LWARN, r, ll_rem(n->grp_conns, ng));
 //            free(ng);
 //        }
@@ -167,7 +167,7 @@ int node_conn(struct nn_node *n, struct nn_conn *cn)
 {
     int r = 1;
 
-    ICHK(LWARN, r, ll_add_front(n->router_conns, (void **)&cn));
+    ICHK(LWARN, r, ll_add_front(n->conn, (void **)&cn));
 
 err:
     return r;
@@ -179,26 +179,11 @@ int node_unconn(struct nn_node *n, struct nn_conn *cn)
 
     node_isok(n);
 
-    ICHK(LWARN, r, ll_rem(n->router_conns, cn));
+    ICHK(LWARN, r, ll_rem(n->conn, cn));
 
     return 0;
 }
 
-struct nn_conn *node_conn_iter(struct nn_node *n, void **iter)
-{
-    int r = 0;
-    struct nn_conn *cn;
-
-  //  assert(n);
-
-  //  cn = ll_next(n->router_conns, iter);
-
-  //  if(cn){
-  //      return cn;
-  //  }else{
-  //      return NULL;
-  //  }
-}
 
 int node_join_grp(struct nn_node *n, struct nn_grp *g)
 {
@@ -322,7 +307,7 @@ int node_router_isok(struct nn_node *n)
     void *iter;
 
     iter = NULL;
-   // while((cn=ll_next(n->router_conns, &iter))){
+   // while((cn=ll_iter_next(n->conn, &iter))){
    //     /* make sure we are a member */
    //     //r = router_isconn(rt->conn, n);
    //     //r = router_print(rt->conn);
@@ -344,7 +329,7 @@ int node_grp_isok(struct nn_node *n)
     void *iter;
 
     iter = NULL;
-   // while((g=ll_next(n->grp_conns, &iter))){
+   // while((g=ll_iter_next(n->grp_conns, &iter))){
    //     r = grp_ismemb(g->grp, n);
    //     assert(r == 0);
    //     //r = grp_print(g->grp);
@@ -368,7 +353,7 @@ int node_isok(struct nn_node *n)
     //assert(n->out_conns_llh);
     //assert(n->in_conns_llh);
     //assert(n->grp_conns);
-    //assert(n->router_conns);
+    //assert(n->conn);
     //assert(n->in_data);
     //assert(n->in_cmd);
     //assert(n->out_data);
@@ -395,7 +380,7 @@ int node_print(struct nn_node *n)
     c = 0;
 
     iter = NULL;
-    //while((cn=ll_next(n->router_conns, &iter))){
+    //while((cn=ll_iter_next(n->conn, &iter))){
     //    printf("p:%p\n", cn);
     //    c++;
     //}
@@ -404,7 +389,7 @@ int node_print(struct nn_node *n)
 
     c = 0;
     iter = NULL;
-    //while((g=ll_next(n->grp_conns, &iter))){
+    //while((g=ll_iter_next(n->grp_conns, &iter))){
     //    printf("p:%p\n", g->grp);
     //    c++;
     //}
@@ -416,3 +401,33 @@ int node_print(struct nn_node *n)
 
 /** debug functions ends **/
 
+struct nn_conn *node_conn_iter(struct nn_node *n, void **iter)
+{
+    int r = 0;
+    struct nn_conn *cn;
+
+  //  assert(n);
+
+  //  cn = ll_iter_next(n->conn, iter);
+
+  //  if(cn){
+  //      return cn;
+  //  }else{
+  //      return NULL;
+  //  }
+}
+
+struct node_conn_iter *node_conn_iter_init(struct nn_node *rt)
+{
+    return (struct node_conn_iter *)ll_iter_init(rt->conn);
+}
+
+int node_conn_iter_free(struct node_conn_iter *iter)
+{
+    return ll_iter_free((struct ll_iter *)iter);
+}
+
+int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn)
+{
+    return ll_iter_next((struct ll_iter *)iter, cn);
+}

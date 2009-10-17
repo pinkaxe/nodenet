@@ -49,8 +49,8 @@ int grp_print(struct nn_grp *g)
    //     c++;
    // }
    // ll_iter_free(iter);
-    //iter = NULL;
-    //while((gm=ll_next(g->node, &iter))){
+    //iter = ll_iter_init(g->node);
+    //while((gm=ll_iter_next(g->node, &iter))){
     //    printf("p:%p\rt", gm->node);
     //    c++;
     //}
@@ -86,7 +86,7 @@ err:
 
 int grp_free(struct nn_grp *g)
 {
-    void *iter = NULL;
+    struct ll_iter *iter;
     int r;
     struct nn_grp_node *m;
 
@@ -94,17 +94,19 @@ int grp_free(struct nn_grp *g)
 
     mutex_lock(&g->mutex);
 
+    iter = ll_iter_init(g->node);
     if(g){
         if(g->node){
             // rem and free first
-            while(m=ll_next(g->node, &iter)){
+            while(!ll_iter_next(iter, (void **)&m)){
                 ICHK(LWARN, r, ll_rem(g->node, m));
                 free(m);
             }
-            ICHK(LWARN, r, ll_free(g->node));
+            //ICHK(LWARN, r, ll_free(g->node));
         }
         free(g);
     }
+    ll_iter_free(iter);
 
     mutex_unlock(&g->mutex);
     mutex_destroy(&g->mutex);
@@ -125,71 +127,73 @@ int grp_unlock(struct nn_grp *g)
     return 0;
 }
 
-int grp_add_node(struct nn_grp *h, struct nn_node *n)
+int grp_add_node(struct nn_grp *g, struct nn_node *n)
 {
     int r = 1;
 
-    //grp_print(h);
-    grp_isok(h);
+    //grp_print(g);
+    grp_isok(g);
 
-    ICHK(LWARN, r, ll_add_front(h->node, (void *)&n));
+    ICHK(LWARN, r, ll_add_front(g->node, (void *)&n));
 
-    //grp_print(h);
-    grp_isok(h);
+    //grp_print(g);
+    grp_isok(g);
 err:
     return r;
 }
 
-int grp_get_node(struct nn_grp *h, void **node, int max)
+int grp_get_node(struct nn_grp *g, void **node, int max)
 {
     struct nn_grp_node *m;
     int i = 0;
-    void *iter;
+    struct ll_iter *iter;
 
-    grp_isok(h);
+    grp_isok(g);
 
-    iter = NULL;
-    while(m=ll_next(h->node, &iter)){
+    iter = ll_iter_init(g->node);
+    while(!ll_iter_next(iter, (void **)&m)){
         // randomize?
         node[i++] = m;
     }
+    ll_iter_free(iter);
 
     return 0;
 }
 
-int grp_isnode(struct nn_grp *h, struct nn_node *node)
+int grp_isnode(struct nn_grp *g, struct nn_node *node)
 {
     int r = 1;
     struct nn_grp_node *m;
-    void *iter;
+    struct ll_iter *iter;
 
-    grp_isok(h);
+    grp_isok(g);
 
-    iter = NULL;
-    while(m=ll_next(h->node, &iter)){
+    iter = ll_iter_init(g->node);
+    while(!ll_iter_next(iter, (void **)&m)){
         if(m->node == node){
             r = 0;
             break;
         }
     }
+    ll_iter_free(iter);
 
     return r;
 }
 
-int grp_rem_node(struct nn_grp *h, struct nn_node *n)
+int grp_rem_node(struct nn_grp *g, struct nn_node *n)
 {
     int r = 1;
     struct nn_node *_n;
-    void *iter;
+    struct ll_iter *iter;
 
-    grp_isok(h);
+    grp_isok(g);
 
-    iter = NULL;
-    while((_n = ll_next(h->node, &iter))){
+    iter = ll_iter_init(g->node);
+    while(!ll_iter_next(iter, (void **)&n)){
         if(_n == n){
-            ICHK(LWARN, r, ll_rem(h->node, _n));
-            grp_isok(h);
-            grp_print(h);
+            ICHK(LWARN, r, ll_rem(g->node, _n));
+            grp_isok(g);
+            grp_print(g);
             break;
         }
     }
@@ -198,19 +202,33 @@ int grp_rem_node(struct nn_grp *h, struct nn_node *n)
     return r;
 }
 
+/*
 struct nn_node *grp_node_iter(struct nn_grp *g, void **iter)
 {
     int r = 0;
     struct nn_node *n;
-    struct nn_cmd *clone;
+    struct ll_iter *iter;
 
     assert(g);
 
-    n = ll_next(g->node, iter);
-
-    if(n){
+    if(ll_iter_next(iter, (void **)&n) && n){
         return n;
     }else{
         return NULL;
     }
+}
+*/
+struct grp_node_iter *grp_node_iter_init(struct nn_grp *g)
+{
+    return (struct grp_node_iter *)ll_iter_init(g->node);
+}
+
+int grp_node_iter_free(struct grp_node_iter *iter)
+{
+    return ll_iter_free((struct ll_iter *)iter);
+}
+
+int grp_node_iter_next(struct grp_node_iter *iter, struct nn_conn **cn)
+{
+    return ll_iter_next((struct ll_iter *)iter, cn);
 }
