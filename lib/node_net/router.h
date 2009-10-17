@@ -9,7 +9,7 @@ struct node_conn_iter;
 struct nn_router *router_init();
 int router_free(struct nn_router *h);
 
-int router_run(struct nn_router *h);
+int router_io_run(struct nn_router *h);
 
 int router_lock(struct nn_router *rt);
 int router_unlock(struct nn_router *rt);
@@ -40,6 +40,7 @@ int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn **cn);
 #define ROUTER_CONN_ITER_POST \
         conn_unlock(cn); \
     } \
+    router_conn_iter_free(iter); \
     router_unlock(rt);
 
 

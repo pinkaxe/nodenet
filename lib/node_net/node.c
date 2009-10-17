@@ -97,6 +97,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     n->state = NN_STATE_PAUSED;
 
     node_isok(n);
+    ICHK(LWARN, r, node_io_run(n));
 
 err:
     return n;
@@ -119,19 +120,19 @@ int node_free(struct nn_node *n)
         if(r) fail++;
     }
 
-//    if(n->grp_conns){
-//        iter = ll_iter_init();
-//
-//        while(ng=ll_iter_next(n->grp_conns, &iter)){
-//            ICHK(LWARN, r, ll_rem(n->grp_conns, ng));
-//            free(ng);
-//        }
-//        ICHK(LWARN, r, ll_free(n->grp_conns));
-//        if(r) fail++;
-//
-//        iter = ll_iter_init();
-//
-//    }
+    if(n->grp_conns){
+        iter = ll_iter_init(n->grp_conns);
+
+        while(!ll_iter_next(iter, &ng)){
+            ICHK(LWARN, r, ll_rem(n->grp_conns, ng));
+            free(ng);
+        }
+        ICHK(LWARN, r, ll_free(n->grp_conns));
+        if(r) fail++;
+
+        ll_iter_free(iter);
+
+    }
 
     mutex_unlock(&n->mutex);
     mutex_destroy(&n->mutex);
@@ -144,11 +145,7 @@ int node_free(struct nn_node *n)
 
 int node_start(struct nn_node *n)
 {
-    int r;
-
-    ICHK(LWARN, r, node_io_run(n));
-
-    return r;
+    return node_set_state(n, NN_STATE_RUNNING);
 }
 
 int node_lock(struct nn_node *n)

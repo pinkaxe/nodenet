@@ -55,6 +55,7 @@ struct nn_router *router_init()
     rt->state = NN_STATE_PAUSED;
 
     router_isvalid(rt);
+    router_io_run(rt);
 err:
     return rt;
 }

@@ -43,6 +43,8 @@ int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn);
 #define NODE_CONN_ITER_POST \
         conn_unlock(cn); \
     } \
+    node_conn_iter_free(iter); \
     node_unlock(n);
+
 
 #endif

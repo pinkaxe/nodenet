@@ -111,12 +111,12 @@ static int conn_free(struct nn_conn *cn)
 
     /* IMPROVE: can save conn state here */
 
-    if(cn->rt_n_cmd){
+    if(cn->rt_n_icmd){
         ICHK(LWARN, r, que_free(cn->rt_n_icmd));
         if(r) fail++;
     }
 
-    if(cn->n_rt_cmd){
+    if(cn->n_rt_icmd){
         ICHK(LWARN, r, que_free(cn->n_rt_icmd));
         if(r) fail++;
     }

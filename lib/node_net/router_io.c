@@ -117,6 +117,7 @@ static int _router_io_free(struct nn_router *rt)
 
     router_unlock(rt);
 
+
     return 0;
 }
 
@@ -139,11 +140,22 @@ static void *router_icmd_thread(void *arg)
             //route_cmd(rt, icmd);
         }
 
+            printf("router lock\n");
         router_lock(rt);
+            printf("router unlock\n");
+
+        while(router_get_state(rt) == NN_STATE_PAUSED){
+            printf("router paused\n");
+            router_unlock(rt);
+            usleep(500000);
+            router_lock(rt);
+        }
+
         if(router_get_state(rt) == NN_STATE_SHUTDOWN){
             router_unlock(rt);
             _router_io_free(rt);
             printf("!!! xxxxxxxxxxxxxxxxxxxx router_io_freed\n");
+            router_free(rt);
             busy_freeing_no--;
             return NULL;
             // quite this thread
@@ -172,7 +184,7 @@ static void *router_icmd_thread(void *arg)
 //}
 
 
-int router_run(struct nn_router *rt)
+int router_io_run(struct nn_router *rt)
 {
     thread_t tid;
     thread_create(&tid, NULL, router_icmd_thread, rt);

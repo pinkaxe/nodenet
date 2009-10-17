@@ -64,7 +64,6 @@ static int _node_io_free(struct nn_node *n)
 
     node_unlock(n);
 
-    ICHK(LWARN, r, node_free(n));
 
     return r;
 
@@ -103,15 +102,23 @@ static void *node_io_thread(void *arg)
 
         node_lock(n);
 
+        while(node_get_state(n) == NN_STATE_PAUSED){
+            node_unlock(n);
+            usleep(500000);
+            node_lock(n);
+        }
+
         if(node_get_state(n) == NN_STATE_SHUTDOWN){
             node_unlock(n);
             printf("node shutting down..\n");
             _node_io_free(n);
+            node_free(n);
             busy_freeing_no--;
             return NULL;
         }
 
         node_unlock(n);
+
 
         /* incoming commands */
         // node_lock(n);

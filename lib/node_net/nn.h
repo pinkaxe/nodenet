@@ -4,7 +4,7 @@
 /* router */
 struct nn_router *nn_router_init();
 int nn_router_free(struct nn_router *rt);
-int nn_router_run(struct nn_router *rt);
+int nn_router_io_run(struct nn_router *rt);
 int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb);
 // nn_router_get_cmd_req(rt, req, timeout)
 // nn_router_get_data_req(rt, req, timeout)

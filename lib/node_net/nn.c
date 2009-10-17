@@ -38,13 +38,13 @@ struct nn_router *nn_router_init(void)
 }
 
 
-int nn_router_run(struct nn_router *rt)
+int nn_router_io_run(struct nn_router *rt)
 {
     int r;
 
     router_lock(rt);
 
-    ICHK(LWARN, r, router_run(rt));
+    ICHK(LWARN, r, router_set_state(rt, NN_STATE_RUNNING));
 
     router_unlock(rt);
 
