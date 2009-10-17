@@ -1,5 +1,7 @@
-#ifndef NN_LINK_H__
-#define NN_LINK_H__
+#ifndef NN_CONN_H__
+#define NN_CONN_H__
+
+#define NN_CONN_STATE_DEAD 1
 
 struct nn_conn *conn_init();
 int conn_free_node(struct nn_conn *cn);

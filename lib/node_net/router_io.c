@@ -12,78 +12,89 @@
 
 extern int busy_freeing_no;
 
-/* rt should be locked before calling this */
-static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
+/* always check if the conn isn't dead before using it,
+ * if dead free' the appropriate side */
+static int if_conn_dead_free(struct nn_conn *cn)
 {
     int r = 0;
-    struct nn_conn *cn;
-    struct router_conn_iter *iter;
 
-    assert(rt);
-
-    iter = router_conn_iter_init(rt);
-    while(!router_conn_iter_next(iter, &cn)){
-
-        conn_lock(cn);
-        //clone = cmd_clone(cmd);
-        printf("!!! router_tx_cmd\n");
-        //if(conn_get_state(cn) != LINK_STATE_DEAD){
-        if(0){
-           /* conn, can send */
-            //while((cn=conn_router_tx_cmd(cn, cmd))){
-            //    usleep(100);
-            //}
-            conn_unlock(cn);
-            if(cn){
-                goto err;
-            }
-        }else{
-            L(LINFO, "Freeing dead conn");
-            conn_unlock(cn);
-        }
-
-   }
-            //conn_free_router(cn);
-
-err:
+    if(conn_get_state(cn) != NN_CONN_STATE_DEAD){
+        /* we just free the router side but could read the buffers back or
+         * something like that first */
+        conn_free_router(cn);
+        r = 1;
+    }
     return r;
 }
 
 
-static int route_to_grp(struct nn_grp *g, struct nn_cmd *cmd)
+
+static int route_to_node_cb(struct nn_conn *cn, void *n_, void *icmd_)
 {
+    int r = 0;
+    struct nn_node *n = n_;
+    struct nn_icmd *icmd = icmd_;
+
+    if(!if_conn_dead_free(cn) && conn_get_node(cn) == n){
+         //r = conn_router_tx_cmd(cn, icmd);
+    }
+    return r;
 }
 
-static int route_to_node(struct nn_node *n, struct nn_cmd *cmd)
+static int route_to_node(struct nn_router *rt, struct nn_icmd *icmd)
 {
+    return router_conn_each(rt, route_to_node_cb, icmd);
 }
+
+
+static int route_to_all_cb(struct nn_conn *cn, void *icmd_)
+{
+    struct nn_icmd *icmd = icmd_;
+
+    if(!if_conn_dead_free(cn)){
+         //conn_router_tx_cmd(cn, icmd);
+    }
+}
+
+static int route_to_all(struct nn_router *rt, struct nn_icmd *icmd)
+{
+    return router_conn_each(rt, route_to_all_cb, icmd);
+}
+
+
+static int route_to_grp(struct nn_grp *g, struct nn_icmd *icmd)
+{
+    //return grp_memb_each(g, route_to_grp_cb, icmd);
+}
+
 
 
 /* decide who/where to route */
-static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
+static int route_cmd(struct nn_router *rt, struct nn_icmd *icmd)
 {
+    printf("route_cmd\n");
     //printf("!!! yeah got it: %d\rt", cmd->id);
     //struct nn_io_conf *conf;
 
-    assert(cmd);
-    assert(cmd->conf);
+    //assert(icmd);
+    //assert(icmd->conf);
 
-    switch(cmd->conf->sendto_type){
-        case NN_SENDTO_GRP:
-            //route_to_grp(g, );
-            break;
-        case NN_SENDTO_NODE:
-            //send_cmd_to_node(e1, cmd);
-            break;
-        case NN_SENDTO_ALL:
-            route_to_all(rt, cmd);
-            //printf("freeing %p\rt", cmd);
-            //cmd_free(cmd);
-            break;
-        default:
-            break;
-    }
-    //free(cmd);
+    //switch(icmd->conf->sendto_type){
+    //    case NN_SENDTO_GRP:
+    //        //route_to_grp(g, );
+    //        break;
+    //    case NN_SENDTO_NODE:
+    //        //send_cmd_to_node(e1, cmd);
+    //        break;
+    //    case NN_SENDTO_ALL:
+    //        route_to_all(rt, icmd);
+    //        //printf("freeing %p\rt", cmd);
+    //        //cmd_free(cmd);
+    //        break;
+    //    default:
+    //        break;
+    //}
+    icmd_free(icmd);
     return 0;
 }
 
@@ -122,30 +133,34 @@ static int _router_io_free(struct nn_router *rt)
 }
 
 
+#if 0
+static int _router_tx_icmd()
+{
+    struct nn_icmd *icmd;
+    icmd = icmd_init(33, NULL, 0, 0, sendto_type, int sendto_id);
+    r = conn_router_tx_icmd(rt, &icmd);
+    if(!r){
+        printf("QQQ route cmd\n");
+        //route_cmd(rt, icmd);
+    }
+    return r;
+}
+#endif
+
 /* pick up cmds coming from router, and router to other node's */
 static void *router_icmd_thread(void *arg)
 {
     struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
     struct nn_conn *cn;
-    struct nn_icmd *icmd;
     int r;
+
 
     for(;;){
         printf("!! running route \n");
-
-        r = conn_router_rx_icmd(rt, &icmd);
-        if(!r){
-            printf("QQQ route cmd\n");
-            //route_cmd(rt, icmd);
-        }
-
-            printf("router lock\n");
         router_lock(rt);
-            printf("router unlock\n");
 
         while(router_get_state(rt) == NN_STATE_PAUSED){
-            printf("router paused\n");
             router_unlock(rt);
             usleep(500000);
             router_lock(rt);
@@ -154,7 +169,7 @@ static void *router_icmd_thread(void *arg)
         if(router_get_state(rt) == NN_STATE_SHUTDOWN){
             router_unlock(rt);
             _router_io_free(rt);
-            printf("!!! xxxxxxxxxxxxxxxxxxxx router_io_freed\n");
+            printf("!!! router_io_freed\n");
             router_free(rt);
             busy_freeing_no--;
             return NULL;
@@ -196,3 +211,41 @@ int router_io_run(struct nn_router *rt)
     return 0;
 }
 
+/* rt should be locked before calling this */
+#if 0
+static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
+{
+    int r = 0;
+    struct nn_conn *cn;
+    struct router_conn_iter *iter;
+
+    assert(rt);
+
+    iter = router_conn_iter_init(rt);
+    while(!router_conn_iter_next(iter, &cn)){
+
+        conn_lock(cn);
+        //clone = cmd_clone(cmd);
+        printf("!!! router_tx_cmd\n");
+        //if(conn_get_state(cn) != LINK_STATE_DEAD){
+        if(0){
+           /* conn, can send */
+            //while((cn=conn_router_tx_cmd(cn, cmd))){
+            //    usleep(100);
+            //}
+            conn_unlock(cn);
+            if(cn){
+                goto err;
+            }
+        }else{
+            L(LINFO, "Freeing dead conn");
+            conn_unlock(cn);
+        }
+
+   }
+            //conn_free_router(cn);
+
+err:
+    return r;
+}
+#endif

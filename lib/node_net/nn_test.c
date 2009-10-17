@@ -118,7 +118,9 @@ int main(int argc, char *argv)
      //   }
 
         printf("starting\n");
-        //nn_router_io_run(rt[0]);
+        nn_node_run(n[0]);
+        nn_router_run(rt[0]);
+        //sleep(1);
 
         for(i=0; i < 1; i++){
             /* unconn not needed but ok */

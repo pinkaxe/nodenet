@@ -215,3 +215,27 @@ int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn **cn)
 {
     return ll_iter_next((struct ll_iter *)iter, cn);
 }
+
+int router_conn_each(struct nn_router *rt,
+        int (*cb)(struct nn_conn *cn))
+{
+    int r;
+    assert(rt);
+    struct router_conn_iter *iter;
+    struct nn_conn *cn;
+
+    router_lock(rt);
+
+    iter = router_conn_iter_init(rt);
+    while(!router_conn_iter_next(iter, &cn)){
+        conn_lock(cn);
+        r = cb(cn);
+        conn_unlock(cn);
+        if(r){
+            break;
+        }
+    }
+    router_conn_iter_free(iter);
+
+    router_unlock(rt);
+}

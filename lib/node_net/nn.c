@@ -38,7 +38,7 @@ struct nn_router *nn_router_init(void)
 }
 
 
-int nn_router_io_run(struct nn_router *rt)
+int nn_router_run(struct nn_router *rt)
 {
     int r;
 
