@@ -104,12 +104,12 @@ int grp_free(struct nn_grp *g)
             }
             ICHK(LWARN, r, ll_free(g->node));
         }
+        ll_iter_free(iter);
+
+        mutex_unlock(&g->mutex);
+        mutex_destroy(&g->mutex);
         free(g);
     }
-    ll_iter_free(iter);
-
-    mutex_unlock(&g->mutex);
-    mutex_destroy(&g->mutex);
 
     return 0;
 }
