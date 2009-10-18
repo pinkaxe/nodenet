@@ -248,36 +248,16 @@ err:
 
 int nn_unconn(struct nn_node *n, struct nn_router *rt)
 {
-    struct node_conn_iter *iter;
     int r;
-    struct nn_conn *cn;
     bool f;
 
-    /* lock node and each conn it point to in turn */
-    node_lock(n);
+    NODE_CONN_ITER_PRE
 
-    iter = node_conn_iter_init(n);
-    while(!node_conn_iter(iter, &cn)){
-        conn_lock(cn);
+    /* disconnect the node <-> conn conn */
+    node_unconn(n, cn);
+    conn_free_node(cn);
 
-        /* disconnect the node <-> conn conn */
-        node_unconn(n, cn);
-
-        /* unlock node and conn */
-        conn_unlock(cn);
-        node_unlock(n);
-
-        if(conn_free_node(cn) == 1){
-            node_lock(n);
-            continue;
-        }
-
-        node_lock(n);
-    }
-    node_conn_iter_free(iter);
-
-err:
-    node_unlock(n);
+    NODE_CONN_ITER_POST
 
     return r;
 }

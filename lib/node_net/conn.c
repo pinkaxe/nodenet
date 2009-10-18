@@ -115,15 +115,24 @@ static int conn_free(struct nn_conn *cn)
 {
     int r = 0;
     int fail = 0;
+    struct timespec ts = {0, 0};
+    struct nn_cmd *cmd;
 
     /* IMPROVE: can save conn state here */
 
+    /* empty and free the io que's */
     if(cn->rt_n_cmd){
+        while((cmd=que_get(cn->rt_n_cmd, &ts))){
+            cmd_free(cmd);
+        }
         ICHK(LWARN, r, que_free(cn->rt_n_cmd));
         if(r) fail++;
     }
 
     if(cn->n_rt_cmd){
+        while((cmd=que_get(cn->n_rt_cmd, &ts))){
+            cmd_free(cmd);
+        }
         ICHK(LWARN, r, que_free(cn->n_rt_cmd));
         if(r) fail++;
     }

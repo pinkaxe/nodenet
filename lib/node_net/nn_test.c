@@ -123,16 +123,16 @@ int main(int argc, char *argv)
         }
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
 
-        while(1){
+        c = 0;
+        while(c < 1024){
             for(i=0; i < 5; i++){
                 cmd = cmd_init(c++, NULL, 0, 1, NN_SENDTO_ALL, 0);
                 while(nn_node_tx_cmd(n[i], rt[0], cmd)){
-                    sleep(1);
+                    usleep(1);
                 }
             }
             usleep(1);
         }
-
 
         for(i=0; i < 5; i++){
             nn_node_set_state(n[i], NN_STATE_PAUSED);
