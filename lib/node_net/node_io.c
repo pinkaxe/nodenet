@@ -17,7 +17,6 @@
 //#include "node_net/node_drivers/bin.n"
 
 static void *node_io_thread(void *arg);
-static handle_int_cmd(struct nn_cmd *cmd);
 
 
 int node_io_run(struct nn_node *n)
@@ -32,7 +31,8 @@ int node_io_run(struct nn_node *n)
     return r;
 }
 
-static int _node_io_free(struct nn_node *n)
+/* free all node sides of all n->conn's and g->... */
+static int node_conn_free(struct nn_node *n)
 {
     int r = 0;
     struct node_conn_iter *iter;
@@ -78,7 +78,7 @@ static void *node_io_thread(void *arg)
     void *cmd_buf = NULL;
     struct nn_node *n = arg;
     struct timespec buf_check_timespec;
-    struct timespec cmd_check_timespec;
+    struct timespec icmd_check_timespec;
     void (*user_func)(struct nn_node *n, void *buf, int len, void *pdata);
     void *pdata;
     int attr;
@@ -93,31 +93,72 @@ static void *node_io_thread(void *arg)
 
     buf_check_timespec.tv_sec = 0;
     buf_check_timespec.tv_nsec = 10000000;
-    cmd_check_timespec.tv_sec = 0;
-    cmd_check_timespec.tv_nsec = 1000000;
+    icmd_check_timespec.tv_sec = 0;
+    icmd_check_timespec.tv_nsec = 1000000;
+
+    L(LNOTICE, "Node thread starting: %p", n);
 
     for(;;){
         sleep(1);
-        printf("node_io_loop\n");
 
         node_lock(n);
 
-        while(node_get_state(n) == NN_STATE_PAUSED){
-            node_unlock(n);
-            usleep(500000);
-            node_lock(n);
+        /* check state */
+        switch(node_get_state(n)){
+            case NN_STATE_RUNNING:
+                break;
+            case NN_STATE_PAUSED:
+                L(LNOTICE, "Node paused: %p", n);
+                while(node_get_state(n) == NN_STATE_PAUSED){
+                    node_unlock(n);
+                    usleep(500000);
+                    node_lock(n);
+                    //node_cond_wait(n);
+                }
+                break;
+            case NN_STATE_SHUTDOWN:
+                L(LNOTICE, "Node shutdown start: %p", n);
+                node_unlock(n);
+                node_conn_free(n);
+                node_free(n);
+                busy_freeing_no--;
+                L(LNOTICE, "Node shutdown completed");
+                return NULL;
         }
 
-        if(node_get_state(n) == NN_STATE_SHUTDOWN){
-            node_unlock(n);
-            printf("node shutting down..\n");
-            _node_io_free(n);
-            node_free(n);
-            busy_freeing_no--;
-            return NULL;
-        }
-
+        /* rx/tx cmd/data */
+        struct nn_icmd *icmd;
+        //icmd = conn_node_rx_icmd(n, &icmd_check_timespec);
         node_unlock(n);
+        if(icmd){
+            // call driver function
+            //n->ops->rx_icmd(n, icmd);
+        }
+
+//        node_lock(n);
+//        //cmd = conn_node_rx_cmd(n, &cmd_check_timespec);
+//        node_unlock(n);
+//        if(cmd){
+//            // call driver function
+//        }
+//
+//        node_lock(n);
+//        //data = conn_node_rx_data(n, &data_check_timespec);
+//        node_unlock(n);
+//        if(data){
+//            // call driver function to send to node endpoint
+//        }
+
+        node_lock(n);
+        // check for output for node driver
+
+    }
+
+end:
+    L(LNOTICE, "Node thread ended: %p", n);
+    return NULL;
+}
+
 
 
         /* incoming commands */
@@ -181,16 +222,4 @@ static void *node_io_thread(void *arg)
         //}
 #endif
 
-        node_unlock(n);
-
-    }
-end:
-    printf("node_io exit\rt");
-    return NULL;
-}
-
-
-static handle_int_cmd(struct nn_cmd *cmd)
-{
-};
 

@@ -13,7 +13,8 @@
 extern int busy_freeing_no;
 
 /* always check if the conn isn't dead before using it,
- * if dead free' the appropriate side */
+ * this function also frees the appropriate side of the
+ * conn */
 static int if_conn_dead_free(struct nn_conn *cn)
 {
     int r = 0;
@@ -101,7 +102,7 @@ static int route_cmd(struct nn_router *rt, struct nn_icmd *icmd)
 
 
 /* called when shutdown is received by router_io_thread */
-static int _router_io_free(struct nn_router *rt)
+static int router_conn_free(struct nn_router *rt)
 {
     struct router_conn_iter *iter;
     struct nn_conn *cn;
@@ -155,49 +156,53 @@ static void *router_icmd_thread(void *arg)
     struct nn_conn *cn;
     int r;
 
+    L(LNOTICE, "Starting router thread");
 
     for(;;){
-        printf("!! running route \n");
         router_lock(rt);
 
-        while(router_get_state(rt) == NN_STATE_PAUSED){
-            router_unlock(rt);
-            usleep(500000);
-            router_lock(rt);
+        switch(router_get_state(rt)){
+            case NN_STATE_RUNNING:
+                break;
+            case NN_STATE_PAUSED:
+                L(LNOTICE, "Router paused: %p", rt);
+                while(router_get_state(rt) == NN_STATE_PAUSED){
+                    router_cond_wait(rt);
+                }
+                break;
+            case NN_STATE_SHUTDOWN:
+                L(LNOTICE, "Router shutdown start: %p", rt);
+                router_unlock(rt);
+                router_conn_free(rt);
+                router_free(rt);
+                busy_freeing_no--;
+                L(LNOTICE, "Router shutdown completed");
+                return NULL;
         }
 
-        if(router_get_state(rt) == NN_STATE_SHUTDOWN){
-            router_unlock(rt);
-            _router_io_free(rt);
-            printf("!!! router_io_freed\n");
-            router_free(rt);
-            busy_freeing_no--;
-            return NULL;
-            // quite this thread
-        }
         router_unlock(rt);
+
+        /* check cmd_in, data_in */
+
+        //while(router_get_state(rt) == NN_STATE_PAUSED){
+        //    router_unlock(rt);
+        //    usleep(500000);
+        //    router_lock(rt);
+        //}
+
+        //if(router_get_state(rt) == NN_STATE_SHUTDOWN){
+        //    router_unlock(rt);
+        //    L(LNOTICE, "Router shutdown start: %p", rt);
+        //    router_conn_free(rt);
+        //    router_free(rt);
+        //    busy_freeing_no--;
+        //    L(LNOTICE, "Router shutdown completed: %p", rt);
+        //    return NULL;
+        //}
 
         sleep(1);
     }
 }
-
-/* pick up data coming from n and call router cb */
-//static void *route_data_thread(void *arg)
-//{
-//    struct timespec ts = {0, 0};
-//    struct nn_router *rt = arg;
-//    struct nn_io_data *data;
-//
-//    for(;;){
-//        data = que_get(rt->data_req, NULL);
-//          cmd = router_get_cmd(rt, NULL);
-//        if(data){
-//            rt->io_data_req_cb(rt, data);
-//        }
-//
-//    }
-//}
-
 
 int router_io_run(struct nn_router *rt)
 {
@@ -210,42 +215,3 @@ int router_io_run(struct nn_router *rt)
 
     return 0;
 }
-
-/* rt should be locked before calling this */
-#if 0
-static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
-{
-    int r = 0;
-    struct nn_conn *cn;
-    struct router_conn_iter *iter;
-
-    assert(rt);
-
-    iter = router_conn_iter_init(rt);
-    while(!router_conn_iter_next(iter, &cn)){
-
-        conn_lock(cn);
-        //clone = cmd_clone(cmd);
-        printf("!!! router_tx_cmd\n");
-        //if(conn_get_state(cn) != LINK_STATE_DEAD){
-        if(0){
-           /* conn, can send */
-            //while((cn=conn_router_tx_cmd(cn, cmd))){
-            //    usleep(100);
-            //}
-            conn_unlock(cn);
-            if(cn){
-                goto err;
-            }
-        }else{
-            L(LINFO, "Freeing dead conn");
-            conn_unlock(cn);
-        }
-
-   }
-            //conn_free_router(cn);
-
-err:
-    return r;
-}
-#endif

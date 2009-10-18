@@ -23,8 +23,10 @@ struct nn_router {
     io_cmd_req_cb_t io_in_cmd_cb;
     io_data_req_cb_t io_in_data_cb;
 
-    mutex_t mutex;
     enum nn_state state;
+
+    mutex_t mutex;
+    cond_t cond;
 };
 
 int router_isvalid(struct nn_router *rt)
@@ -51,6 +53,7 @@ struct nn_router *router_init()
 
     // FIXME: err checking
     mutex_init(&rt->mutex, NULL);
+    cond_init(&rt->cond, NULL);
 
     rt->state = NN_STATE_PAUSED;
 
@@ -75,6 +78,8 @@ int router_free(struct nn_router *rt)
     }
 
     mutex_unlock(&rt->mutex);
+
+    cond_destroy(&rt->cond);
     mutex_destroy(&rt->mutex);
 
     free(rt);
@@ -93,6 +98,11 @@ int router_unlock(struct nn_router *rt)
 {
     mutex_unlock(&rt->mutex);
     return 0;
+}
+
+int router_cond_wait(struct nn_router *rt)
+{
+    cond_wait(&rt->cond, &rt->mutex);
 }
 
 int router_set_state(struct nn_router *rt, enum nn_state state)
