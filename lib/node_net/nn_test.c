@@ -53,10 +53,10 @@ int output_node(struct nn_node *n, void *buf, int len, void *pdata)
 int xmain(int argc, char *argv)
 {
     int i;
-    struct nn_router *rt[1024];
-    struct nn_node *n[1024];
-    struct nn_grp *g[1024];
-    struct nn_conn *cn[1024];
+    struct nn_router *rt[524];
+    struct nn_node *n[524];
+    struct nn_grp *g[524];
+    struct nn_conn *cn[524];
     struct nn_cmd *cmd;
 
     rt[0] = nn_router_init();
@@ -74,10 +74,10 @@ int xmain(int argc, char *argv)
 int main(int argc, char *argv)
 {
     int i;
-    struct nn_router *rt[1024];
-    struct nn_node *n[1024];
-    struct nn_grp *g[1024];
-    struct nn_conn *cn[1024];
+    struct nn_router *rt[524];
+    struct nn_node *n[524];
+    struct nn_grp *g[524];
+    struct nn_conn *cn[524];
     struct nn_cmd *cmd;
     //struct nn_io_data *data;
     //struct nn_io_conf *conf;
@@ -93,11 +93,10 @@ int main(int argc, char *argv)
         }
 
         /* create input nodes */
-        for(i=0; i < 1; i++){
+        for(i=0; i < 5; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT, input_node, NULL);
             nn_conn(n[i], rt[0]);
             //nn_node_join_grp(n[i], rt[0]);
-
             //conn_conn(n[i], rt[0]);
             //nn_join_grp(n[i], g[1]);
             ok(n[i]);
@@ -117,23 +116,45 @@ int main(int argc, char *argv)
      //       //nn_join_grp(n[i], g[2]);
      //   }
 
-        nn_node_set_state(n[0], NN_STATE_RUNNING);
-        nn_router_set_state(rt[0], NN_STATE_RUNNING);
-        sleep(3);
 
-        nn_node_set_state(n[0], NN_STATE_PAUSED);
+        for(i=0; i < 5; i++){
+            nn_node_set_state(n[i], NN_STATE_RUNNING);
+        }
+        nn_router_set_state(rt[0], NN_STATE_RUNNING);
+
+        for(i=0; i < 5; i++){
+            nn_node_set_state(n[i], NN_STATE_PAUSED);
+        }
         nn_router_set_state(rt[0], NN_STATE_PAUSED);
-        sleep(3);
 
-        nn_node_set_state(n[0], NN_STATE_RUNNING);
+        for(i=0; i < 5; i++){
+            nn_node_set_state(n[i], NN_STATE_RUNNING);
+        }
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
-        sleep(3);
 
-        for(i=0; i < 1; i++){
+        for(i=0; i < 5; i++){
+            node_print(n[i]);
+        }
+        router_print(rt[0]);
+
+        sleep(1);
+
+        for(i=0; i < 5; i++){
             /* unconn not needed but ok */
             nn_unconn(n[i], rt[0]);
             nn_node_free(n[i]);
         }
+        sleep(2);
+
+        /*
+        for(i=0; i < 3; i++){
+            node_print(n[i]);
+        }
+        router_print(rt[0]);
+
+        sleep(10);
+        */
+
         nn_grp_free(g[0]);
         nn_grp_free(g[1]);
         nn_grp_free(g[2]);
@@ -205,13 +226,13 @@ int io_data_req_cb(struct nn_router *rt, struct nn_io_data *data)
             while(nn_router_tx_cmd(rt[0], cmd)){
                 //assert(1 == 0);
                 //printf("!! bla\n");
-                usleep(100);
+                usleep(50);
             }
 
             //data = malloc(sizeof(*data));
             //nn_router_tx_data(rt[0], data);
 
-            //usleep(10000);
+            //usleep(5000);
         }
         sleep(5);
         */

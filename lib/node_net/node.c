@@ -377,32 +377,31 @@ int node_isok(struct nn_node *n)
 int node_print(struct nn_node *n)
 {
     void *track;
-    struct nn_conn *cn;
     struct nn_node_grp *g;
     int r = 0;
     int c;
-    void *iter;
+    //void *iter;
 
-    puts("\n-- node->conn --\n");
-
-    c = 0;
-
-    iter = NULL;
-    //while((cn=ll_iter_next(n->conn, &iter))){
-    //    printf("p:%p\n", cn);
-    //    c++;
-    //}
-
-    puts("\n-- node->grp --\n");
 
     c = 0;
-    iter = NULL;
+
+    NODE_CONN_ITER_PRE
+
+    printf("node->conn\t");
+    printf("n=%p, cn:%p, rt=%p\n", n, cn, conn_get_router(cn));
+
+    NODE_CONN_ITER_POST
+
+    //puts("\n-- node->grp --\n");
+
+    //c = 0;
+    //iter = NULL;
     //while((g=ll_iter_next(n->grp_conns, &iter))){
     //    printf("p:%p\n", g->grp);
     //    c++;
     //}
 
-    printf("total: %d\n\n", c);
+    //printf("total: %d\n\n", c);
 
     return 0;
 }

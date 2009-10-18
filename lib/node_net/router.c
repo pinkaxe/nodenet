@@ -174,13 +174,15 @@ int router_unconn(struct nn_router *rt, struct nn_conn *cn)
 
 int router_print(struct nn_router *rt)
 {
-    struct nn_conn *cn;
     int r = 0;
-    int c;
-    struct ll_iter *iter;
+    int c = 0;
 
-    printf("\rt-- router->node --: %p\rt\rt", rt);
-    c = 0;
+    ROUTER_CONN_ITER_PRE
+
+    printf("router->conn\t");
+    printf("rt=%p, cn:%p, n=%p\n", rt, cn, conn_get_node(cn));
+
+    ROUTER_CONN_ITER_POST
 
     //iter = NULL;
     ////ll_each(rt->conn, cn, iter){
@@ -190,14 +192,14 @@ int router_print(struct nn_router *rt)
     //    c++;
     //}
 
-    iter = ll_iter_init(rt->conn);
-    while((!ll_iter_next(iter, &cn))){
-        printf("p:%p\n", cn);
-        c++;
-    }
-    ll_iter_free(iter);
+   // iter = ll_iter_init(rt->conn);
+   // while((!ll_iter_next(iter, &cn))){
+   //     printf("p:%p\n", cn);
+   //     c++;
+   // }
+   // ll_iter_free(iter);
 
-    printf("total: %d\rt\rt", c);
+   // printf("total: %d\rt\rt", c);
 
     return 0;
 }

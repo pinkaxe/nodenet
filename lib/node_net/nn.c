@@ -196,31 +196,11 @@ int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
  * - to change a conn, just change it on the side(router/node) that
  *   you have the conn for. The conn status etc. can be changed and
  *   can then be picked up by the other side when it accesses the
- *   conn. 
+ *   conn.
  * - order of locking for node side - node, conn. For router
  *   side router, conn
  *   */
 
-
-static int _node_conn_unconn(struct nn_node *n, struct nn_conn *cn)
-{
-    int r = 0;
-
-    node_unconn(n, cn);
-    /* set to NULL for validation */
-    //conn_set_node(cn, NULL);
-
-    return r;
-}
-
-//static int _router_conn_unconn(struct nn_router *rt, struct nn_conn *cn)
-//{
-//    int r = 0;
-//
-//    r= router_unconn(rt, cn);
-//
-//    return r;
-//}
 
 #include "util/link.h"
 
@@ -276,7 +256,7 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
         conn_lock(cn);
 
         /* disconnect the node <-> conn conn */
-        _node_conn_unconn(n, cn);
+        node_unconn(n, cn);
 
         /* unlock node and conn */
         conn_unlock(cn);
@@ -286,21 +266,6 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
             node_lock(n);
             continue;
         }
-
-#if 0
-        /* lock router and conn */
-        router_lock(rt);
-        conn_lock(cn);
-
-        /* disconnect the router <-> conn conn */
-        _router_conn_unconn(rt, cn);
-
-        /* unlock router and conn */
-        conn_unlock(cn);
-        router_unlock(rt);
-
-        conn_free_router(cn);
-#endif
 
         node_lock(n);
     }
