@@ -20,7 +20,7 @@ struct que *que_init(int len)
 {
     struct que *h;
 
-    h = calloc(1, sizeof(struct que));
+    h = calloc(1, sizeof(*h));
     if(!h){
         goto end;
     }
@@ -67,7 +67,7 @@ int que_add(struct que *h, void *item)
 
     mutex_lock(&h->mutex);
 
-    if((h->head == h->len && h->tail == 0) || 
+    if((h->head == h->len - 1 && h->tail == 0) || 
             h->head == h->tail - 1){
         r = 1;
         goto err;
@@ -75,7 +75,7 @@ int que_add(struct que *h, void *item)
 
     h->pp[h->head] = item;
 
-    if(++h->head > h->len){
+    if(++h->head >= h->len){
         h->head = 0;
     }
 
@@ -117,7 +117,7 @@ void *que_get(struct que *h, struct timespec *ts)
 
     r = h->pp[h->tail];
 
-    if(++h->tail > h->len){
+    if(++h->tail >= h->len){
         h->tail = 0;
     }
 
@@ -128,7 +128,7 @@ timeout:
     return r;
 }
 
-void *que_set_get_cb(struct que *h, void (*get_cb)(void *p)) 
+void *que_set_get_cb(struct que *h, void (*get_cb)(void *p))
 {
     h->get_cb = get_cb;
 }
