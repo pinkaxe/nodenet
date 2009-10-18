@@ -4,6 +4,7 @@
 #define NN_CONN_STATE_DEAD 1
 
 struct nn_conn *conn_init();
+int conn_free(struct nn_conn *cn);
 int conn_free_node(struct nn_conn *cn);
 int conn_free_router(struct nn_conn *cn);
 

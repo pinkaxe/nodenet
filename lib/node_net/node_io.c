@@ -37,7 +37,6 @@ static int node_conn_free(struct nn_node *n)
     int r = 0;
     struct node_conn_iter *iter;
     struct nn_conn *cn;
-    node_lock(n);
 
     iter = node_conn_iter_init(n);
     /* remove the conns to routers */
@@ -46,15 +45,15 @@ static int node_conn_free(struct nn_node *n)
         conn_lock(cn);
 
         node_unconn(n, cn);
-
+        r = conn_free_node(cn);
         conn_unlock(cn);
-        node_unlock(n);
 
-        conn_free_node(cn);
-
-        node_lock(n);
+        if(r == 1){
+            conn_free(cn);
+        }
     }
     node_conn_iter_free(iter);
+
 
    // /* remove pointers from groups */
    // iter = NULL;
@@ -62,7 +61,6 @@ static int node_conn_free(struct nn_node *n)
    //     grp_rem_node(g, n);
    // }
 
-    node_unlock(n);
 
 
     return r;
@@ -115,12 +113,13 @@ static void *node_io_thread(void *arg)
                 L(LNOTICE, "Node paused state exit: %p", n);
                 break;
             case NN_STATE_SHUTDOWN:
-                L(LNOTICE, "Node shutdown start: %p", n);
-                node_unlock(n);
+                L(LNOTICE, "Node thread shutdown start: %p", n);
                 node_conn_free(n);
-                node_free(n);
                 busy_freeing_no--;
-                L(LNOTICE, "Node shutdown completed");
+                node_set_state(n, NN_STATE_FINISHED);
+                node_cond_broadcast(n);
+                node_unlock(n);
+                L(LNOTICE, "Node thread shutdown completed");
                 return NULL;
         }
 

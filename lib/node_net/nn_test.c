@@ -118,13 +118,14 @@ int main(int argc, char *argv)
      //   }
 
 
+
         for(i=0; i < 5; i++){
             nn_node_set_state(n[i], NN_STATE_RUNNING);
         }
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
 
         c = 0;
-        while(c < 1024){
+        while(c < 10){
             for(i=0; i < 5; i++){
                 cmd = cmd_init(c++, NULL, 0, 1, NN_SENDTO_ALL, 0);
                 while(nn_node_tx_cmd(n[i], rt[0], cmd)){
@@ -152,10 +153,12 @@ int main(int argc, char *argv)
 
         for(i=0; i < 5; i++){
             /* unconn not needed but ok */
-            nn_unconn(n[i], rt[0]);
+            //nn_unconn(n[i], rt[0]);
             nn_node_free(n[i]);
         }
-        sleep(2);
+        for(i=0; i < 5; i++){
+            nn_node_clean(n[i]);
+        }
 
         /*
         for(i=0; i < 3; i++){
@@ -171,8 +174,9 @@ int main(int argc, char *argv)
         nn_grp_free(g[2]);
 
         nn_router_free(rt[0]);
+        nn_router_clean(rt[0]);
 
-        sleep(2);
+        //sleep(2);
         printf("done\n");
         //nn_wait();
     }

@@ -296,13 +296,32 @@ int nn_node_free(struct nn_node *n)
     int r;
     struct nn_conn *cn;
     struct nn_router *rt;
-    bool f = false; // free or not
+
+    node_lock(n);
 
     busy_freeing_no++;
     r = node_set_state(n, NN_STATE_SHUTDOWN);
     node_cond_broadcast(n);
 
+    node_unlock(n);
+
     return r;
+}
+
+int nn_node_clean(struct nn_node *n)
+{
+
+    node_lock(n);
+
+    while(node_get_state(n) != NN_STATE_FINISHED){
+        node_cond_wait(n);
+    }
+
+    node_unlock(n);
+
+    node_free(n);
+
+    return 0;
 }
 
 
@@ -310,9 +329,29 @@ int nn_router_free(struct nn_router *rt)
 {
     int r;
 
+    router_lock(rt);
+
     busy_freeing_no++;
     r = router_set_state(rt, NN_STATE_SHUTDOWN);
     router_cond_broadcast(rt);
 
+    router_unlock(rt);
+
     return r;
+}
+
+int nn_router_clean(struct nn_router *rt)
+{
+
+    router_lock(rt);
+
+    while(router_get_state(rt) != NN_STATE_FINISHED){
+        router_cond_wait(rt);
+    }
+
+    router_unlock(rt);
+
+    router_free(rt);
+
+    return 0;
 }

@@ -43,7 +43,6 @@ struct nn_conn {
 
 };
 
-static int conn_free(struct nn_conn *cn);
 
 struct ques_to_init {
     struct que **q;
@@ -111,7 +110,7 @@ err:
     return cn;
 }
 
-static int conn_free(struct nn_conn *cn)
+int conn_free(struct nn_conn *cn)
 {
     int r = 0;
     int fail = 0;
@@ -151,10 +150,6 @@ int conn_free_node(struct nn_conn *cn)
     int r;
 
     r = link_free_node(cn->link);
-    if(r == 1){
-        conn_free(cn);
-    }
-
     return r;
 }
 
@@ -163,9 +158,6 @@ int conn_free_router(struct nn_conn *cn)
     int r;
 
     r = link_free_router(cn->link);
-    if(r == 1){
-        conn_free(cn);
-    }
 
     return r;
 }
@@ -228,12 +220,7 @@ int conn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
 
         r = que_add(cn->n_rt_cmd, cmd);
 
-        //conn_unlock(cn);
-
-        // signal router of change, router doesn't have to be locked
-        //router_conn_buf_avail(rt);
-
-        //conn_lock(cn);
+        // FIXME: signal router of change in some way
     }
 
     NODE_CONN_ITER_POST

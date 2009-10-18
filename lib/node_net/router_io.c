@@ -22,8 +22,10 @@ static int if_conn_dead_free(struct nn_conn *cn)
     if(conn_get_state(cn) != NN_CONN_STATE_DEAD){
         /* we just free the router side but could read the buffers back or
          * something like that first */
-        conn_free_router(cn);
-        r = 1;
+        r = conn_free_router(cn);
+        if(r == 1){
+            conn_free(cn);
+        }
     }
     return r;
 }
@@ -104,10 +106,9 @@ static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 /* called when shutdown is received by router_io_thread */
 static int router_conn_free(struct nn_router *rt)
 {
+    int r = 0;
     struct router_conn_iter *iter;
     struct nn_conn *cn;
-
-    router_lock(rt);
 
     iter = router_conn_iter_init(rt);
 
@@ -116,19 +117,17 @@ static int router_conn_free(struct nn_router *rt)
         conn_lock(cn);
 
         router_unconn(rt, cn);
+        r = conn_free_router(cn);
 
         conn_unlock(cn);
-        router_unlock(rt);
 
-        conn_free_router(cn);
+        if(r == 1){
+            conn_free(cn);
+        }
 
-        router_lock(rt);
     }
 
     router_conn_iter_free(iter);
-
-    router_unlock(rt);
-
 
     return 0;
 }
@@ -164,7 +163,6 @@ static void shutdown(struct nn_router *rt)
     L(LNOTICE, "Route shutdown start: %p", rt);
 
     router_conn_free(rt);
-    router_free(rt);
     busy_freeing_no--;
 
     L(LNOTICE, "Router shutdown completed: %p", rt);
@@ -194,8 +192,10 @@ static void *router_cmd_thread(void *arg)
                 pause(rt);
                 break;
             case NN_STATE_SHUTDOWN:
-                router_unlock(rt);
                 shutdown(rt);
+                router_set_state(rt, NN_STATE_FINISHED);
+                router_cond_broadcast(rt);
+                router_unlock(rt);
                 thread_exit(NULL);
                 break;
         }
