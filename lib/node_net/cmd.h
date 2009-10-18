@@ -40,4 +40,6 @@ struct nn_cmd *cmd_init(enum nn_cmd_cmd id, void *pdata, int data_no,
 int cmd_free(struct nn_cmd *cmd);
 struct nn_cmd *cmd_clone(struct nn_cmd *cmd);
 
+enum nn_cmd_cmd cmd_get_id(struct nn_cmd *cmd);
+
 #endif

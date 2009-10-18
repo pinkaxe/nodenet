@@ -1,6 +1,8 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <unistd.h>
+#include <string.h>
 
 #include "sys/thread.h"
 #include "util/log.h"
@@ -14,6 +16,7 @@
 /* always check if the conn isn't dead before using it,
  * this function also frees the appropriate side of the
  * conn */
+#if 0
 static int if_conn_dead_free(struct nn_conn *cn)
 {
     int r = 0;
@@ -29,13 +32,14 @@ static int if_conn_dead_free(struct nn_conn *cn)
     return r;
 }
 
+#endif
 
+/*
 
 static int route_to_node_cb(struct nn_conn *cn, void *n_, void *cmd_)
 {
     int r = 0;
     struct nn_node *n = n_;
-    struct nn_cmd *cmd = cmd_;
 
     if(!if_conn_dead_free(cn) && conn_get_node(cn) == n){
          //r = conn_router_tx_cmd(cn, cmd);
@@ -68,7 +72,7 @@ static int route_to_grp(struct nn_grp *g, struct nn_cmd *cmd)
 {
     //return grp_memb_each(g, route_to_grp_cb, cmd);
 }
-
+*/
 
 
 /* decide who/where to route */
@@ -146,7 +150,7 @@ static int _router_tx_cmd()
 }
 #endif
 
-static void pause(struct nn_router *rt)
+static void _pause(struct nn_router *rt)
 {
     L(LNOTICE, "Router paused: %p", rt);
 
@@ -157,7 +161,7 @@ static void pause(struct nn_router *rt)
     L(LNOTICE, "Router unpaused %p", rt);
 }
 
-static void shutdown(struct nn_router *rt)
+static void _shutdown(struct nn_router *rt)
 {
     L(LNOTICE, "Route shutdown start: %p", rt);
 
@@ -170,11 +174,9 @@ static void shutdown(struct nn_router *rt)
 /* pick up cmds coming from router, and router to other node's */
 static void *router_cmd_thread(void *arg)
 {
-    struct timespec ts = {0, 0};
+    //struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
-    struct nn_conn *cn;
     struct nn_cmd *cmd;
-    int r;
 
     L(LNOTICE, "Router thread starting");
 
@@ -187,14 +189,17 @@ static void *router_cmd_thread(void *arg)
             case NN_STATE_RUNNING:
                 break;
             case NN_STATE_PAUSED:
-                pause(rt);
+                _pause(rt);
                 break;
             case NN_STATE_SHUTDOWN:
-                shutdown(rt);
+                _shutdown(rt);
                 router_set_state(rt, NN_STATE_FINISHED);
                 router_cond_broadcast(rt);
                 router_unlock(rt);
                 thread_exit(NULL);
+                break;
+            case NN_STATE_FINISHED:
+                L(LCRIT, "Illegal state");
                 break;
         }
 

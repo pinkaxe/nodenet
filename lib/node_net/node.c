@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <time.h>
@@ -21,6 +22,7 @@
 #include "node.h"
 #include "node_drivers/node_driver.h"
 
+int node_isok(struct nn_node *n);
 
 struct nn_node {
 
@@ -63,7 +65,6 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata)
 {
     int r;
-    int err;
     struct nn_node *n;
 
     PCHK(LWARN, n, calloc(1, sizeof(*n)));
@@ -125,7 +126,7 @@ int node_free(struct nn_node *n)
     if(n->grp_conns){
         iter = ll_iter_init(n->grp_conns);
 
-        while(!ll_iter_next(iter, &ng)){
+        while(!ll_iter_next(iter, (void **)&ng)){
             ICHK(LWARN, r, ll_rem(n->grp_conns, ng));
             free(ng);
         }
@@ -177,7 +178,6 @@ int node_conn(struct nn_node *n, struct nn_conn *cn)
 
     ICHK(LWARN, r, ll_add_front(n->conn, (void **)&cn));
 
-err:
     return r;
 }
 
@@ -306,49 +306,6 @@ void *node_write_in_buf(struct nn_node *n)
 
 /** debug functions **/
 
-/* check that the conn's it points to points back */
-int node_router_isok(struct nn_node *n)
-{
-    void *track;
-    struct nn_conn *cn;
-    int r = 0;
-    void *iter;
-
-    iter = NULL;
-   // while((cn=ll_iter_next(n->conn, &iter))){
-   //     /* make sure we are a member */
-   //     //r = router_isconn(rt->conn, n);
-   //     //r = router_print(rt->conn);
-   //     //assert(r == 0);
-   //     //if(r){
-   //     //    break;
-   //     //}
-   // }
-
-    return r;
-}
-
-/* check that the grp's it points to points back */
-int node_grp_isok(struct nn_node *n)
-{
-    void *track;
-    struct nn_node_grp *g;
-    int r = 0;
-    void *iter;
-
-    iter = NULL;
-   // while((g=ll_iter_next(n->grp_conns, &iter))){
-   //     r = grp_ismemb(g->grp, n);
-   //     assert(r == 0);
-   //     //r = grp_print(g->grp);
-   //     if(r){
-   //         break;
-   //     }
-   // }
-
-    return r;
-}
-
 int node_isok(struct nn_node *n)
 {
 
@@ -374,11 +331,48 @@ int node_isok(struct nn_node *n)
     return 0;
 }
 
+/* check that the conn's it points to points back */
+int node_router_isok(struct nn_node *n)
+{
+    int r = 0;
+    void *iter;
+
+    iter = NULL;
+   // while((cn=ll_iter_next(n->conn, &iter))){
+   //     /* make sure we are a member */
+   //     //r = router_isconn(rt->conn, n);
+   //     //r = router_print(rt->conn);
+   //     //assert(r == 0);
+   //     //if(r){
+   //     //    break;
+   //     //}
+   // }
+
+    return r;
+}
+
+/* check that the grp's it points to points back */
+int node_grp_isok(struct nn_node *n)
+{
+    int r = 0;
+    void *iter;
+
+    iter = NULL;
+   // while((g=ll_iter_next(n->grp_conns, &iter))){
+   //     r = grp_ismemb(g->grp, n);
+   //     assert(r == 0);
+   //     //r = grp_print(g->grp);
+   //     if(r){
+   //         break;
+   //     }
+   // }
+
+    return r;
+}
+
+
 int node_print(struct nn_node *n)
 {
-    void *track;
-    struct nn_node_grp *g;
-    int r = 0;
     int c;
     //void *iter;
 
@@ -408,10 +402,9 @@ int node_print(struct nn_node *n)
 
 /** debug functions ends **/
 
+#if 0
 struct nn_conn *node_conn_iter(struct nn_node *n, void **iter)
 {
-    int r = 0;
-    struct nn_conn *cn;
 
   //  assert(n);
 
@@ -423,6 +416,8 @@ struct nn_conn *node_conn_iter(struct nn_node *n, void **iter)
   //      return NULL;
   //  }
 }
+
+#endif
 
 struct node_conn_iter *node_conn_iter_init(struct nn_node *rt)
 {
@@ -436,5 +431,5 @@ int node_conn_iter_free(struct node_conn_iter *iter)
 
 int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn)
 {
-    return ll_iter_next((struct ll_iter *)iter, cn);
+    return ll_iter_next((struct ll_iter *)iter, (void **)cn);
 }

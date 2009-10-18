@@ -28,6 +28,14 @@ struct node_conn_iter *node_conn_iter_init(struct nn_node *rt);
 int node_conn_iter_free(struct node_conn_iter *iter);
 int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn);
 
+/* locking */
+int node_lock(struct nn_node *n);
+int node_unlock(struct nn_node *n);
+int node_cond_wait(struct nn_node *n);
+int node_cond_broadcast(struct nn_node *n);
+
+int node_print(struct nn_node *n);
+
 /* easy iterator pre/post
  * n != NULL when this is called, afterwards cn for
  each matching router is set and can be used */

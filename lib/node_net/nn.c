@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <time.h>
 #include <stdint.h>
@@ -142,7 +143,7 @@ int nn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
 
 int nn_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 {
-    int r;
+    int r = 0;
 
     //router_lock(rt);
 
@@ -163,7 +164,7 @@ int nn_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 
 int nn_router_tx_data(struct nn_router *rt, struct nn_io_data *data)
 {
-    int r;
+    int r = 0;
 
     //r = router_add_data_req(rt, data);
     return r;
@@ -172,11 +173,11 @@ int nn_router_tx_data(struct nn_router *rt, struct nn_io_data *data)
 
 int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
 {
-    int r;
+    int r = 0;
 
     //router_lock(rt);
 
-    ICHK(LWARN, r, router_set_cmd_cb(rt, cb));
+    //ICHK(LWARN, r, router_set_cmd_cb(rt, cb));
 
     //router_unlock(rt);
 
@@ -204,7 +205,7 @@ int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
 
 int nn_conn(struct nn_node *n, struct nn_router *rt)
 {
-    int r;
+    int r = 0;
     struct nn_conn *cn;
 
     cn = conn_init();
@@ -233,15 +234,12 @@ int nn_conn(struct nn_node *n, struct nn_router *rt)
     node_unlock(n);
     conn_unlock(cn);
 
-err:
-
     return r;
 }
 
 int nn_unconn(struct nn_node *n, struct nn_router *rt)
 {
-    int r;
-    bool f;
+    int r = 0;
 
     NODE_CONN_ITER_PRE
 
@@ -257,9 +255,7 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt)
 
 int nn_grp_free(struct nn_grp *g)
 {
-    void *iter;
     int r;
-    struct nn_node *node;
 
     // lock grp
 
@@ -284,10 +280,7 @@ int nn_grp_free(struct nn_grp *g)
 
 int nn_node_free(struct nn_node *n)
 {
-    void *iter = NULL;
     int r;
-    struct nn_conn *cn;
-    struct nn_router *rt;
 
     node_lock(n);
 
@@ -311,6 +304,17 @@ int nn_node_clean(struct nn_node *n)
     node_unlock(n);
 
     node_free(n);
+
+    return 0;
+}
+
+int nn_node_print(struct nn_node *n)
+{
+    //node_lock(n);
+
+    node_print(n);
+
+    //node_unlock(n);
 
     return 0;
 }
@@ -342,6 +346,17 @@ int nn_router_clean(struct nn_router *rt)
     router_unlock(rt);
 
     router_free(rt);
+
+    return 0;
+}
+
+int nn_router_print(struct nn_router *rt)
+{
+    //router_lock(rt);
+
+    router_print(rt);
+
+    //router_unlock(rt);
 
     return 0;
 }

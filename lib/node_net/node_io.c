@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdint.h>
+#include <string.h>
+#include <unistd.h>
+#include <assert.h>
 
 #include "sys/thread.h"
 #include "util/log.h"
@@ -71,11 +74,9 @@ static int node_conn_free(struct nn_node *n)
 /* rx input from conn, call user functions, tx output to conn  */
 static void *node_io_thread(void *arg)
 {
-    void *buf = NULL;
-    void *cmd_buf = NULL;
     struct nn_node *n = arg;
     struct timespec buf_check_timespec;
-    struct timespec icmd_check_timespec;
+    struct timespec cmd_check_timespec;
     void (*user_func)(struct nn_node *n, void *buf, int len, void *pdata);
     void *pdata;
     int attr;
@@ -90,8 +91,8 @@ static void *node_io_thread(void *arg)
 
     buf_check_timespec.tv_sec = 0;
     buf_check_timespec.tv_nsec = 10000000;
-    icmd_check_timespec.tv_sec = 0;
-    icmd_check_timespec.tv_nsec = 1000000;
+    cmd_check_timespec.tv_sec = 0;
+    cmd_check_timespec.tv_nsec = 1000000;
 
     L(LNOTICE, "Node thread starting: %p", n);
 
@@ -119,38 +120,30 @@ static void *node_io_thread(void *arg)
                 node_unlock(n);
                 L(LNOTICE, "Node thread shutdown completed");
                 return NULL;
+            case NN_STATE_FINISHED:
+                L(LCRIT, "Node thread illegally in finished state");
+                break;
         }
+
+        node_unlock(n);
 
         /* rx/tx cmd/data */
-        struct nn_icmd *icmd;
-        //icmd = conn_node_rx_icmd(n, &icmd_check_timespec);
-        node_unlock(n);
-        if(icmd){
-            // call driver function
-            //n->ops->rx_icmd(n, icmd);
+        struct nn_cmd *cmd;
+
+        NODE_CONN_ITER_PRE
+
+        if(!conn_node_rx_cmd(cn, &cmd)){
+            if(cmd){
+                node_unlock(n);
+                printf("!!!! node rx cmd, call driver\n");
+                node_lock(n);
+            }
         }
 
-//        node_lock(n);
-//        //cmd = conn_node_rx_cmd(n, &cmd_check_timespec);
-//        node_unlock(n);
-//        if(cmd){
-//            // call driver function
-//        }
-//
-//        node_lock(n);
-//        //data = conn_node_rx_data(n, &data_check_timespec);
-//        node_unlock(n);
-//        if(data){
-//            // call driver function to send to node endpoint
-//        }
-
-        node_lock(n);
-        // check for output for node driver
-        node_unlock(n);
+        NODE_CONN_ITER_POST
 
     }
 
-end:
     L(LNOTICE, "Node thread ended: %p", n);
     return NULL;
 }

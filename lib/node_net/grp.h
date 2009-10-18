@@ -18,4 +18,7 @@ struct grp_node_iter *grp_node_iter_init(struct nn_grp *g);
 int grp_node_iter_free(struct grp_node_iter *iter);
 int grp_node_iter_next(struct grp_node_iter *iter, struct nn_conn **cn);
 
+int grp_lock(struct nn_grp *g);
+int grp_unlock(struct nn_grp *g);
+
 #endif

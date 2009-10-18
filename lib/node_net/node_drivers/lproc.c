@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <time.h>
@@ -87,6 +88,7 @@ void *lproc_middle(void *arg)
 
     }
 #endif
+    return NULL;
 }
 
 int lproc_loop()
@@ -99,7 +101,7 @@ int lproc_loop()
         sleep(1);
         printf("in process\rt");
     }
-end:
+
     printf("... lproc exit\rt");
     return 0;
 

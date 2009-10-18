@@ -102,7 +102,6 @@ int bin_loop()
         sleep(1);
         printf("in process\rt");
     }
-end:
     printf("... bin exit\rt");
     return 0;
 
@@ -125,7 +124,6 @@ int dispatcher_bin(struct nn_node *n)
         // parent
         close(fd[1]);
         //printf("parent\rt");
-        thread_t tid;
         //thread_create(&tid, NULL, bin_middle, n);
     }else if(pid == 0){
         // child

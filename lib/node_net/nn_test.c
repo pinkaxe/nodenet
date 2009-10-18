@@ -16,7 +16,6 @@
 
 #define GRP0 0
 
-static struct nn_node *n[0], *n1, *n2;
 
 int input_node(struct nn_node *n, void *buf, int len, void *pdata)
 {
@@ -34,11 +33,11 @@ int process_node(struct nn_node *n, void *buf, int len, void *pdata)
 
 int output_node(struct nn_node *n, void *buf, int len, void *pdata)
 {
-    int i;
 
     //n->tx_cmd(n, );
     //nn_node_tx_cmd(n, buf, len, destiny);
     //nn_node_tx(n, );
+    return 0;
 }
 
 #if 0
@@ -71,14 +70,13 @@ int xmain(int argc, char *argv)
 }
 #endif
 
-int main(int argc, char *argv)
+int main(int argc, char **argv)
 {
     int i;
     int c = 0;
     struct nn_router *rt[524];
     struct nn_node *n[524];
     struct nn_grp *g[524];
-    struct nn_conn *cn[524];
     struct nn_cmd *cmd;
     //struct nn_io_data *data;
     //struct nn_io_conf *conf;
@@ -146,9 +144,9 @@ int main(int argc, char *argv)
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
 
         for(i=0; i < 5; i++){
-            node_print(n[i]);
+            nn_node_print(n[i]);
         }
-        router_print(rt[0]);
+        nn_router_print(rt[0]);
 
 
         for(i=0; i < 5; i++){

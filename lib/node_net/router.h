@@ -25,6 +25,20 @@ struct router_conn_iter *router_conn_iter_init(struct nn_router *rt);
 int router_conn_iter_free(struct router_conn_iter *iter);
 int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn **cn);
 
+int router_conn_each(struct nn_router *rt,
+        int (*cb)(struct nn_conn *cn, void *a0), 
+        struct nn_cmd *cmd);
+
+enum nn_state router_get_state(struct nn_router *rt);
+int router_set_state(struct nn_router *rt, enum nn_state state);
+
+int router_lock(struct nn_router *rt);
+int router_unlock(struct nn_router *rt);
+int router_cond_wait(struct nn_router *rt);
+int router_cond_broadcast(struct nn_router *rt);
+
+int router_print(struct nn_router *rt);
+
 /* easy iterator pre/post
  * rt != NULL when this is called, afterwards cn for the
  matching each matching node is set and can be used */

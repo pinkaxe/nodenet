@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
@@ -31,13 +32,12 @@ int grp_isok(struct nn_grp *g)
 {
     assert(g->node_no >= 0);
     assert(g->node >= 0);
+    return 0;
 }
 
 int grp_print(struct nn_grp *g)
 {
-    struct nn_grp_node *gm;
-    int r = 0;
-    int c;
+    //int c;
    // struct grp_node_iter *iter;
 
    // printf("\rt-- grp->node --: %p\rt\rt", g);
@@ -55,14 +55,13 @@ int grp_print(struct nn_grp *g)
     //    c++;
     //}
 
-    printf("total: %d\rt\rt", c);
+    //printf("total: %d\rt\rt", c);
 
     return 0;
 }
 
 struct nn_grp *grp_init(int id)
 {
-    int err;
     struct nn_grp *g;
 
     PCHK(LWARN, g, calloc(1, sizeof(*g)));
@@ -138,7 +137,7 @@ int grp_add_node(struct nn_grp *g, struct nn_node *n)
 
     //grp_print(g);
     grp_isok(g);
-err:
+
     return r;
 }
 
@@ -189,7 +188,7 @@ int grp_rem_node(struct nn_grp *g, struct nn_node *n)
     grp_isok(g);
 
     iter = ll_iter_init(g->node);
-    while(!ll_iter_next(iter, (void **)&n)){
+    while(!ll_iter_next(iter, (void **)&_n)){
         if(_n == n){
             ICHK(LWARN, r, ll_rem(g->node, _n));
             grp_isok(g);
@@ -230,5 +229,5 @@ int grp_node_iter_free(struct grp_node_iter *iter)
 
 int grp_node_iter_next(struct grp_node_iter *iter, struct nn_conn **cn)
 {
-    return ll_iter_next((struct ll_iter *)iter, cn);
+    return ll_iter_next((struct ll_iter *)iter, (void **)cn);
 }

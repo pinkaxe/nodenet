@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -197,11 +198,13 @@ int conn_get_state(struct nn_conn *cn)
 int conn_lock(struct nn_conn *cn)
 {
     mutex_lock(&cn->mutex);
+    return 0;
 }
 
 int conn_unlock(struct nn_conn *cn)
 {
     mutex_unlock(&cn->mutex);
+    return 0;
 }
 
 
@@ -260,46 +263,18 @@ int conn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd
     return r;
 
 }
-    // lock router
-    // lock ll
-    // remove first ll pointer
-    // unlock ll
-    //
-    // use pointer
-    /*
-    ROUTER_CONN_ITER_PRE
 
-    if(link_get_state(cn->link) == LINK_STATE_ALIVE){
-        cmd = que_get(cn->n_rt_cmd, &ts);
-    }
-
-    if(cmd){
-        r = 0;
-        conn_unlock(cn);
-        router_unlock(rt);
-        goto end;
-    }
-
-    ROUTER_CONN_ITER_POST
-
-end:
-    return r;
-}
-    */
-
-int conn_node_rx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
-        **cmd)
+int conn_node_rx_cmd(struct nn_conn *cn, struct nn_cmd **cmd)
 {
+    int r = 1;
     struct timespec ts = {0, 0};
 
-    NODE_CONN_ITER_PRE
-
-    if(link_get_to(cn->link) == rt){
-        cmd = que_get(cn->rt_n_cmd, &ts);
+    if(link_get_state(cn->link) == LINK_STATE_ALIVE){
+        *cmd = que_get(cn->rt_n_cmd, &ts);
+        if(*cmd) r = 0;
     }
 
-    NODE_CONN_ITER_POST
-
+    return r;
 }
 
 

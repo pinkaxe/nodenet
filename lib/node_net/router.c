@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <assert.h>
@@ -60,11 +61,11 @@ struct nn_router_buf_counter(struct nn_router *rt)
 int router_isvalid(struct nn_router *rt)
 {
     assert(rt->conn);
+    return 0;
 }
 
 struct nn_router *router_init()
 {
-    int err;
     struct nn_router *rt;
 
     PCHK(LWARN, rt, calloc(1, sizeof(*rt)));
@@ -93,8 +94,6 @@ err:
 
 int router_free(struct nn_router *rt)
 {
-    void *iter;
-    struct nn_conn *cn;
     int r = 0;
 
     router_isvalid(rt);
@@ -158,7 +157,6 @@ int router_conn(struct nn_router *rt, struct nn_conn *cn)
 
     ICHK(LWARN, r, ll_add_front(rt->conn, (void **)&cn));
 
-err:
     return r;
 }
 
@@ -202,8 +200,6 @@ int router_unconn(struct nn_router *rt, struct nn_conn *cn)
 
 int router_print(struct nn_router *rt)
 {
-    int r = 0;
-    int c = 0;
 
     ROUTER_CONN_ITER_PRE
 
@@ -260,11 +256,12 @@ int router_conn_iter_free(struct router_conn_iter *iter)
 
 int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn **cn)
 {
-    return ll_iter_next((struct ll_iter *)iter, cn);
+    return ll_iter_next((struct ll_iter *)iter, (void **)cn);
 }
 
 int router_conn_each(struct nn_router *rt,
-        int (*cb)(struct nn_conn *cn))
+        int (*cb)(struct nn_conn *cn, void *a0),
+        struct nn_cmd *cmd)
 {
     int r;
     assert(rt);
@@ -276,7 +273,7 @@ int router_conn_each(struct nn_router *rt,
     iter = router_conn_iter_init(rt);
     while(!router_conn_iter_next(iter, &cn)){
         conn_lock(cn);
-        r = cb(cn);
+        r = cb(cn, cmd);
         conn_unlock(cn);
         if(r){
             break;
@@ -285,4 +282,7 @@ int router_conn_each(struct nn_router *rt,
     router_conn_iter_free(iter);
 
     router_unlock(rt);
+
+    return r;
+
 }
