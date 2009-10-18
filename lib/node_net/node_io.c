@@ -67,7 +67,6 @@ static int node_conn_free(struct nn_node *n)
 
 }
 
-extern int busy_freeing_no;
 
 /* rx input from conn, call user functions, tx output to conn  */
 static void *node_io_thread(void *arg)
@@ -115,7 +114,6 @@ static void *node_io_thread(void *arg)
             case NN_STATE_SHUTDOWN:
                 L(LNOTICE, "Node thread shutdown start: %p", n);
                 node_conn_free(n);
-                busy_freeing_no--;
                 node_set_state(n, NN_STATE_FINISHED);
                 node_cond_broadcast(n);
                 node_unlock(n);

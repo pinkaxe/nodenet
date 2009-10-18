@@ -19,14 +19,6 @@
 
 #include "nn.h"
 
-int busy_freeing_no = 0;
-
-int nn_wait()
-{
-    while(busy_freeing_no > 0){
-        usleep(500);
-    }
-}
 
 struct nn_router *nn_router_init(void)
 {
@@ -299,7 +291,6 @@ int nn_node_free(struct nn_node *n)
 
     node_lock(n);
 
-    busy_freeing_no++;
     r = node_set_state(n, NN_STATE_SHUTDOWN);
     node_cond_broadcast(n);
 
@@ -331,7 +322,6 @@ int nn_router_free(struct nn_router *rt)
 
     router_lock(rt);
 
-    busy_freeing_no++;
     r = router_set_state(rt, NN_STATE_SHUTDOWN);
     router_cond_broadcast(rt);
 

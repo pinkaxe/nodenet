@@ -10,7 +10,6 @@
 #include "conn.h"
 #include "router.h"
 
-extern int busy_freeing_no;
 
 /* always check if the conn isn't dead before using it,
  * this function also frees the appropriate side of the
@@ -163,7 +162,6 @@ static void shutdown(struct nn_router *rt)
     L(LNOTICE, "Route shutdown start: %p", rt);
 
     router_conn_free(rt);
-    busy_freeing_no--;
 
     L(LNOTICE, "Router shutdown completed: %p", rt);
 }
