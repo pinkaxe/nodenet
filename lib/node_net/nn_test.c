@@ -117,17 +117,15 @@ int main(int argc, char *argv)
      //       //nn_join_grp(n[i], g[2]);
      //   }
 
-        printf("starting\n");
-        nn_node_run(n[0]);
-        nn_router_run(rt[0]);
-        //sleep(1);
+        nn_node_set_state(n[0], NN_STATE_RUNNING);
+        nn_router_set_state(rt[0], NN_STATE_RUNNING);
+        sleep(5);
 
         for(i=0; i < 1; i++){
             /* unconn not needed but ok */
             nn_unconn(n[i], rt[0]);
             nn_node_free(n[i]);
         }
-
         nn_grp_free(g[0]);
         nn_grp_free(g[1]);
         nn_grp_free(g[2]);

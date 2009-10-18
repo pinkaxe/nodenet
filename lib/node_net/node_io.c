@@ -151,6 +151,7 @@ static void *node_io_thread(void *arg)
 
         node_lock(n);
         // check for output for node driver
+        node_unlock(n);
 
     }
 

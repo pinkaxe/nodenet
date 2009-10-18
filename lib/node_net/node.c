@@ -143,11 +143,6 @@ int node_free(struct nn_node *n)
 }
 
 
-int node_start(struct nn_node *n)
-{
-    return node_set_state(n, NN_STATE_RUNNING);
-}
-
 int node_lock(struct nn_node *n)
 {
     mutex_lock(&n->mutex);

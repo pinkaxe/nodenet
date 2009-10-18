@@ -38,13 +38,13 @@ struct nn_router *nn_router_init(void)
 }
 
 
-int nn_router_run(struct nn_router *rt)
+int nn_router_set_state(struct nn_router *rt, enum nn_state state)
 {
     int r;
 
     router_lock(rt);
 
-    ICHK(LWARN, r, router_set_state(rt, NN_STATE_RUNNING));
+    ICHK(LWARN, r, router_set_state(rt, state));
 
     router_unlock(rt);
 
@@ -63,13 +63,13 @@ struct nn_node *nn_node_init(enum nn_node_driver type, enum nn_node_attr attr,
 
 //int nn_node_setname(struct nn_node *n, char *name);
 
-int nn_node_run(struct nn_node *n)
+int nn_node_set_state(struct nn_node *n, enum nn_state state)
 {
     int r;
 
     node_lock(n);
 
-    ICHK(LWARN, r, node_start(n));
+    ICHK(LWARN, r, node_set_state(n, state));
 
     node_unlock(n);
 
