@@ -103,6 +103,13 @@ int router_unlock(struct nn_router *rt)
 int router_cond_wait(struct nn_router *rt)
 {
     cond_wait(&rt->cond, &rt->mutex);
+    return 0;
+}
+
+int router_cond_broadcast(struct nn_router *rt)
+{
+    cond_broadcast(&rt->cond);
+    return 0;
 }
 
 int router_set_state(struct nn_router *rt, enum nn_state state)

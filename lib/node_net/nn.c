@@ -45,6 +45,7 @@ int nn_router_set_state(struct nn_router *rt, enum nn_state state)
     router_lock(rt);
 
     ICHK(LWARN, r, router_set_state(rt, state));
+    router_cond_broadcast(rt);
 
     router_unlock(rt);
 
@@ -70,6 +71,7 @@ int nn_node_set_state(struct nn_node *n, enum nn_state state)
     node_lock(n);
 
     ICHK(LWARN, r, node_set_state(n, state));
+    node_cond_broadcast(n);
 
     node_unlock(n);
 
@@ -348,6 +350,7 @@ int nn_node_free(struct nn_node *n)
 
     busy_freeing_no++;
     r = node_set_state(n, NN_STATE_SHUTDOWN);
+    node_cond_broadcast(n);
 
     return r;
 }
@@ -359,6 +362,7 @@ int nn_router_free(struct nn_router *rt)
 
     busy_freeing_no++;
     r = router_set_state(rt, NN_STATE_SHUTDOWN);
+    router_cond_broadcast(rt);
 
     return r;
 }

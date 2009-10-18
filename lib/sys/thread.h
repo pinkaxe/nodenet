@@ -64,7 +64,10 @@ typedef	pthread_cond_t cond_t;
 	pthread_cond_timedwait(tid, data, timespec)
 
 #define cond_signal(cond) \
-	dbg_thread(pthread_cond_signal(cond))	
+	dbg_thread(pthread_cond_signal(cond))
+
+#define cond_broadcast(cond) \
+	dbg_thread(pthread_cond_broadcast(cond))
 
 #define thread_testcancel() \
 	pthread_testcancel() /* returns void */

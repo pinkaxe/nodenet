@@ -156,7 +156,7 @@ static void *router_icmd_thread(void *arg)
     struct nn_conn *cn;
     int r;
 
-    L(LNOTICE, "Starting router thread");
+    L(LNOTICE, "Router thread starting");
 
     for(;;){
         router_lock(rt);
@@ -169,6 +169,7 @@ static void *router_icmd_thread(void *arg)
                 while(router_get_state(rt) == NN_STATE_PAUSED){
                     router_cond_wait(rt);
                 }
+                L(LNOTICE, "Router paused state exit: %p", rt);
                 break;
             case NN_STATE_SHUTDOWN:
                 L(LNOTICE, "Router shutdown start: %p", rt);

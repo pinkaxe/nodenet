@@ -45,6 +45,7 @@ struct nn_node {
     uint32_t max_exe_usec;
 
     mutex_t mutex;
+    cond_t cond;
 
     DBG_STRUCT_END
 };
@@ -93,6 +94,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
 
     // FIXME: err checking
     mutex_init(&n->mutex, NULL);
+    cond_init(&n->cond, NULL);
 
     n->state = NN_STATE_PAUSED;
 
@@ -135,6 +137,8 @@ int node_free(struct nn_node *n)
     }
 
     mutex_unlock(&n->mutex);
+
+    cond_destroy(&n->cond);
     mutex_destroy(&n->mutex);
 
     free(n);
@@ -152,6 +156,18 @@ int node_lock(struct nn_node *n)
 int node_unlock(struct nn_node *n)
 {
     mutex_unlock(&n->mutex);
+    return 0;
+}
+
+int node_cond_wait(struct nn_node *n)
+{
+    cond_wait(&n->cond, &n->mutex);
+    return 0;
+}
+
+int node_cond_broadcast(struct nn_node *n)
+{
+    cond_broadcast(&n->cond);
     return 0;
 }
 

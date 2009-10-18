@@ -110,11 +110,9 @@ static void *node_io_thread(void *arg)
             case NN_STATE_PAUSED:
                 L(LNOTICE, "Node paused: %p", n);
                 while(node_get_state(n) == NN_STATE_PAUSED){
-                    node_unlock(n);
-                    usleep(500000);
-                    node_lock(n);
-                    //node_cond_wait(n);
+                    node_cond_wait(n);
                 }
+                L(LNOTICE, "Node paused state exit: %p", n);
                 break;
             case NN_STATE_SHUTDOWN:
                 L(LNOTICE, "Node shutdown start: %p", n);

@@ -119,7 +119,15 @@ int main(int argc, char *argv)
 
         nn_node_set_state(n[0], NN_STATE_RUNNING);
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
-        sleep(5);
+        sleep(3);
+
+        nn_node_set_state(n[0], NN_STATE_PAUSED);
+        nn_router_set_state(rt[0], NN_STATE_PAUSED);
+        sleep(3);
+
+        nn_node_set_state(n[0], NN_STATE_RUNNING);
+        nn_router_set_state(rt[0], NN_STATE_RUNNING);
+        sleep(3);
 
         for(i=0; i < 1; i++){
             /* unconn not needed but ok */
