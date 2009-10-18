@@ -12,7 +12,8 @@ int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb);
 int nn_node_set_state(struct nn_node *n, enum nn_state state);
 // nn_router_get_cmd_req(rt, req, timeout)
 // nn_router_get_data_req(rt, req, timeout)
-int nn_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd);
+int nn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd
+        *cmd);
 int nn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
         *cmd);
 

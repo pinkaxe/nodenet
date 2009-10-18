@@ -87,6 +87,8 @@ static void *node_io_thread(void *arg)
     pdata = node_get_pdatap(n);
     attr = node_get_attr(n);
 
+    L(LNOTICE, "Node thread starting: %p", n);
+
     node_unlock(n);
 
     buf_check_timespec.tv_sec = 0;
@@ -94,12 +96,11 @@ static void *node_io_thread(void *arg)
     cmd_check_timespec.tv_sec = 0;
     cmd_check_timespec.tv_nsec = 1000000;
 
-    L(LNOTICE, "Node thread starting: %p", n);
 
     for(;;){
-        sleep(1);
 
         node_lock(n);
+        //printf("checking state\n");
 
         /* check state */
         switch(node_get_state(n)){
@@ -132,15 +133,26 @@ static void *node_io_thread(void *arg)
 
         NODE_CONN_ITER_PRE
 
+            int j;
+       // j = 100;
+       // while(j--){
         if(!conn_node_rx_cmd(cn, &cmd)){
             if(cmd){
+                conn_unlock(cn);
                 node_unlock(n);
                 printf("!!!! node rx cmd, call driver\n");
+                usleep(1000);
                 node_lock(n);
+                conn_lock(cn);
+                cmd_free(cmd);
+                //usleep(1000);
             }
         }
+       // }
 
         NODE_CONN_ITER_POST
+
+        usleep(10000);
 
     }
 

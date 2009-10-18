@@ -52,10 +52,10 @@ int output_node(struct nn_node *n, void *buf, int len, void *pdata)
 int xmain(int argc, char *argv)
 {
     int i;
-    struct nn_router *rt[524];
-    struct nn_node *n[524];
-    struct nn_grp *g[524];
-    struct nn_conn *cn[524];
+    struct nn_router *rt[10024];
+    struct nn_node *n[10024];
+    struct nn_grp *g[10024];
+    struct nn_conn *cn[10024];
     struct nn_cmd *cmd;
 
     rt[0] = nn_router_init();
@@ -73,13 +73,12 @@ int xmain(int argc, char *argv)
 int main(int argc, char **argv)
 {
     int i;
-    int c = 0;
-    struct nn_router *rt[524];
-    struct nn_node *n[524];
-    struct nn_grp *g[524];
-    struct nn_cmd *cmd;
+    struct nn_router *rt[10024];
+    struct nn_node *n[10024];
+    struct nn_grp *g[10024];
     //struct nn_io_data *data;
     //struct nn_io_conf *conf;
+    struct nn_cmd *cmd;
 
     while(1){
 
@@ -92,7 +91,7 @@ int main(int argc, char **argv)
         }
 
         /* create input nodes */
-        for(i=0; i < 5; i++){
+        for(i=0; i < 100; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT, input_node, NULL);
             nn_conn(n[i], rt[0]);
             //nn_node_join_grp(n[i], rt[0]);
@@ -117,44 +116,56 @@ int main(int argc, char **argv)
 
 
 
-        for(i=0; i < 5; i++){
+        for(i=0; i < 100; i++){
             nn_node_set_state(n[i], NN_STATE_RUNNING);
         }
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
 
+        /*
         c = 0;
         while(c < 10){
-            for(i=0; i < 5; i++){
-                cmd = cmd_init(c++, NULL, 0, 1, NN_SENDTO_ALL, 0);
+            for(i=0; i < 100; i++){
+                cmd = cmd_init(c * 100 + i++, NULL, 0, 1, NN_SENDTO_ALL, 0);
                 while(nn_node_tx_cmd(n[i], rt[0], cmd)){
-                    usleep(1);
+                    usleep(100);
                 }
             }
-            usleep(1);
+            c++;
+            usleep(1000);
+        }
+        */
+
+        int c = 0;
+        for(i=0; i < 100; i++){
+            cmd = cmd_init(c++, NULL, 0, 1, NN_SENDTO_ALL, 0);
+            while(nn_router_tx_cmd(rt[0], n[i], cmd)){
+                usleep(1600);
+            }
+            usleep(16000);
         }
 
-        for(i=0; i < 5; i++){
+        for(i=0; i < 100; i++){
             nn_node_set_state(n[i], NN_STATE_PAUSED);
         }
         nn_router_set_state(rt[0], NN_STATE_PAUSED);
 
-        for(i=0; i < 5; i++){
+        for(i=0; i < 100; i++){
             nn_node_set_state(n[i], NN_STATE_RUNNING);
         }
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
 
-        for(i=0; i < 5; i++){
+        for(i=0; i < 100; i++){
             nn_node_print(n[i]);
         }
         nn_router_print(rt[0]);
 
 
-        for(i=0; i < 5; i++){
+        for(i=0; i < 100; i++){
             /* unconn not needed but ok */
             //nn_unconn(n[i], rt[0]);
             nn_node_free(n[i]);
         }
-        for(i=0; i < 5; i++){
+        for(i=0; i < 100; i++){
             nn_node_clean(n[i]);
         }
 
@@ -239,15 +250,15 @@ int io_data_req_cb(struct nn_router *rt, struct nn_io_data *data)
             while(nn_router_tx_cmd(rt[0], cmd)){
                 //assert(1 == 0);
                 //printf("!! bla\n");
-                usleep(50);
+                usleep(1000);
             }
 
             //data = malloc(sizeof(*data));
             //nn_router_tx_data(rt[0], data);
 
-            //usleep(5000);
+            //usleep(100000);
         }
-        sleep(5);
+        sleep(100);
         */
         /* create output nodes */
         /*

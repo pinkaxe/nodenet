@@ -254,7 +254,7 @@ int conn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd
     NODE_CONN_ITER_PRE
 
     if(link_get_to(cn->link) == rt){
-        que_add(cn->rt_n_cmd, cmd);
+        r = que_add(cn->rt_n_cmd, cmd);
         //node_set_cmd_avail
     }
 
@@ -269,9 +269,13 @@ int conn_node_rx_cmd(struct nn_conn *cn, struct nn_cmd **cmd)
     int r = 1;
     struct timespec ts = {0, 0};
 
+    *cmd = NULL;
     if(link_get_state(cn->link) == LINK_STATE_ALIVE){
         *cmd = que_get(cn->rt_n_cmd, &ts);
-        if(*cmd) r = 0;
+        if(*cmd){
+            printf("cmd: %p\n", *cmd);
+            r = 0;
+        }
     }
 
     return r;

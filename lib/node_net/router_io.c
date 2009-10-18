@@ -184,12 +184,14 @@ static void *router_cmd_thread(void *arg)
 
         router_lock(rt);
 
+again:
         /* state changed ? */
         switch(router_get_state(rt)){
             case NN_STATE_RUNNING:
                 break;
             case NN_STATE_PAUSED:
                 _pause(rt);
+                goto again;
                 break;
             case NN_STATE_SHUTDOWN:
                 _shutdown(rt);

@@ -141,13 +141,13 @@ int nn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
     return conn_node_tx_cmd(n, rt, cmd);
 }
 
-int nn_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd)
+int nn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd *cmd)
 {
     int r = 0;
 
     //router_lock(rt);
 
-    //r = conn_router_tx_cmd(rt, cmd);
+    r = conn_router_tx_cmd(rt, n, cmd);
 
     //router_unlock(rt);
 
