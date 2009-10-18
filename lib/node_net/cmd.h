@@ -16,41 +16,24 @@ struct nn_io_conf {
     int sendto_id;  /* depend on send_to_type grp_id/node_id */
 };
 
-struct nn_cmd {
+//struct nn_cmd {
+//    enum nn_cmd_cmd id;
+//    void *pdata;
+//    int data_no;
+//    struct nn_io_conf *conf;
+//    //uint32_t seq_no;
+//};
+
+struct nn_packet_cmd {
     enum nn_cmd_cmd id;
     void *pdata;
     int data_no;
-    struct nn_io_conf *conf;
-    //uint32_t seq_no;
 };
-
-struct nn_packet_icmd {
-    enum nn_cmd_cmd id;
-    void *pdata;
-    int data_no;
-};
-
-/*
-struct nn_io_data {
-    void *data;
-    int data_no;
-    struct nn_io_conf *conf;
-};
-*/
 
 
 typedef int (*io_cmd_req_cb_t)(struct nn_router *rt, struct nn_cmd *cmd);
 typedef int (*io_data_req_cb_t)(struct nn_router *rt, struct nn_io_data *data);
 
-/*
-int nn_io_set_cmd_cb(struct nn_router *rt, int (*nn_io_req)(struct nn_cmd
-            *req));
-int nn_io_add_cmd_req(struct nn_cmd *req);
-
-int nn_io_set_data_cb(struct nn_router *rt, int (*nn_io_req)(struct nn_io_data
-            *data));
-int nn_io_add_data_req(struct nn_io_data *req);
-*/
 
 struct nn_cmd *cmd_init(enum nn_cmd_cmd id, void *pdata, int data_no,
         int sendto_no, int sendto_type, int sendto_id);

@@ -7,7 +7,6 @@ struct nn_grp;
 struct nn_grp_memb;
 
 struct nn_cmd;
-struct nn_icmd;
 struct nn_io_data;
 
 struct nn_conn;

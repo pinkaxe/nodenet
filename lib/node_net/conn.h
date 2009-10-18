@@ -21,10 +21,10 @@ int conn_get_state(struct nn_conn *cn);
 
 
 /* router -> node cmd */
-int conn_router_tx_icmd(struct nn_router *rt, struct nn_node *n, struct nn_icmd
-        *icmd);
-int conn_node_rx_icmd(struct nn_node *n, struct nn_router *rt, struct nn_icmd
-        **icmd);
+int conn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd
+        *cmd);
+int conn_node_rx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
+        **cmd);
 
 /* node -> router cmd */
 //int conn_node_tx_cmd(struct nn_node *rt, struct nn_cmd *cmd);

@@ -30,57 +30,57 @@ static int if_conn_dead_free(struct nn_conn *cn)
 
 
 
-static int route_to_node_cb(struct nn_conn *cn, void *n_, void *icmd_)
+static int route_to_node_cb(struct nn_conn *cn, void *n_, void *cmd_)
 {
     int r = 0;
     struct nn_node *n = n_;
-    struct nn_icmd *icmd = icmd_;
+    struct nn_cmd *cmd = cmd_;
 
     if(!if_conn_dead_free(cn) && conn_get_node(cn) == n){
-         //r = conn_router_tx_cmd(cn, icmd);
+         //r = conn_router_tx_cmd(cn, cmd);
     }
     return r;
 }
 
-static int route_to_node(struct nn_router *rt, struct nn_icmd *icmd)
+static int route_to_node(struct nn_router *rt, struct nn_cmd *cmd)
 {
-    return router_conn_each(rt, route_to_node_cb, icmd);
+    return router_conn_each(rt, route_to_node_cb, cmd);
 }
 
 
-static int route_to_all_cb(struct nn_conn *cn, void *icmd_)
+static int route_to_all_cb(struct nn_conn *cn, void *cmd_)
 {
-    struct nn_icmd *icmd = icmd_;
+    struct nn_cmd *cmd = cmd_;
 
     if(!if_conn_dead_free(cn)){
-         //conn_router_tx_cmd(cn, icmd);
+         //conn_router_tx_cmd(cn, cmd);
     }
 }
 
-static int route_to_all(struct nn_router *rt, struct nn_icmd *icmd)
+static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
 {
-    return router_conn_each(rt, route_to_all_cb, icmd);
+    return router_conn_each(rt, route_to_all_cb, cmd);
 }
 
 
-static int route_to_grp(struct nn_grp *g, struct nn_icmd *icmd)
+static int route_to_grp(struct nn_grp *g, struct nn_cmd *cmd)
 {
-    //return grp_memb_each(g, route_to_grp_cb, icmd);
+    //return grp_memb_each(g, route_to_grp_cb, cmd);
 }
 
 
 
 /* decide who/where to route */
-static int route_cmd(struct nn_router *rt, struct nn_icmd *icmd)
+static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 {
     printf("route_cmd\n");
     //printf("!!! yeah got it: %d\rt", cmd->id);
     //struct nn_io_conf *conf;
 
-    //assert(icmd);
-    //assert(icmd->conf);
+    //assert(cmd);
+    //assert(cmd->conf);
 
-    //switch(icmd->conf->sendto_type){
+    //switch(cmd->conf->sendto_type){
     //    case NN_SENDTO_GRP:
     //        //route_to_grp(g, );
     //        break;
@@ -88,14 +88,14 @@ static int route_cmd(struct nn_router *rt, struct nn_icmd *icmd)
     //        //send_cmd_to_node(e1, cmd);
     //        break;
     //    case NN_SENDTO_ALL:
-    //        route_to_all(rt, icmd);
+    //        route_to_all(rt, cmd);
     //        //printf("freeing %p\rt", cmd);
     //        //cmd_free(cmd);
     //        break;
     //    default:
     //        break;
     //}
-    icmd_free(icmd);
+    cmd_free(cmd);
     return 0;
 }
 
@@ -135,80 +135,100 @@ static int router_conn_free(struct nn_router *rt)
 
 
 #if 0
-static int _router_tx_icmd()
+static int _router_tx_cmd()
 {
-    struct nn_icmd *icmd;
-    icmd = icmd_init(33, NULL, 0, 0, sendto_type, int sendto_id);
-    r = conn_router_tx_icmd(rt, &icmd);
+    struct nn_cmd *cmd;
+    cmd = cmd_init(33, NULL, 0, 0, sendto_type, int sendto_id);
+    r = conn_router_tx_cmd(rt, &cmd);
     if(!r){
         printf("QQQ route cmd\n");
-        //route_cmd(rt, icmd);
+        //route_cmd(rt, cmd);
     }
     return r;
 }
 #endif
 
+static void pause(struct nn_router *rt)
+{
+    L(LNOTICE, "Router paused: %p", rt);
+
+    while(router_get_state(rt) == NN_STATE_PAUSED){
+        router_cond_wait(rt);
+    }
+
+    L(LNOTICE, "Router unpaused %p", rt);
+}
+
+static void shutdown(struct nn_router *rt)
+{
+    L(LNOTICE, "Route shutdown start: %p", rt);
+
+    router_conn_free(rt);
+    router_free(rt);
+    busy_freeing_no--;
+
+    L(LNOTICE, "Router shutdown completed: %p", rt);
+}
+
+
 /* pick up cmds coming from router, and router to other node's */
-static void *router_icmd_thread(void *arg)
+static void *router_cmd_thread(void *arg)
 {
     struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
     struct nn_conn *cn;
+    struct nn_cmd *cmd;
     int r;
 
     L(LNOTICE, "Router thread starting");
 
     for(;;){
+
         router_lock(rt);
 
+        /* state changed ? */
         switch(router_get_state(rt)){
             case NN_STATE_RUNNING:
                 break;
             case NN_STATE_PAUSED:
-                L(LNOTICE, "Router paused: %p", rt);
-                while(router_get_state(rt) == NN_STATE_PAUSED){
-                    router_cond_wait(rt);
-                }
-                L(LNOTICE, "Router paused state exit: %p", rt);
+                pause(rt);
                 break;
             case NN_STATE_SHUTDOWN:
-                L(LNOTICE, "Router shutdown start: %p", rt);
                 router_unlock(rt);
-                router_conn_free(rt);
-                router_free(rt);
-                busy_freeing_no--;
-                L(LNOTICE, "Router shutdown completed");
-                return NULL;
+                shutdown(rt);
+                thread_exit(NULL);
+                break;
         }
 
         router_unlock(rt);
 
-        /* check cmd_in, data_in */
+        ROUTER_CONN_ITER_PRE
 
-        //while(router_get_state(rt) == NN_STATE_PAUSED){
-        //    router_unlock(rt);
-        //    usleep(500000);
-        //    router_lock(rt);
-        //}
+            /* rx cmd's and route */
+            if(!conn_router_rx_cmd(cn, &cmd)){
+                conn_unlock(cn);
+                router_unlock(rt);
 
-        //if(router_get_state(rt) == NN_STATE_SHUTDOWN){
-        //    router_unlock(rt);
-        //    L(LNOTICE, "Router shutdown start: %p", rt);
-        //    router_conn_free(rt);
-        //    router_free(rt);
-        //    busy_freeing_no--;
-        //    L(LNOTICE, "Router shutdown completed: %p", rt);
-        //    return NULL;
-        //}
+                // route data
+                printf("!! router got cmd\n");
+                cmd_free(cmd);
 
-        sleep(1);
+                router_lock(rt);
+                conn_lock(cn);
+            }
+
+        /* rx data and route */
+        // conn_router_rx_data()
+
+        ROUTER_CONN_ITER_POST
     }
+
 }
 
 int router_io_run(struct nn_router *rt)
 {
     thread_t tid;
-    thread_create(&tid, NULL, router_icmd_thread, rt);
+    thread_create(&tid, NULL, router_cmd_thread, rt);
     thread_detach(tid);
 
     //thread_create(&tid, NULL, route_data_thread, rt);

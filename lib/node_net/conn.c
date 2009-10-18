@@ -21,7 +21,17 @@
 struct nn_conn {
     struct link *link;
     mutex_t mutex;
+    cond_t cond; /* if anything changes */
 
+    /*
+    struct nn_conn_flags {
+        int state;
+        int n_rt_cmd;
+        int n_rt_data;
+        int rt_n_cmd;
+        int rt_n_data;
+    };
+    */
     /* router(output) -> node(input) */
     struct que *rt_n_cmd;   /* router write node cmd */
     struct que *rt_n_data;  /* router write node data */
@@ -31,9 +41,6 @@ struct nn_conn {
     struct que *n_rt_cmd;    /* only master node */
     struct que *n_rt_data;   /* n write data */
 
-    /* internal going to and from router commands */
-    struct que *n_rt_icmd;
-    struct que *rt_n_icmd;
 };
 
 static int conn_free(struct nn_conn *cn);
@@ -75,8 +82,8 @@ struct nn_conn *conn_init()
     }
 
     struct ques_to_init qs[] = {
-        {&cn->rt_n_icmd, 8},
-        {&cn->n_rt_icmd, 8},
+        {&cn->rt_n_cmd, 8},
+        {&cn->n_rt_cmd, 8},
         //{&cn->rt_n_cmd, 8},
         //{&cn->n_rt_cmd, 8},
         {NULL, 0},
@@ -88,7 +95,7 @@ struct nn_conn *conn_init()
         cn = NULL;
         goto err;
     }
-    assert(cn->rt_n_icmd);
+    assert(cn->rt_n_cmd);
 
     PCHK(LWARN, l, link_init());
     if(!l){
@@ -111,13 +118,13 @@ static int conn_free(struct nn_conn *cn)
 
     /* IMPROVE: can save conn state here */
 
-    if(cn->rt_n_icmd){
-        ICHK(LWARN, r, que_free(cn->rt_n_icmd));
+    if(cn->rt_n_cmd){
+        ICHK(LWARN, r, que_free(cn->rt_n_cmd));
         if(r) fail++;
     }
 
-    if(cn->n_rt_icmd){
-        ICHK(LWARN, r, que_free(cn->n_rt_icmd));
+    if(cn->n_rt_cmd){
+        ICHK(LWARN, r, que_free(cn->n_rt_cmd));
         if(r) fail++;
     }
 
@@ -202,8 +209,8 @@ int conn_unlock(struct nn_conn *cn)
 
 
 /* router -> node cmd */
-int conn_router_tx_icmd(struct nn_router *rt, struct nn_node *n, struct nn_icmd
-        *icmd)
+int conn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd
+        *cmd)
 {
 
     int r = 1;
@@ -211,7 +218,8 @@ int conn_router_tx_icmd(struct nn_router *rt, struct nn_node *n, struct nn_icmd
     NODE_CONN_ITER_PRE
 
     if(link_get_to(cn->link) == rt){
-        que_add(cn->rt_n_icmd, icmd);
+        que_add(cn->rt_n_cmd, cmd);
+        //node_set_cmd_avail
     }
 
     NODE_CONN_ITER_POST
@@ -220,18 +228,33 @@ int conn_router_tx_icmd(struct nn_router *rt, struct nn_node *n, struct nn_icmd
 
 }
 
-int conn_router_rx_icmd(struct nn_router *rt, struct nn_icmd **icmd)
+int conn_router_rx_cmd(struct nn_conn *cn, struct nn_cmd **cmd)
 {
     int r = 1;
     struct timespec ts = {0, 0};
 
+    if(link_get_state(cn->link) == LINK_STATE_ALIVE){
+        *cmd = que_get(cn->n_rt_cmd, &ts);
+        if(*cmd) r = 0;
+    }
+
+    return r;
+}
+
+    // lock router
+    // lock ll
+    // remove first ll pointer
+    // unlock ll
+    //
+    // use pointer
+    /*
     ROUTER_CONN_ITER_PRE
 
     if(link_get_state(cn->link) == LINK_STATE_ALIVE){
-        icmd = que_get(cn->n_rt_icmd, &ts);
+        cmd = que_get(cn->n_rt_cmd, &ts);
     }
 
-    if(icmd){
+    if(cmd){
         r = 0;
         conn_unlock(cn);
         router_unlock(rt);
@@ -243,30 +266,39 @@ int conn_router_rx_icmd(struct nn_router *rt, struct nn_icmd **icmd)
 end:
     return r;
 }
+    */
 
-int conn_node_rx_icmd(struct nn_node *n, struct nn_router *rt, struct nn_icmd
-        **icmd)
+int conn_node_rx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
+        **cmd)
 {
     struct timespec ts = {0, 0};
 
     NODE_CONN_ITER_PRE
 
     if(link_get_to(cn->link) == rt){
-        icmd = que_get(cn->rt_n_icmd, &ts);
+        cmd = que_get(cn->rt_n_cmd, &ts);
     }
 
     NODE_CONN_ITER_POST
 
 }
 
-int conn_node_tx_icmd(struct nn_node *n, struct nn_router *rt, struct nn_icmd
-        *icmd)
+int conn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
+        *cmd)
 {
 
     NODE_CONN_ITER_PRE
 
     if(link_get_to(cn->link) == rt){
-        que_add(cn->n_rt_icmd, icmd);
+
+        que_add(cn->n_rt_cmd, cmd);
+
+        //conn_unlock(cn);
+
+        // signal router of change, router doesn't have to be locked
+        //router_conn_buf_avail(rt);
+
+        //conn_lock(cn);
     }
 
     NODE_CONN_ITER_POST

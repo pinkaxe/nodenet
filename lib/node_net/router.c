@@ -19,7 +19,8 @@
 
 
 struct nn_router {
-    struct ll *conn;
+    struct ll *conn; /* all the conn's */
+    //struct que *conn_data_avail; /* conn with data available */
     io_cmd_req_cb_t io_in_cmd_cb;
     io_data_req_cb_t io_in_data_cb;
 
@@ -28,6 +29,33 @@ struct nn_router {
     mutex_t mutex;
     cond_t cond;
 };
+
+#if 0
+/* ll of connections that have data waiting to be picked up */
+struct nn_conn_buf_avail {
+    struct ll *conn;
+    mutex_t mutex;
+    cond_t cond;
+};
+
+struct nn_conn_router_pending {
+};
+
+
+struct nn_router_buf_counter(struct nn_router *rt)
+{
+    //int c;
+    struct ll *conn;
+    mutex_t mutex;
+    cond_t cond;
+    struct nn_conn_flags {
+        int n_rt_cmd;
+        int n_rt_data;
+        int rt_n_cmd;
+        int rt_n_data;
+    };
+}
+#endif
 
 int router_isvalid(struct nn_router *rt)
 {

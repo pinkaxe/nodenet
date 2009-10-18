@@ -51,6 +51,9 @@ typedef	pthread_cond_t cond_t;
 #define thread_detach(tid) \
 	dbg_thread(pthread_detach(tid))
 
+#define thread_exit(r) \
+	pthread_exit(r)
+
 #define mutex_lock(mutex) \
 	dbg_thread(pthread_mutex_lock(mutex))
 
