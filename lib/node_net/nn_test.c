@@ -74,6 +74,7 @@ int xmain(int argc, char *argv)
 int main(int argc, char *argv)
 {
     int i;
+    int c = 0;
     struct nn_router *rt[524];
     struct nn_node *n[524];
     struct nn_grp *g[524];
@@ -122,6 +123,17 @@ int main(int argc, char *argv)
         }
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
 
+        while(1){
+            for(i=0; i < 5; i++){
+                cmd = cmd_init(c++, NULL, 0, 1, NN_SENDTO_ALL, 0);
+                while(nn_node_tx_cmd(n[i], rt[0], cmd)){
+                    sleep(1);
+                }
+            }
+            usleep(1);
+        }
+
+
         for(i=0; i < 5; i++){
             nn_node_set_state(n[i], NN_STATE_PAUSED);
         }
@@ -137,7 +149,6 @@ int main(int argc, char *argv)
         }
         router_print(rt[0]);
 
-        sleep(1);
 
         for(i=0; i < 5; i++){
             /* unconn not needed but ok */

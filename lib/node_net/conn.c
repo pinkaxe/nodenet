@@ -208,6 +208,43 @@ int conn_unlock(struct nn_conn *cn)
 
 
 
+int conn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
+        *cmd)
+{
+    int r = 0;
+
+    NODE_CONN_ITER_PRE
+
+    if(link_get_to(cn->link) == rt){
+
+        r = que_add(cn->n_rt_cmd, cmd);
+
+        //conn_unlock(cn);
+
+        // signal router of change, router doesn't have to be locked
+        //router_conn_buf_avail(rt);
+
+        //conn_lock(cn);
+    }
+
+    NODE_CONN_ITER_POST
+
+    return r;
+}
+
+int conn_router_rx_cmd(struct nn_conn *cn, struct nn_cmd **cmd)
+{
+    int r = 1;
+    struct timespec ts = {0, 0};
+
+    if(link_get_state(cn->link) == LINK_STATE_ALIVE){
+        *cmd = que_get(cn->n_rt_cmd, &ts);
+        if(*cmd) r = 0;
+    }
+
+    return r;
+}
+
 /* router -> node cmd */
 int conn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd
         *cmd)
@@ -227,20 +264,6 @@ int conn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd
     return r;
 
 }
-
-int conn_router_rx_cmd(struct nn_conn *cn, struct nn_cmd **cmd)
-{
-    int r = 1;
-    struct timespec ts = {0, 0};
-
-    if(link_get_state(cn->link) == LINK_STATE_ALIVE){
-        *cmd = que_get(cn->n_rt_cmd, &ts);
-        if(*cmd) r = 0;
-    }
-
-    return r;
-}
-
     // lock router
     // lock ll
     // remove first ll pointer
@@ -283,27 +306,6 @@ int conn_node_rx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
 
 }
 
-int conn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
-        *cmd)
-{
-
-    NODE_CONN_ITER_PRE
-
-    if(link_get_to(cn->link) == rt){
-
-        que_add(cn->n_rt_cmd, cmd);
-
-        //conn_unlock(cn);
-
-        // signal router of change, router doesn't have to be locked
-        //router_conn_buf_avail(rt);
-
-        //conn_lock(cn);
-    }
-
-    NODE_CONN_ITER_POST
-
-}
 
 #if 0
 /* router -> node data */

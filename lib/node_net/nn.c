@@ -142,6 +142,11 @@ err:
 
 }
 
+int nn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
+        *cmd)
+{
+    return conn_node_tx_cmd(n, rt, cmd);
+}
 
 int nn_router_tx_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 {

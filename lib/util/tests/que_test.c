@@ -20,7 +20,7 @@ void *adder(void *arg)
                 //printf("full\n");
                 usleep(10);
             }
-            printf("add %p(%d)\n", str[i], r);
+            //printf("add %p(%d)\n", str[i], r);
         }
     }
     return NULL;
@@ -36,7 +36,7 @@ void *remover(void *arg)
             while(!(curr=que_get(q, NULL))){
                 usleep(10);
             }
-            printf("get %p: %p\n", curr, str[i]);
+            //printf("get %p: %p\n", curr, str[i]);
             assert(curr == str[i]);
         }
     }

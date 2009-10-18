@@ -204,23 +204,26 @@ static void *router_cmd_thread(void *arg)
 
         ROUTER_CONN_ITER_PRE
 
-            /* rx cmd's and route */
-            if(!conn_router_rx_cmd(cn, &cmd)){
-                conn_unlock(cn);
-                router_unlock(rt);
+        /* rx cmd's and route */
+        if(!conn_router_rx_cmd(cn, &cmd)){
+            conn_unlock(cn);
+            router_unlock(rt);
 
-                // route data
-                printf("!! router got cmd\n");
-                cmd_free(cmd);
+            // route data
+            enum nn_cmd_cmd id = cmd_get_id(cmd);
+            printf("!! router got cmd: %d\n", id);
+            cmd_free(cmd);
 
-                router_lock(rt);
-                conn_lock(cn);
-            }
+            router_lock(rt);
+            conn_lock(cn);
+        }
 
         /* rx data and route */
         // conn_router_rx_data()
 
         ROUTER_CONN_ITER_POST
+
+        usleep(10000);
     }
 
 }
