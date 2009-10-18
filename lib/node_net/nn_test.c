@@ -139,10 +139,10 @@ int main(int argc, char **argv)
         for(i=0; i < 100; i++){
             cmd = cmd_init(c++, NULL, 0, 1, NN_SENDTO_ALL, 0);
             while(nn_router_tx_cmd(rt[0], n[i], cmd)){
-                usleep(1600);
+                usleep(160000);
             }
-            usleep(16000);
         }
+        sleep(2);
 
         for(i=0; i < 100; i++){
             nn_node_set_state(n[i], NN_STATE_PAUSED);
@@ -154,10 +154,10 @@ int main(int argc, char **argv)
         }
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
 
-        for(i=0; i < 100; i++){
-            nn_node_print(n[i]);
-        }
-        nn_router_print(rt[0]);
+       // for(i=0; i < 100; i++){
+       //     nn_node_print(n[i]);
+       // }
+       // nn_router_print(rt[0]);
 
 
         for(i=0; i < 100; i++){
@@ -165,10 +165,6 @@ int main(int argc, char **argv)
             //nn_unconn(n[i], rt[0]);
             nn_node_free(n[i]);
         }
-        for(i=0; i < 100; i++){
-            nn_node_clean(n[i]);
-        }
-
         /*
         for(i=0; i < 3; i++){
             node_print(n[i]);
@@ -183,11 +179,17 @@ int main(int argc, char **argv)
         nn_grp_free(g[2]);
 
         nn_router_free(rt[0]);
+
+        for(i=0; i < 100; i++){
+            nn_node_clean(n[i]);
+        }
+
         nn_router_clean(rt[0]);
 
         //sleep(2);
         printf("done\n");
         //nn_wait();
+        usleep(100000);
     }
     return 0;
 }

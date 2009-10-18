@@ -133,26 +133,20 @@ static void *node_io_thread(void *arg)
 
         NODE_CONN_ITER_PRE
 
-            int j;
-       // j = 100;
-       // while(j--){
         if(!conn_node_rx_cmd(cn, &cmd)){
             if(cmd){
                 conn_unlock(cn);
                 node_unlock(n);
                 printf("!!!! node rx cmd, call driver\n");
-                usleep(1000);
                 node_lock(n);
                 conn_lock(cn);
                 cmd_free(cmd);
-                //usleep(1000);
             }
         }
-       // }
 
         NODE_CONN_ITER_POST
 
-        usleep(10000);
+        usleep(100000);
 
     }
 

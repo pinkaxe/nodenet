@@ -228,7 +228,7 @@ again:
 
         ROUTER_CONN_ITER_POST
 
-        usleep(10000);
+        usleep(100000);
     }
 
 }
