@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -14,7 +15,6 @@ struct link {
 
 struct link *link_init()
 {
-    int r = 0;
     struct link *l;
 
     PCHK(LWARN, l, calloc(1, sizeof(*l)));
@@ -28,7 +28,7 @@ err:
 }
 
 /* p -> pointer to free */
-static _link_free(struct link *l, void **p)
+static int _link_free(struct link *l, void **p)
 {
     int r = 0;
 

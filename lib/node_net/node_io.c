@@ -11,6 +11,7 @@
 
 #include "types.h"
 #include "node.h"
+#include "cmd.h"
 #include "conn.h"
 #include "node_io.h"
 #include "node_drivers/node_driver.h"

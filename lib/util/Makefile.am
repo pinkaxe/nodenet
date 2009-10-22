@@ -3,6 +3,7 @@ lib_LTLIBRARIES = libutil.la
 
 libutil_la_SOURCES = \
 	debug.h \
+	dbg.h \
 	log.c \
 	log.h \
 	sbuf.c \

@@ -1,7 +1,8 @@
 
-#include<stdio.h>
-#include<pthread.h>
-#include<assert.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <assert.h>
 
 #include "util/que.h"
 
@@ -45,7 +46,6 @@ void *remover(void *arg)
 
 int main(int argc, char **argv)
 {
-    int i;
     pthread_t tid;
 
     q = que_init(2);

@@ -18,7 +18,6 @@ int main()
 	struct node *new, *n;
     //void *iter = NULL;
     struct ll_iter *iter;
-	int j;
 	int i;
 
     for(;;){
@@ -39,7 +38,7 @@ int main()
 		}
 
         iter = ll_iter_init(h);
-        while((!ll_iter_next(iter, &n))){
+        while((!ll_iter_next(iter, (void **)&n))){
             printf("*%d\n", n->x);
             ll_rem(h, n);
             free(n);

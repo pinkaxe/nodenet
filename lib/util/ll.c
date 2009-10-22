@@ -1,5 +1,11 @@
 
 #include<stdlib.h>
+#include<string.h>
+#include<stdio.h>
+#include<errno.h>
+#include<assert.h>
+
+#include "util/log.h"
 #include<stdio.h>
 #include<errno.h>
 #include<assert.h>
@@ -50,7 +56,7 @@ static int ll_free_nodes(struct ll *h)
     struct ll_node *n;
 
     iter = NULL;
-    while(n=ll_next_node(h, &iter)){
+    while((n=ll_next_node(h, &iter))){
         ICHK(LWARN, r, _ll_rem(h, n));
         if(r) fail++;
     }
@@ -127,7 +133,6 @@ int ll_rem(struct ll *h, void *data)
 {
     int r = 1;
     struct ll_node *n;
-    void *iter = NULL;
 
     n = h->start;
     while(n){
@@ -159,6 +164,7 @@ err:
 int ll_iter_free(struct ll_iter *iter)
 {
     free(iter);
+    return 0;
 }
 
 
@@ -246,6 +252,7 @@ static struct ll_node *ll_next_node(struct ll *h,  void **iter)
             r = _iter->data;
         }
     }
+    return r;
 }
 
 #if 0
@@ -286,4 +293,5 @@ void *ll_prev(void **iter)
 {
     //assert(curr);
     //return curr->prev;
+    return NULL;
 }

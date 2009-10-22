@@ -2,16 +2,27 @@
 lib_LTLIBRARIES = libnode_net.la
 
 libnode_net_la_SOURCES = \
+			 types.h \
 			 node.c \
+			 node.h \
 			 node_io.c \
+			 node_io.h \
 			 router.c \
+			 router.h \
 			 router_io.c \
+			 router_io.h \
 			 conn.c \
+			 conn.h \
 			 grp.c \
+			 grp.h \
 			 cmd.c \
+			 cmd.h \
 			 nn.c \
+			 nn.h \
 			 node_drivers/node_driver.c \
+			 node_drivers/node_driver.h \
 			 node_drivers/thread.c \
+			 node_drivers/thread.h \
 			 node_drivers/lproc.c \
 			 node_drivers/bin.c
 

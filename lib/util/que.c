@@ -1,11 +1,13 @@
 
 #include<stdlib.h>
+#include<string.h>
 #include <stdio.h>
 #include <time.h>
 #include <errno.h>
 #include<assert.h>
 
 #include "util/log.h"
+#include "util/que.h"
 #include "sys/thread.h"
 
 struct que {
@@ -131,6 +133,7 @@ timeout:
 void *que_set_get_cb(struct que *h, void (*get_cb)(void *p))
 {
     h->get_cb = get_cb;
+    return NULL;
 }
 
 

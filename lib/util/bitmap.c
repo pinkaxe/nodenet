@@ -141,7 +141,7 @@ err:
 
 void bitmap_print(struct bitmap *h)
 {
-    size_t i;
+    int i;
 
     for(i=0; i < h->bits_no; i++){
         printf("bit no %d: %d\n", i, bitmap_bit_inuse(h, i));

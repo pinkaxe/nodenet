@@ -74,7 +74,7 @@ static int route_to_grp(struct nn_grp *g, struct nn_cmd *cmd)
 }
 */
 
-
+#if 0
 /* decide who/where to route */
 static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
 {
@@ -104,6 +104,7 @@ static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
     return 0;
 }
 
+#endif
 
 
 /* called when shutdown is received by router_io_thread */
