@@ -1,2 +1,3 @@
 
 SUBDIRS = lib
+EXTRA_DIST = README
