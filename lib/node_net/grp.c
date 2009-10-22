@@ -37,25 +37,6 @@ int grp_isok(struct nn_grp *g)
 
 int grp_print(struct nn_grp *g)
 {
-    //int c;
-   // struct grp_node_iter *iter;
-
-   // printf("\rt-- grp->node --: %p\rt\rt", g);
-   // c = 0;
-
-   // iter = ll_iter_init(g->node);
-   // while((!ll_iter_next(iter, &cn))){
-   //     printf("p:%p\n", cn);
-   //     c++;
-   // }
-   // ll_iter_free(iter);
-    //iter = ll_iter_init(g->node);
-    //while((gm=ll_iter_next(g->node, &iter))){
-    //    printf("p:%p\rt", gm->node);
-    //    c++;
-    //}
-
-    //printf("total: %d\rt\rt", c);
 
     return 0;
 }
@@ -201,22 +182,6 @@ int grp_rem_node(struct nn_grp *g, struct nn_node *n)
     return r;
 }
 
-/*
-struct nn_node *grp_node_iter(struct nn_grp *g, void **iter)
-{
-    int r = 0;
-    struct nn_node *n;
-    struct ll_iter *iter;
-
-    assert(g);
-
-    if(ll_iter_next(iter, (void **)&n) && n){
-        return n;
-    }else{
-        return NULL;
-    }
-}
-*/
 struct grp_node_iter *grp_node_iter_init(struct nn_grp *g)
 {
     return (struct grp_node_iter *)ll_iter_init(g->node);

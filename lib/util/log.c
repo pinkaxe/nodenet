@@ -19,8 +19,9 @@ void dlog(int level, const char *filename, int line,
 
     va_start(args, format);
     level = LOG_WARNING;
-    //syslog(level, "%s:%d:%s->", filename, line, funcname);
-    //vsyslog(level, format, args);
+    /* valgrind error here from syslog ? */
+    syslog(level, "%s:%d:%s->", filename, line, funcname);
+    vsyslog(level, format, args);
 
 	if(level <= LOG_ERR){
 		printf("Error: |");

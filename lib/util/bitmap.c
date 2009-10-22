@@ -146,10 +146,5 @@ void bitmap_print(struct bitmap *h)
     for(i=0; i < h->bits_no; i++){
         printf("bit no %d: %d\n", i, bitmap_bit_inuse(h, i));
     }
-        /*
-    for(i=0; i < h->bytes_no; i++){
-        printf("byte no %d: %x\n", i, h->map[i]);
-    }
-    */
 
 }

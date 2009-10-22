@@ -39,14 +39,12 @@ void dlog(int level, const char *filename, int line,
         L(level, "%s fail, r=%d(%s)", #rexp, lexp, strerror(lexp)); \
     } 
 
-//    printf("%s -> %d\n", #rexp, lexp);
 
 #define PCHK(level, lexp, rexp) \
     if(!(lexp = (rexp))){ \
         L(level, "%s fail, err=%d(%s)", #rexp, errno, strerror(errno)); \
     }
 
-//    printf("%s -> %d\n", #rexp, errno);
 
 #endif
 

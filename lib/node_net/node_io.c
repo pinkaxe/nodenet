@@ -17,11 +17,7 @@
 #include "node_drivers/node_driver.h"
 #include "node_drivers/thread.h"
 
-//#include "node_net/node_drivers/lproc.n"
-//#include "node_net/node_drivers/bin.n"
-
 static void *node_io_thread(void *arg);
-
 
 int node_io_run(struct nn_node *n)
 {
@@ -58,15 +54,6 @@ static int node_conn_free(struct nn_node *n)
     }
     node_conn_iter_free(iter);
 
-
-   // /* remove pointers from groups */
-   // iter = NULL;
-   // while((g=node_grps_iter(n, &iter))){
-   //     grp_rem_node(g, n);
-   // }
-
-
-
     return r;
 
 }
@@ -97,11 +84,9 @@ static void *node_io_thread(void *arg)
     cmd_check_timespec.tv_sec = 0;
     cmd_check_timespec.tv_nsec = 1000000;
 
-
     for(;;){
 
         node_lock(n);
-        //printf("checking state\n");
 
         /* check state */
         switch(node_get_state(n)){
@@ -138,7 +123,7 @@ static void *node_io_thread(void *arg)
             if(cmd){
                 conn_unlock(cn);
                 node_unlock(n);
-                printf("!!!! node rx cmd, call driver\n");
+                L(LNOTICE, "Node rx'd cmd, call driver");
                 node_lock(n);
                 conn_lock(cn);
                 cmd_free(cmd);
@@ -154,68 +139,3 @@ static void *node_io_thread(void *arg)
     L(LNOTICE, "Node thread ended: %p", n);
     return NULL;
 }
-
-
-
-        /* incoming commands */
-        // node_lock(n);
-        //cmd_buf = node_get_cmd(n, &cmd_check_timespec);
-        //cmd_buf = conn_node_rx_cmd(n, &cmd_check_timespec);
-        // node_unlock(n);
-
-       // if(cmd_buf){
-       //     printf("!!! Got a cmd_buf\n");
-       //     struct nn_cmd *cmd = cmd_buf;
-
-       //     //int cmdid = cmd->cmd;
-       //     handle_int_cmd(cmd);
-
-       //     cmd_free(cmd);
-       //     goto end;
-
-       //     //switch(cmdid){
-       //     //    case NN_NODE_STATE_RUN:
-       //     //        n->state = nn_node_STATE_RUNNING;
-       //     //        break;
-       //     //    case NN_NODE_STATE_PAUSE:
-       //     //        n->state = nn_node_STATE_PAUSE;
-       //     //        break;
-       //     //    case NN_CMD_CMD_STOP:
-       //     //        n->state = nn_node_STATE_STOP0;
-       //     //        goto end;
-
-       //     //printf("!!! freed cmd_buf\rt ");
-       //     //exit(1);
-       //     //free(cmd_buf);
-       //     //break;
-       //     // process and free
-       // }else{
-       //     if(errno == ETIMEDOUT){
-       //         //printf("!! timedout xxxx\rt");
-       //     }
-       // }
-
-#if 0
-        /* incoming data */
-        //if(n->state == nn_node_STATE_RUNNING){
-            if((attr & NN_NODE_ATTR_NO_INPUT)){
-                /* call user function */
-                //user_func(n, NULL, 0, pdata);
-                //n->ops->node_buf_exe(n, NULL, 0, pdata);
-            }else{
-                /* incoming data */
-                buf = node_get_buf(n, &buf_check_timespec);
-                if(buf){
-                    /* call user function */
-                    user_func(n, buf, 1, pdata);
-                }else{
-                    if(errno == ETIMEDOUT){
-                        //printf("!! timedout xx\rt");
-                    }
-                }
-                //sleep(1);
-            }
-        //}
-#endif
-
-

@@ -1,4 +1,5 @@
 
+/* main api from outside */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -101,9 +102,8 @@ int nn_join_grp(struct nn_node *n, struct nn_grp *g)
     }
 
 err:
-    //node_unlock(n);
-    //grp_unlock(g);
-    //rel_unlock();
+    node_unlock(n);
+    grp_unlock(g);
 
     return r;
 }
@@ -112,9 +112,8 @@ int nn_quit_grp(struct nn_node *n, struct nn_grp *g)
 {
     int r;
 
-    //rel_lock();
-    //grp_lock(g);
-    //node_lock(n);
+    grp_lock(g);
+    node_lock(n);
 
     ICHK(LWARN, r, grp_rem_node(g, n));
     if(r){
@@ -127,13 +126,14 @@ int nn_quit_grp(struct nn_node *n, struct nn_grp *g)
     }
 
 err:
-    //node_unlock(n);
-    //grp_unlock(g);
-    //rel_unlock();
+    node_unlock(n);
+    grp_unlock(g);
 
     return r;
 
 }
+
+/* NOTE: tx/rx shouldn't lock anything for now */
 
 int nn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
         *cmd)
@@ -145,22 +145,12 @@ int nn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd *cmd
 {
     int r = 0;
 
-    //router_lock(rt);
-
     r = conn_router_tx_cmd(rt, n, cmd);
 
-    //router_unlock(rt);
 
     return r;
 }
 
-//int nn_router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
-//{
-//    int r;
-//
-//    ICHK(LWARN, r, router_set_data_cb(rt, cb));
-//    return r;
-//}
 
 int nn_router_tx_data(struct nn_router *rt, struct nn_io_data *data)
 {
@@ -183,6 +173,14 @@ int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
 
     return r;
 }
+
+//int nn_router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
+//{
+//    int r;
+//
+//    ICHK(LWARN, r, router_set_data_cb(rt, cb));
+//    return r;
+//}
 
 
 /* relationship between routers, nodes and grps, locking is intricate, work
@@ -257,21 +255,6 @@ int nn_grp_free(struct nn_grp *g)
 {
     int r;
 
-    // lock grp
-
-    //while((n=grp_nodes_iter(g, &iter))){
-    //    // unlock grp
-    //    // lock n
-    //    // lock grp
-    //    // make sure still pointed at, grp_ismemb(g, n);
-    //    ICHK(LWARN, r, node_quit_grp(n, g));
-    //    // unlock n
-    //    /* remove pointers from nodes to this grp */
-    //}
-
-    //unlock_grp();
-
-    //rel_lock();
 
     ICHK(LWARN, r, grp_free(g));
 
@@ -310,11 +293,8 @@ int nn_node_clean(struct nn_node *n)
 
 int nn_node_print(struct nn_node *n)
 {
-    //node_lock(n);
 
     node_print(n);
-
-    //node_unlock(n);
 
     return 0;
 }
@@ -352,11 +332,8 @@ int nn_router_clean(struct nn_router *rt)
 
 int nn_router_print(struct nn_router *rt)
 {
-    //router_lock(rt);
 
     router_print(rt);
-
-    //router_unlock(rt);
 
     return 0;
 }

@@ -1,5 +1,4 @@
 
-#lib_LTLIBRARIES = libxdb.la
 bin_PROGRAMS = s
 AM_LDFLAGS = -static -L../wrap -lwrap -L../util -lutil \
 			 -lpthread -lsqlite3

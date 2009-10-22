@@ -22,9 +22,9 @@ libnode_net_la_SOURCES = \
 			 node_drivers/node_driver.c \
 			 node_drivers/node_driver.h \
 			 node_drivers/thread.c \
-			 node_drivers/thread.h \
-			 node_drivers/lproc.c \
-			 node_drivers/bin.c
+			 node_drivers/thread.h
+
+#node_drivers/lproc.c /node_drivers/bin.c
 
 libnode_net_la_LIBADD =
 

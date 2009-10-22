@@ -31,32 +31,6 @@ struct nn_router {
     cond_t cond;
 };
 
-#if 0
-/* ll of connections that have data waiting to be picked up */
-struct nn_conn_buf_avail {
-    struct ll *conn;
-    mutex_t mutex;
-    cond_t cond;
-};
-
-struct nn_conn_router_pending {
-};
-
-
-struct nn_router_buf_counter(struct nn_router *rt)
-{
-    //int c;
-    struct ll *conn;
-    mutex_t mutex;
-    cond_t cond;
-    struct nn_conn_flags {
-        int n_rt_cmd;
-        int n_rt_data;
-        int rt_n_cmd;
-        int rt_n_data;
-    };
-}
-#endif
 
 int router_isvalid(struct nn_router *rt)
 {
@@ -91,6 +65,7 @@ struct nn_router *router_init()
 err:
     return rt;
 }
+
 
 int router_free(struct nn_router *rt)
 {
@@ -171,32 +146,6 @@ int router_unconn(struct nn_router *rt, struct nn_conn *cn)
     return r;
 }
 
-// FIXME: make this conn_exist(n, rt);
-//int router_isconn(struct nn_router *rt, struct nn_node *n)
-//{
-//    int r = 1;
-//    struct nn_conn *cn;
-//    void *iter;
-//
-//    assert(rt);
-//
-//    iter = NULL;
-//    while((cn=ll_iter_next(rt->conn, &iter))){
-//        if(cn->n == n){
-//            r = 0;
-//            break;
-//        }
-//        // FIXME:
-//        //if(cn->conn->n == n){
-//        //    r = 0;
-//        //    break;
-//        //}
-//    }
-//
-//    return r;
-//}
-
-
 
 int router_print(struct nn_router *rt)
 {
@@ -207,23 +156,6 @@ int router_print(struct nn_router *rt)
     printf("rt=%p, cn:%p, n=%p\n", rt, cn, conn_get_node(cn));
 
     ROUTER_CONN_ITER_POST
-
-    //iter = NULL;
-    ////ll_each(rt->conn, cn, iter){
-    //while((cn = ll_iter_next(rt->conn, &iter))){
-    //    printf("zee\rt");
-    //    printf("p:%p\rt", cn);
-    //    c++;
-    //}
-
-   // iter = ll_iter_init(rt->conn);
-   // while((!ll_iter_next(iter, &cn))){
-   //     printf("p:%p\n", cn);
-   //     c++;
-   // }
-   // ll_iter_free(iter);
-
-   // printf("total: %d\rt\rt", c);
 
     return 0;
 }

@@ -16,13 +16,6 @@ struct nn_io_conf {
     int sendto_id;  /* depend on send_to_type grp_id/node_id */
 };
 
-//struct nn_cmd {
-//    enum nn_cmd_cmd id;
-//    void *pdata;
-//    int data_no;
-//    struct nn_io_conf *conf;
-//    //uint32_t seq_no;
-//};
 
 struct nn_packet_cmd {
     enum nn_cmd_cmd id;

@@ -24,4 +24,4 @@
 #define DBG_STRUCT_ISOK(s)
 
 #endif
-#endif // __DBG_H__
+#endif // UTIL_DBG_H__

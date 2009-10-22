@@ -183,60 +183,6 @@ int ll_iter_next(struct ll_iter *iter, void **data)
     return r;
 }
 
-#if 0
-
-int ll_next4(struct ll *h, void **data, void **iter)
-{
-    int r = 0;
-    struct ll_node *n;
-
-    if(*iter){
-        /* middle */
-        n = *iter;
-        *data = n->data;
-        *iter = n->next;
-    }else{
-        /* first */
-        n = h->start;
-        if(n){
-            *data = n->data;
-            *iter = n->next;
-        }
-    }
-
-    return r;
-}
-
-#endif
-
-#if 0
-/* return ll_node */
-static struct ll_node *ll_next_node(struct ll *h,  void **iter)
-{
-    void *r = NULL;
-    struct ll_node *_iter;
-
-    if(!(*iter)){
-        /* first */
-        *iter = h->start;
-        _iter = *iter;
-        if(_iter){
-            r = _iter->data;
-        }
-        goto end;
-    }
-
-    _iter = *iter;
-    if(_iter->next){
-        /* got next */
-        r = _iter->next->data;
-        *iter = _iter->next;
-    }
-
-end:
-    return r;
-}
-#endif
 
 /* return ll_node */
 static struct ll_node *ll_next_node(struct ll *h,  void **iter)
@@ -255,39 +201,6 @@ static struct ll_node *ll_next_node(struct ll *h,  void **iter)
     return r;
 }
 
-#if 0
-int ll_next2(struct ll *h, void **res, void **iter)
-{
-    int r = 1;
-    struct ll_node *_iter;
-
-    if(!(*iter)){
-        /* first */
-        *iter = h->start;
-        _iter = *iter;
-        if(_iter){
-            *res = _iter->data;
-            if(*res){
-                r = 0;
-            }
-        }
-        goto end;
-    }
-
-    _iter = *iter;
-    if(_iter->next){
-        /* got next */
-        *res = _iter->next->data;
-        if(*res){
-            r = 0;
-        }
-        *iter = _iter->next;
-    }
-
-end:
-    return r;
-}
-#endif
 
 void *ll_prev(void **iter)
 {

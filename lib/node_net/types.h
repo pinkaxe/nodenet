@@ -12,6 +12,7 @@ struct nn_io_data;
 struct nn_conn;
 
 
+/* FIXME: some of these enum's can be moved to there .c files .h */
 enum nn_node_driver {
     NN_NODE_TYPE_THREAD,
     NN_NODE_TYPE_LPROC,

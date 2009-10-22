@@ -24,15 +24,6 @@ struct nn_conn {
     mutex_t mutex;
     cond_t cond; /* if anything changes */
 
-    /*
-    struct nn_conn_flags {
-        int state;
-        int n_rt_cmd;
-        int n_rt_data;
-        int rt_n_cmd;
-        int rt_n_data;
-    };
-    */
     /* router(output) -> node(input) */
     struct que *rt_n_cmd;   /* router write node cmd */
     struct que *rt_n_data;  /* router write node data */

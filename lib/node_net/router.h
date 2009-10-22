@@ -2,7 +2,7 @@
 #ifndef NN_ROUTER_H__
 #define NN_ROUTER_H__
 
-/* these don't exist, just for type checking */
+/* these types don't exist, just for type checking */
 struct router_conn_iter;
 struct node_conn_iter;
 
@@ -59,7 +59,5 @@ int router_print(struct nn_router *rt);
 
 
 
-
-//int router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb);
 
 #endif

@@ -20,9 +20,10 @@
 #include "conn.h"
 
 #include "node.h"
+#include "node_io.h"
 #include "node_drivers/node_driver.h"
 
-int node_isok(struct nn_node *n);
+static int node_isok(struct nn_node *n);
 
 struct nn_node {
 
@@ -36,7 +37,7 @@ struct nn_node {
     struct ll *conn;      /* all conn connected to via conn's */
     struct ll *grp_conns;     /* all groups connected to via conn's */
 
-    /* funcp's to communicate with this node type */
+    /* funcp's to communicate with this node type driver */
     struct node_driver_ops *ops;
 
     void *code;  /* pointer to object depending on type */
@@ -252,77 +253,35 @@ enum nn_state node_get_state(struct nn_node *n)
     return n->state;
 }
 
+/* iter */
 
-
-
-/*
-int  node_add_cmd(struct nn_node *n, struct nn_cmd *cmd)
+struct node_conn_iter *node_conn_iter_init(struct nn_node *rt)
 {
-    return que_add(n->in_cmd, cmd);
+    return (struct node_conn_iter *)ll_iter_init(rt->conn);
 }
 
-int node_add_data(struct nn_node *n, void *data, uint32_t data_no)
+int node_conn_iter_free(struct node_conn_iter *iter)
 {
+    return ll_iter_free((struct ll_iter *)iter);
 }
 
-void *node_get_cmd(struct nn_node *n, struct timespec *ts)
+int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn)
 {
-    struct nn_cmd *c;
-
-    c = que_get(n->in_cmd, ts);
-
-    return c;
+    return ll_iter_next((struct ll_iter *)iter, (void **)cn);
 }
-
-void *node_get_buf(struct nn_node *n, struct timespec *ts)
-{
-    void *buf;
-
-    buf = que_get(n->in_data, ts);
-    return buf;
-}
-*/
-
-
-/*
-int node_write_in_cmd(struct nn_node *n, enum nn_cmd_cmd cmd, void *pdata)
-{
-    struct nn_cmd *c = malloc(sizeof(*c));
-
-    c->id = cmd;
-    c->pdata = pdata;
-
-    return que_add(n->in_cmd, c);
-}
-
-void *node_write_in_buf(struct nn_node *n)
-{
-}
-
-*/
-
 
 
 
 /** debug functions **/
 
-int node_isok(struct nn_node *n)
+static int node_isok(struct nn_node *n)
 {
 
     DBG_STRUCT_ISOK(n);
 
-    //printf("n->type: %d", n->type);
     assert(n->type >= 0 && n->type < 128);
     assert(n->attr >= 0 && n->attr < 128);
     assert(n->code);
-    //assert(n->out_conns_llh);
-    //assert(n->in_conns_llh);
-    //assert(n->grp_conns);
-    //assert(n->conn);
-    //assert(n->in_data);
-    //assert(n->in_cmd);
-    //assert(n->out_data);
-    //assert(n->out_cmd);
 
     //node_router_isok(n);
     //node_grp_isok(n);
@@ -331,8 +290,26 @@ int node_isok(struct nn_node *n)
     return 0;
 }
 
+int node_print(struct nn_node *n)
+{
+    int c;
+    //void *iter;
+
+    c = 0;
+
+    NODE_CONN_ITER_PRE
+
+    printf("node->conn\t");
+    printf("n=%p, cn:%p, rt=%p\n", n, cn, conn_get_router(cn));
+
+    NODE_CONN_ITER_POST
+
+    return 0;
+}
+
+#if 0
 /* check that the conn's it points to points back */
-int node_router_isok(struct nn_node *n)
+static int node_router_isok(struct nn_node *n)
 {
     int r = 0;
     void *iter;
@@ -352,7 +329,7 @@ int node_router_isok(struct nn_node *n)
 }
 
 /* check that the grp's it points to points back */
-int node_grp_isok(struct nn_node *n)
+static int node_grp_isok(struct nn_node *n)
 {
     int r = 0;
     void *iter;
@@ -370,66 +347,9 @@ int node_grp_isok(struct nn_node *n)
     return r;
 }
 
+#endif
 
-int node_print(struct nn_node *n)
-{
-    int c;
-    //void *iter;
-
-
-    c = 0;
-
-    NODE_CONN_ITER_PRE
-
-    printf("node->conn\t");
-    printf("n=%p, cn:%p, rt=%p\n", n, cn, conn_get_router(cn));
-
-    NODE_CONN_ITER_POST
-
-    //puts("\n-- node->grp --\n");
-
-    //c = 0;
-    //iter = NULL;
-    //while((g=ll_iter_next(n->grp_conns, &iter))){
-    //    printf("p:%p\n", g->grp);
-    //    c++;
-    //}
-
-    //printf("total: %d\n\n", c);
-
-    return 0;
-}
 
 /** debug functions ends **/
 
-#if 0
-struct nn_conn *node_conn_iter(struct nn_node *n, void **iter)
-{
 
-  //  assert(n);
-
-  //  cn = ll_iter_next(n->conn, iter);
-
-  //  if(cn){
-  //      return cn;
-  //  }else{
-  //      return NULL;
-  //  }
-}
-
-#endif
-
-struct node_conn_iter *node_conn_iter_init(struct nn_node *rt)
-{
-    return (struct node_conn_iter *)ll_iter_init(rt->conn);
-}
-
-int node_conn_iter_free(struct node_conn_iter *iter)
-{
-    return ll_iter_free((struct ll_iter *)iter);
-}
-
-int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn)
-{
-    return ll_iter_next((struct ll_iter *)iter, (void **)cn);
-}

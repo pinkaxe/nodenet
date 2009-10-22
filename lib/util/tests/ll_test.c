@@ -16,7 +16,6 @@ int main()
     int r;
     struct ll *h;
 	struct node *new, *n;
-    //void *iter = NULL;
     struct ll_iter *iter;
 	int i;
 
@@ -49,49 +48,6 @@ int main()
         //sleep(5);
     }
 
-
 err:
 	return r;
-
-      //  iter = NULL;
-      //  while((n=ll_next(h, &iter))){
-      //      //printf("**%d\n", n->x);
-      //  }
-
-      //  int r;
-      //  ll_each(r, h, n, iter){
-      //      //printf("xx **%d\n", n->x);
-      //      ll_rem(h, n);
-      //      free(n);
-      //  }
-
-        //sleep(2);
-#if 0
-		for(i=0; i < 10; i++){
-			curr = ll_rem_end(h);
-            if(curr){
-                printf("%d:%d\n", i, curr->x);
-                free(curr);
-            }
-            //free(curr);
-        }
-
-		for(i=0; i < 10; i++){
-			new = malloc(sizeof *new);
-			new->x = i;
-			r = ll_add_end(h, new);
-            if(r){
-                goto err;
-            }
-		}
-
-		for(i=0; i < 10; i++){
-			curr = ll_rem_end(h);
-            if(curr){
-                printf("-- %d:%d\n", i, curr->x);
-                free(curr);
-            }
-            //free(curr);
-        }
-#endif
 }

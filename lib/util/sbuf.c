@@ -8,6 +8,10 @@
 #include "util/sbuf.h"
 #include "wrap/xstdlib.h"
 
+/* FIXME: vasprintf is GNU specific have to be implemented for other systems
+ * */
+int vasprintf(char **strp, const char *fmt, va_list ap);
+
 struct sbuf {
 	char *start;
 	char *end; /* point to \0 */
