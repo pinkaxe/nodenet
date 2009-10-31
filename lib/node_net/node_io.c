@@ -68,12 +68,15 @@ static void *node_io_thread(void *arg)
     void (*user_func)(struct nn_node *n, void *buf, int len, void *pdata);
     void *pdata;
     int attr;
+    struct nn_pkt *pkt;
+    struct node_driver_ops *ops;
 
     node_lock(n);
-
     user_func = node_get_codep(n);
     pdata = node_get_pdatap(n);
     attr = node_get_attr(n);
+
+    ops = node_driver_get_ops(node_get_type(n));
 
     L(LNOTICE, "Node thread starting: %p", n);
 
@@ -114,8 +117,7 @@ static void *node_io_thread(void *arg)
 
         node_unlock(n);
 
-        /* rx/tx pkt/data */
-        struct nn_pkt *pkt;
+        /* rx/tx pkt */
 
         NODE_CONN_ITER_PRE
 
@@ -124,6 +126,8 @@ static void *node_io_thread(void *arg)
                 conn_unlock(cn);
                 node_unlock(n);
                 L(LNOTICE, "Node rx'd pkt, call driver");
+                ops->node_buf_exe(n, pkt_get_data(pkt), pkt_get_data_len(pkt),
+                        pkt_get_pdata(pkt));
                 node_lock(n);
                 conn_lock(cn);
                 pkt_free(pkt);

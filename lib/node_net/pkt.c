@@ -14,10 +14,11 @@
 
 struct nn_pkt {
     enum nn_pkt_pkt id;
+    void *data;
+    int data_len;
     void *pdata;
-    int data_no;
     struct nn_io_conf *conf;
-    //uint32_t seq_no;
+    //uint32_t seq_len;
 };
 
 enum nn_pkt_pkt pkt_get_id(struct nn_pkt *pkt)
@@ -25,8 +26,23 @@ enum nn_pkt_pkt pkt_get_id(struct nn_pkt *pkt)
     return pkt->id;
 }
 
-struct nn_pkt *pkt_init(enum nn_pkt_pkt id, void *pdata, int data_no,
-        int sendto_no, int sendto_type, int sendto_id)
+void *pkt_get_data(struct nn_pkt *pkt)
+{
+    return pkt->data;
+}
+
+int pkt_get_data_len(struct nn_pkt *pkt)
+{
+    return pkt->data_len;
+}
+
+void *pkt_get_pdata(struct nn_pkt *pkt)
+{
+    return pkt->pdata;
+}
+
+struct nn_pkt *pkt_init(enum nn_pkt_pkt id, void *data, int data_len,
+        void *pdata, int sendto_no, int sendto_type, int sendto_id)
 {
     struct nn_pkt *pkt;
     struct nn_io_conf *conf;
@@ -36,8 +52,9 @@ struct nn_pkt *pkt_init(enum nn_pkt_pkt id, void *pdata, int data_no,
         goto err;
     }
     pkt->id = id;
+    pkt->data = data;
+    pkt->data_len = data_len;
     pkt->pdata = pdata;
-    pkt->data_no = data_no;
     pkt->conf = NULL;
 
     PCHK(LWARN, conf, malloc(sizeof(*conf)));
@@ -57,6 +74,17 @@ err:
     return pkt;
 }
 
+int pkt_set_id(struct nn_pkt *pkt, enum nn_pkt_pkt id)
+{
+    int r = 0;
+
+    pkt->id = id;
+
+    return r;
+}
+
+
+
 struct nn_pkt *pkt_clone(struct nn_pkt *pkt)
 {
     struct nn_pkt *clone;
@@ -68,7 +96,7 @@ struct nn_pkt *pkt_clone(struct nn_pkt *pkt)
     }
     clone->id = pkt->id;
     clone->pdata = pkt->pdata;
-    clone->data_no = pkt->data_no;
+    clone->data_len = pkt->data_len;
     clone->conf = NULL;
 
     PCHK(LWARN, conf, malloc(sizeof(*conf)));

@@ -8,6 +8,7 @@
 #include <assert.h>
 
 #include "util/log.h"
+#include "util/dpool.h"
 
 #include "node_net/types.h"
 #include "node_net/pkt.h"
@@ -17,10 +18,21 @@
     assert(x); \
 }
 
+struct buf {
+    int i;
+};
+
 
 int input_node(struct nn_node *n, void *buf, int len, void *pdata)
 {
-    L(LNOTICE, "Process buffer %", __FUNCTION__);
+    struct dpool *dpool = pdata;
+    struct dpool_buf *dpool_buf = buf;
+    struct buf *b = dpool_buf->data;
+
+    L(LNOTICE, "Process buffer %d, %s", b->i, __FUNCTION__);
+
+    dpool_ret_buf(dpool, dpool_buf);
+
     return 0;
 }
 
@@ -41,6 +53,7 @@ int output_node(struct nn_node *n, void *buf, int len, void *pdata)
 }
 
 #define GRPS_NO 3
+
 int main(int argc, char **argv)
 {
     int i, c;
@@ -48,8 +61,13 @@ int main(int argc, char **argv)
     struct nn_node *n[1024];
     struct nn_grp *g[GRPS_NO];
     struct nn_pkt *pkt;
+    struct dpool *dpool;
+    struct buf *buf;
+    struct dpool_buf *dpool_buf;
 
     while(1){
+
+        dpool = dpool_create(sizeof(*buf), 100, 0);
 
         rt[0] = nn_router_init();
         ok(rt[0]);
@@ -76,14 +94,18 @@ int main(int argc, char **argv)
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
 
 
-        /* send a pkt to the router */
+        /* send a pkt from the router */
         for(i=0; i < 100; i++){
-            pkt = pkt_init(c++, NULL, 0, 1, NN_SENDTO_ALL, 0);
-            while(nn_router_tx_pkt(rt[0], n[i], pkt)){
+            dpool_buf = dpool_get_buf(dpool);
+            buf = dpool_buf->data;
+            buf->i = i;
+            pkt = pkt_init(c++, dpool_buf, sizeof(dpool_buf), dpool, 1,
+                    NN_SENDTO_ALL, 0);
+            while(nn_router_tx_pkt(rt[0], n[0], pkt)){
                 usleep(160000);
             }
         }
-        sleep(2);
+        sleep(5);
 
         /* unpause everything */
         for(i=0; i < 100; i++){
@@ -115,6 +137,8 @@ int main(int argc, char **argv)
         }
 
         nn_router_clean(rt[0]);
+
+        dpool_free(dpool);
 
         printf("loop done\n");
         usleep(100000);

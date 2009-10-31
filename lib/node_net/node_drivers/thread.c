@@ -10,12 +10,19 @@
 #include "util/log.h"
 #include "util/que.h"
 
+#include "types.h"
+#include "node.h"
 #include "node_net/types.h"
 #include "node_driver.h"
 
-static int node_driver_thread_buf_exe(struct nn_node *n, char *buf, size_t len, void *pdata)
+static int node_driver_thread_buf_exe(struct nn_node *n, char *buf, size_t
+        len, void *pdata)
 {
-    return 0; //n->user_func(n, buf, len, pdata);
+    int (*func)(struct nn_node *n,char *buf, size_t len, void *pdata);
+    printf("ok\n");
+
+    func = node_get_codep(n);
+    return func(n, buf, len, pdata);
 }
 
 

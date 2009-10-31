@@ -22,4 +22,6 @@ struct dpool_buf *dpool_get_buf(struct dpool *h);
 struct dpool_buf *dpool_get_filled_buf(struct dpool *h);
 int dpool_ret_buf(struct dpool *h, struct dpool_buf *buf);
 
+//void *dpool_buf_get_data(struct dpool_buf *h);
+
 #endif

@@ -267,6 +267,7 @@ int conn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt
 
 }
 
+
 int conn_node_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
 {
     int r = 1;
@@ -283,54 +284,3 @@ int conn_node_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
 
     return r;
 }
-
-
-#if 0
-/* router -> node data */
-int conn_router_tx_data(struct nn_router *rt, struct nn_data *data)
-{
-    // add to rt_n_data
-}
-
-int conn_node_rx_data(struct nn_node *rt, struct nn_data **data)
-{
-    // remove from rt_n_data
-}
-
-/* node -> router pkt */
-int conn_node_tx_pkt(struct nn_node *rt, struct nn_pkt *pkt)
-{
-    // add to n_rt_pkts
-}
-
-int conn_router_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
-{
-    // remove from n_rt_pkts
-}
-
-
-/* node -> router data */
-int conn_node_tx_data(struct nn_router *rt, struct nn_data *data)
-{
-    // add to n_rt_data
-}
-
-int conn_router_rx_data(struct nn_router *rt, struct nn_data **data)
-{
-    // remove from n_rt_data
-}
-
-#if 0
-/* router -> node notify */
-int conn_node_tx_notify(struct nn_router *rt, struct nn_notify *notify)
-{
-    // add to n_rt_notify
-}
-
-int conn_router_rx_notify(struct nn_router *rt, struct nn_notify **notify)
-{
-    // remove from n_rt_notify
-}
-
-#endif
-#endif
