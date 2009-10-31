@@ -14,7 +14,7 @@
 #include "util/ll.h"
 
 #include "types.h"
-#include "cmd.h"
+#include "pkt.h"
 #include "conn.h"
 #include "router.h"
 
@@ -22,7 +22,7 @@
 struct nn_router {
     struct ll *conn; /* all the conn's */
     //struct que *conn_data_avail; /* conn with data available */
-    io_cmd_req_cb_t io_in_cmd_cb;
+    io_pkt_req_cb_t io_in_pkt_cb;
     io_data_req_cb_t io_in_data_cb;
 
     enum nn_state state;
@@ -161,10 +161,10 @@ int router_print(struct nn_router *rt)
 }
 
 
-int router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
+int router_set_pkt_cb(struct nn_router *rt, io_pkt_req_cb_t cb)
 {
     router_isvalid(rt);
-    rt->io_in_cmd_cb = cb;
+    rt->io_in_pkt_cb = cb;
     return 0;
 }
 
@@ -193,7 +193,7 @@ int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn **cn)
 
 int router_conn_each(struct nn_router *rt,
         int (*cb)(struct nn_conn *cn, void *a0),
-        struct nn_cmd *cmd)
+        struct nn_pkt *pkt)
 {
     int r;
     assert(rt);
@@ -205,7 +205,7 @@ int router_conn_each(struct nn_router *rt,
     iter = router_conn_iter_init(rt);
     while(!router_conn_iter_next(iter, &cn)){
         conn_lock(cn);
-        r = cb(cn, cmd);
+        r = cb(cn, pkt);
         conn_unlock(cn);
         if(r){
             break;

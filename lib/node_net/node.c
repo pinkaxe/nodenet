@@ -16,7 +16,7 @@
 #include "util/ll.h"
 
 #include "types.h"
-#include "cmd.h"
+#include "pkt.h"
 #include "conn.h"
 
 #include "node.h"

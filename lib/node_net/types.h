@@ -6,7 +6,7 @@ struct nn_node;
 struct nn_grp;
 struct nn_grp_memb;
 
-struct nn_cmd;
+struct nn_pkt;
 struct nn_io_data;
 
 struct nn_conn;
@@ -29,8 +29,8 @@ enum nn_node_state {
     NN_NODE_STATE_STOPPED,
 };
 
-enum nn_cmd_cmd {
-    NN_CMD_CMD_STOP
+enum nn_pkt_pkt {
+    NN_pkt_pkt_STOP
 };
 
 enum nn_state {

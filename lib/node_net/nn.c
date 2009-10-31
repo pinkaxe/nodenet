@@ -13,7 +13,7 @@
 #include "util/log.h"
 
 #include "types.h"
-#include "cmd.h"
+#include "pkt.h"
 #include "router.h"
 #include "node.h"
 #include "conn.h"
@@ -135,17 +135,17 @@ err:
 
 /* NOTE: tx/rx shouldn't lock anything for now */
 
-int nn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
-        *cmd)
+int nn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
+        *pkt)
 {
-    return conn_node_tx_cmd(n, rt, cmd);
+    return conn_node_tx_pkt(n, rt, pkt);
 }
 
-int nn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd *cmd)
+int nn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt *pkt)
 {
     int r = 0;
 
-    r = conn_router_tx_cmd(rt, n, cmd);
+    r = conn_router_tx_pkt(rt, n, pkt);
 
 
     return r;
@@ -161,13 +161,13 @@ int nn_router_tx_data(struct nn_router *rt, struct nn_io_data *data)
 }
 
 
-int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb)
+int nn_router_set_pkt_cb(struct nn_router *rt, io_pkt_req_cb_t cb)
 {
     int r = 0;
 
     //router_lock(rt);
 
-    //ICHK(LWARN, r, router_set_cmd_cb(rt, cb));
+    //ICHK(LWARN, r, router_set_pkt_cb(rt, cb));
 
     //router_unlock(rt);
 

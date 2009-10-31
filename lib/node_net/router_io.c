@@ -8,7 +8,7 @@
 #include "util/log.h"
 
 #include "types.h"
-#include "cmd.h"
+#include "pkt.h"
 #include "conn.h"
 #include "router.h"
 
@@ -64,12 +64,12 @@ static void _shutdown(struct nn_router *rt)
 }
 
 
-/* pick up cmds coming from router, and router to other node's */
-static void *router_cmd_thread(void *arg)
+/* pick up pkts coming from router, and router to other node's */
+static void *router_pkt_thread(void *arg)
 {
     //struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
-    struct nn_cmd *cmd;
+    struct nn_pkt *pkt;
 
     L(LNOTICE, "Router thread starting");
 
@@ -102,15 +102,15 @@ again:
 
         ROUTER_CONN_ITER_PRE
 
-        /* rx cmd's and route */
-        if(!conn_router_rx_cmd(cn, &cmd)){
+        /* rx pkt's and route */
+        if(!conn_router_rx_pkt(cn, &pkt)){
             conn_unlock(cn);
             router_unlock(rt);
 
             // route data
-            enum nn_cmd_cmd id = cmd_get_id(cmd);
-            L(LNOTICE, "Router got cmd: %d\n", id);
-            cmd_free(cmd);
+            enum nn_pkt_pkt id = pkt_get_id(pkt);
+            L(LNOTICE, "Router got pkt: %d\n", id);
+            pkt_free(pkt);
 
             router_lock(rt);
             conn_lock(cn);
@@ -129,7 +129,7 @@ again:
 int router_io_run(struct nn_router *rt)
 {
     thread_t tid;
-    thread_create(&tid, NULL, router_cmd_thread, rt);
+    thread_create(&tid, NULL, router_pkt_thread, rt);
     thread_detach(tid);
 
     //thread_create(&tid, NULL, route_data_thread, rt);
@@ -161,84 +161,84 @@ static int if_conn_dead_free(struct nn_conn *cn)
 
 /*
 
-static int route_to_node_cb(struct nn_conn *cn, void *n_, void *cmd_)
+static int route_to_node_cb(struct nn_conn *cn, void *n_, void *pkt_)
 {
     int r = 0;
     struct nn_node *n = n_;
 
     if(!if_conn_dead_free(cn) && conn_get_node(cn) == n){
-         //r = conn_router_tx_cmd(cn, cmd);
+         //r = conn_router_tx_pkt(cn, pkt);
     }
     return r;
 }
 
-static int route_to_node(struct nn_router *rt, struct nn_cmd *cmd)
+static int route_to_node(struct nn_router *rt, struct nn_pkt *pkt)
 {
-    return router_conn_each(rt, route_to_node_cb, cmd);
+    return router_conn_each(rt, route_to_node_cb, pkt);
 }
 
 
-static int route_to_all_cb(struct nn_conn *cn, void *cmd_)
+static int route_to_all_cb(struct nn_conn *cn, void *pkt_)
 {
-    struct nn_cmd *cmd = cmd_;
+    struct nn_pkt *pkt = pkt_;
 
     if(!if_conn_dead_free(cn)){
-         //conn_router_tx_cmd(cn, cmd);
+         //conn_router_tx_pkt(cn, pkt);
     }
 }
 
-static int route_to_all(struct nn_router *rt, struct nn_cmd *cmd)
+static int route_to_all(struct nn_router *rt, struct nn_pkt *pkt)
 {
-    return router_conn_each(rt, route_to_all_cb, cmd);
+    return router_conn_each(rt, route_to_all_cb, pkt);
 }
 
 
-static int route_to_grp(struct nn_grp *g, struct nn_cmd *cmd)
+static int route_to_grp(struct nn_grp *g, struct nn_pkt *pkt)
 {
-    //return grp_memb_each(g, route_to_grp_cb, cmd);
+    //return grp_memb_each(g, route_to_grp_cb, pkt);
 }
 */
 
 #if 0
 /* decide who/where to route */
-static int route_cmd(struct nn_router *rt, struct nn_cmd *cmd)
+static int route_pkt(struct nn_router *rt, struct nn_pkt *pkt)
 {
-    printf("route_cmd\n");
-    //printf("!!! yeah got it: %d\rt", cmd->id);
+    printf("route_pkt\n");
+    //printf("!!! yeah got it: %d\rt", pkt->id);
     //struct nn_io_conf *conf;
 
-    //assert(cmd);
-    //assert(cmd->conf);
+    //assert(pkt);
+    //assert(pkt->conf);
 
-    //switch(cmd->conf->sendto_type){
+    //switch(pkt->conf->sendto_type){
     //    case NN_SENDTO_GRP:
     //        //route_to_grp(g, );
     //        break;
     //    case NN_SENDTO_NODE:
-    //        //send_cmd_to_node(e1, cmd);
+    //        //send_pkt_to_node(e1, pkt);
     //        break;
     //    case NN_SENDTO_ALL:
-    //        route_to_all(rt, cmd);
-    //        //printf("freeing %p\rt", cmd);
-    //        //cmd_free(cmd);
+    //        route_to_all(rt, pkt);
+    //        //printf("freeing %p\rt", pkt);
+    //        //pkt_free(pkt);
     //        break;
     //    default:
     //        break;
     //}
-    cmd_free(cmd);
+    pkt_free(pkt);
     return 0;
 }
 
 #endif
 #if 0
-static int _router_tx_cmd()
+static int _router_tx_pkt()
 {
-    struct nn_cmd *cmd;
-    cmd = cmd_init(33, NULL, 0, 0, sendto_type, int sendto_id);
-    r = conn_router_tx_cmd(rt, &cmd);
+    struct nn_pkt *pkt;
+    pkt = pkt_init(33, NULL, 0, 0, sendto_type, int sendto_id);
+    r = conn_router_tx_pkt(rt, &pkt);
     if(!r){
-        printf("QQQ route cmd\n");
-        //route_cmd(rt, cmd);
+        printf("QQQ route pkt\n");
+        //route_pkt(rt, pkt);
     }
     return r;
 }

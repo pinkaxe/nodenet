@@ -10,14 +10,19 @@
 #include "util/link.h"
 
 #include "types.h"
-#include "router.h"
 #include "node.h"
 #include "conn.h"
-#include "cmd.h"
+#include "pkt.h"
 
 /* rename functions for this file */
+/* FIXME: do for all *_from *_router for this file */
 #define link_free_node link_free_from
 #define link_free_router link_free_to
+
+#define link_get_node link_get_from
+#define link_get_router link_get_to
+#define link_set_node link_set_from
+#define link_set_router link_set_to
 
 struct nn_conn {
     struct link *link;
@@ -25,26 +30,25 @@ struct nn_conn {
     cond_t cond; /* if anything changes */
 
     /* router(output) -> node(input) */
-    struct que *rt_n_cmd;   /* router write node cmd */
-    struct que *rt_n_data;  /* router write node data */
+    struct que *rt_n_pkts;   /* router write node pkt */
 
     /* node(output) -> router(input) */
-    struct que *n_rt_notify; /* always used */
-    struct que *n_rt_cmd;    /* only master node */
-    struct que *n_rt_data;   /* n write data */
+    struct que *n_rt_pkts;   /* n write data */
+    struct que *n_rt_notify; /* always used, from node_driver */
+    //struct que *n_rt_pkts;    /* only master node */
 
 };
 
 
-struct ques_to_init {
+struct ques_router_init {
     struct que **q;
     size_t size;
 };
 
-int ques_init(struct ques_to_init *qs)
+int ques_init(struct ques_router_init *qs)
 {
     int r = 0;
-    struct ques_to_init *_qs = qs;
+    struct ques_router_init *_qs = qs;
 
     while((_qs->size > 0)){
         PCHK(LWARN, *(_qs->q), que_init(8));
@@ -72,11 +76,10 @@ struct nn_conn *conn_init()
         goto err;
     }
 
-    struct ques_to_init qs[] = {
-        {&cn->rt_n_cmd, 8},
-        {&cn->n_rt_cmd, 8},
-        //{&cn->rt_n_cmd, 8},
-        //{&cn->n_rt_cmd, 8},
+    struct ques_router_init qs[] = {
+        {&cn->rt_n_pkts, 8},
+        {&cn->n_rt_pkts, 8},
+        {&cn->n_rt_notify, 8},
         {NULL, 0},
     };
 
@@ -86,7 +89,8 @@ struct nn_conn *conn_init()
         cn = NULL;
         goto err;
     }
-    assert(cn->rt_n_cmd);
+    assert(cn->rt_n_pkts);
+    assert(cn->n_rt_pkts);
 
     PCHK(LWARN, l, link_init());
     if(!l){
@@ -107,24 +111,32 @@ int conn_free(struct nn_conn *cn)
     int r = 0;
     int fail = 0;
     struct timespec ts = {0, 0};
-    struct nn_cmd *cmd;
+    struct nn_pkt *pkt;
 
     /* IMPROVE: can save conn state here */
 
     /* empty and free the io que's */
-    if(cn->rt_n_cmd){
-        while((cmd=que_get(cn->rt_n_cmd, &ts))){
-            cmd_free(cmd);
+    if(cn->rt_n_pkts){
+        while((pkt=que_get(cn->rt_n_pkts, &ts))){
+            pkt_free(pkt);
         }
-        ICHK(LWARN, r, que_free(cn->rt_n_cmd));
+        ICHK(LWARN, r, que_free(cn->rt_n_pkts));
         if(r) fail++;
     }
 
-    if(cn->n_rt_cmd){
-        while((cmd=que_get(cn->n_rt_cmd, &ts))){
-            cmd_free(cmd);
+    if(cn->n_rt_pkts){
+        while((pkt=que_get(cn->n_rt_pkts, &ts))){
+            pkt_free(pkt);
         }
-        ICHK(LWARN, r, que_free(cn->n_rt_cmd));
+        ICHK(LWARN, r, que_free(cn->n_rt_pkts));
+        if(r) fail++;
+    }
+
+    if(cn->n_rt_notify){
+        while((pkt=que_get(cn->n_rt_notify, &ts))){
+            pkt_free(pkt);
+        }
+        ICHK(LWARN, r, que_free(cn->n_rt_notify));
         if(r) fail++;
     }
 
@@ -162,7 +174,7 @@ int conn_set_node(struct nn_conn *cn, struct nn_node *n)
 
 int conn_set_router(struct nn_conn *cn, struct nn_router *rt)
 {
-    return link_set_to(cn->link, rt);
+    return link_set_router(cn->link, rt);
 }
 
 int conn_set_state(struct nn_conn *cn, int state)
@@ -172,12 +184,12 @@ int conn_set_state(struct nn_conn *cn, int state)
 
 struct nn_node *conn_get_node(struct nn_conn *cn)
 {
-    return link_get_from(cn->link);
+    return link_get_node(cn->link);
 }
 
 struct nn_router *conn_get_router(struct nn_conn *cn)
 {
-    return link_get_to(cn->link);
+    return link_get_router(cn->link);
 }
 
 int conn_get_state(struct nn_conn *cn)
@@ -203,16 +215,16 @@ int conn_unlock(struct nn_conn *cn)
 
 
 
-int conn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
-        *cmd)
+int conn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
+        *pkt)
 {
     int r = 0;
 
     NODE_CONN_ITER_PRE
 
-    if(link_get_to(cn->link) == rt){
+    if(link_get_router(cn->link) == rt){
 
-        r = que_add(cn->n_rt_cmd, cmd);
+        r = que_add(cn->n_rt_pkts, pkt);
 
         // FIXME: signal router of change in some way
     }
@@ -222,31 +234,31 @@ int conn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
     return r;
 }
 
-int conn_router_rx_cmd(struct nn_conn *cn, struct nn_cmd **cmd)
+int conn_router_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
 {
     int r = 1;
     struct timespec ts = {0, 0};
 
     if(link_get_state(cn->link) == LINK_STATE_ALIVE){
-        *cmd = que_get(cn->n_rt_cmd, &ts);
-        if(*cmd) r = 0;
+        *pkt = que_get(cn->n_rt_pkts, &ts);
+        if(*pkt) r = 0;
     }
 
     return r;
 }
 
-/* router -> node cmd */
-int conn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd
-        *cmd)
+/* router -> node pkt */
+int conn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt
+        *pkt)
 {
 
     int r = 1;
 
     NODE_CONN_ITER_PRE
 
-    if(link_get_to(cn->link) == rt){
-        r = que_add(cn->rt_n_cmd, cmd);
-        //node_set_cmd_avail
+    if(link_get_router(cn->link) == rt){
+        r = que_add(cn->rt_n_pkts, pkt);
+        //node_set_pkt_avail
     }
 
     NODE_CONN_ITER_POST
@@ -255,16 +267,16 @@ int conn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd
 
 }
 
-int conn_node_rx_cmd(struct nn_conn *cn, struct nn_cmd **cmd)
+int conn_node_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
 {
     int r = 1;
     struct timespec ts = {0, 0};
 
-    *cmd = NULL;
+    *pkt = NULL;
     if(link_get_state(cn->link) == LINK_STATE_ALIVE){
-        *cmd = que_get(cn->rt_n_cmd, &ts);
-        if(*cmd){
-            printf("cmd: %p\n", *cmd);
+        *pkt = que_get(cn->rt_n_pkts, &ts);
+        if(*pkt){
+            printf("pkt: %p\n", *pkt);
             r = 0;
         }
     }
@@ -285,15 +297,15 @@ int conn_node_rx_data(struct nn_node *rt, struct nn_data **data)
     // remove from rt_n_data
 }
 
-/* node -> router cmd */
-int conn_node_tx_cmd(struct nn_node *rt, struct nn_cmd *cmd)
+/* node -> router pkt */
+int conn_node_tx_pkt(struct nn_node *rt, struct nn_pkt *pkt)
 {
-    // add to n_rt_cmd
+    // add to n_rt_pkts
 }
 
-int conn_router_rx_cmd(struct nn_router *rt, struct nn_cmd **cmd)
+int conn_router_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
 {
-    // remove from n_rt_cmd
+    // remove from n_rt_pkts
 }
 
 

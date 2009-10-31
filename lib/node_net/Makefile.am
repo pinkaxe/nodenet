@@ -15,8 +15,8 @@ libnode_net_la_SOURCES = \
 			 conn.h \
 			 grp.c \
 			 grp.h \
-			 cmd.c \
-			 cmd.h \
+			 pkt.c \
+			 pkt.h \
 			 nn.c \
 			 nn.h \
 			 node_drivers/node_driver.c \

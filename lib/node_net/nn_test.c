@@ -1,6 +1,6 @@
 
 /* a simple test program for node_net, for now 
- * create nodes/routers/grps, change there states, send cmd's to them, 
+ * create nodes/routers/grps, change there states, send pkt's to them, 
  * and cleanup in loop. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +10,7 @@
 #include "util/log.h"
 
 #include "node_net/types.h"
-#include "node_net/cmd.h"
+#include "node_net/pkt.h"
 #include "node_net/nn.h"
 
 #define ok(x){ \
@@ -34,8 +34,8 @@ int output_node(struct nn_node *n, void *buf, int len, void *pdata)
 {
 
     L(LNOTICE, "Process buffer %", __FUNCTION__);
-    //n->tx_cmd(n, );
-    //nn_node_tx_cmd(n, buf, len, destiny);
+    //n->tx_pkt(n, );
+    //nn_node_tx_pkt(n, buf, len, destiny);
     //nn_node_tx(n, );
     return 0;
 }
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
     struct nn_router *rt[1];
     struct nn_node *n[1024];
     struct nn_grp *g[GRPS_NO];
-    struct nn_cmd *cmd;
+    struct nn_pkt *pkt;
 
     while(1){
 
@@ -76,10 +76,10 @@ int main(int argc, char **argv)
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
 
 
-        /* send a cmd to the router */
+        /* send a pkt to the router */
         for(i=0; i < 100; i++){
-            cmd = cmd_init(c++, NULL, 0, 1, NN_SENDTO_ALL, 0);
-            while(nn_router_tx_cmd(rt[0], n[i], cmd)){
+            pkt = pkt_init(c++, NULL, 0, 1, NN_SENDTO_ALL, 0);
+            while(nn_router_tx_pkt(rt[0], n[i], pkt)){
                 usleep(160000);
             }
         }

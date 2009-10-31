@@ -1,5 +1,5 @@
-#ifndef NN_CMD_H__
-#define NN_CMD_H__
+#ifndef NN_PKT_H__
+#define NN_PKT_H__
 
 #include "node_net/types.h"
 
@@ -17,22 +17,22 @@ struct nn_io_conf {
 };
 
 
-struct nn_packet_cmd {
-    enum nn_cmd_cmd id;
+struct nn_packet_pkt {
+    enum nn_pkt_pkt id;
     void *pdata;
     int data_no;
 };
 
 
-typedef int (*io_cmd_req_cb_t)(struct nn_router *rt, struct nn_cmd *cmd);
+typedef int (*io_pkt_req_cb_t)(struct nn_router *rt, struct nn_pkt *pkt);
 typedef int (*io_data_req_cb_t)(struct nn_router *rt, struct nn_io_data *data);
 
 
-struct nn_cmd *cmd_init(enum nn_cmd_cmd id, void *pdata, int data_no,
+struct nn_pkt *pkt_init(enum nn_pkt_pkt id, void *pdata, int data_no,
         int sendto_no, int sendto_type, int sendto_id);
-int cmd_free(struct nn_cmd *cmd);
-struct nn_cmd *cmd_clone(struct nn_cmd *cmd);
+int pkt_free(struct nn_pkt *pkt);
+struct nn_pkt *pkt_clone(struct nn_pkt *pkt);
 
-enum nn_cmd_cmd cmd_get_id(struct nn_cmd *cmd);
+enum nn_pkt_pkt pkt_get_id(struct nn_pkt *pkt);
 
 #endif

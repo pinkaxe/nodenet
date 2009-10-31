@@ -78,7 +78,7 @@ ______________________
     Command: to send commands between nodes. This can optionally be used
     but a different protocol can also be used.
 
-        files - lib/node_net/cmd.c
+        files - lib/node_net/pkt.c
 
     3) lib/util usage:
 
@@ -99,7 +99,7 @@ ______________________
         rt -> router
         g -> group
         cn -> connection
-        cmd -> cmd
+        pkt -> pkt
         h -> local handle
 
 
@@ -139,7 +139,7 @@ ______________________
            - lib/node_net/node.c
            - lib/node_net/link.c
            - lib/node_net/grp.c
-           - lib/node_net/cmd.c
+           - lib/node_net/pkt.c
 
         b) layer that take care of the io between the nodes/routers.
             - lib/node_net/router_io.c
@@ -165,7 +165,7 @@ ______________________
     the public api in lib/node_net/nn.h to create nodes/router/groups and
     connect them up.  From this thread command buffers can be sent to nodes
     and routers directly but usually it will be handled from nodes. The user
-    must only use the functions in nn.h and cmd.h. The other files is
+    must only use the functions in nn.h and pkt.h. The other files is
     internal.
 
     For each initiated router a thread gets created(lib/node_net/router_io.c),
@@ -175,4 +175,5 @@ ______________________
     the public api. nn.c can do it's work.
 
     The user don't have to worry about any locking.
+
 

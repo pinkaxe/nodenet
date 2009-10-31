@@ -11,7 +11,7 @@
 
 #include "types.h"
 #include "node.h"
-#include "cmd.h"
+#include "pkt.h"
 #include "conn.h"
 #include "node_io.h"
 #include "node_drivers/node_driver.h"
@@ -64,7 +64,7 @@ static void *node_io_thread(void *arg)
 {
     struct nn_node *n = arg;
     struct timespec buf_check_timespec;
-    struct timespec cmd_check_timespec;
+    struct timespec pkt_check_timespec;
     void (*user_func)(struct nn_node *n, void *buf, int len, void *pdata);
     void *pdata;
     int attr;
@@ -81,8 +81,8 @@ static void *node_io_thread(void *arg)
 
     buf_check_timespec.tv_sec = 0;
     buf_check_timespec.tv_nsec = 10000000;
-    cmd_check_timespec.tv_sec = 0;
-    cmd_check_timespec.tv_nsec = 1000000;
+    pkt_check_timespec.tv_sec = 0;
+    pkt_check_timespec.tv_nsec = 1000000;
 
     for(;;){
 
@@ -114,19 +114,19 @@ static void *node_io_thread(void *arg)
 
         node_unlock(n);
 
-        /* rx/tx cmd/data */
-        struct nn_cmd *cmd;
+        /* rx/tx pkt/data */
+        struct nn_pkt *pkt;
 
         NODE_CONN_ITER_PRE
 
-        if(!conn_node_rx_cmd(cn, &cmd)){
-            if(cmd){
+        if(!conn_node_rx_pkt(cn, &pkt)){
+            if(pkt){
                 conn_unlock(cn);
                 node_unlock(n);
-                L(LNOTICE, "Node rx'd cmd, call driver");
+                L(LNOTICE, "Node rx'd pkt, call driver");
                 node_lock(n);
                 conn_lock(cn);
-                cmd_free(cmd);
+                pkt_free(pkt);
             }
         }
 

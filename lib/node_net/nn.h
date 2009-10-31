@@ -8,14 +8,14 @@ int nn_router_clean(struct nn_router *rt);
 int nn_router_set_state(struct nn_router *rt, enum nn_state state);
 int nn_router_print(struct nn_router *rt);
 
-int nn_router_set_cmd_cb(struct nn_router *rt, io_cmd_req_cb_t cb);
+int nn_router_set_pkt_cb(struct nn_router *rt, io_pkt_req_cb_t cb);
 int nn_node_set_state(struct nn_node *n, enum nn_state state);
-// nn_router_get_cmd_req(rt, req, timeout)
+// nn_router_get_pkt_req(rt, req, timeout)
 // nn_router_get_data_req(rt, req, timeout)
-int nn_router_tx_cmd(struct nn_router *rt, struct nn_node *n, struct nn_cmd
-        *cmd);
-int nn_node_tx_cmd(struct nn_node *n, struct nn_router *rt, struct nn_cmd
-        *cmd);
+int nn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt
+        *pkt);
+int nn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
+        *pkt);
 
 /* node */
 struct nn_node *nn_node_init(enum nn_node_driver type, enum nn_node_attr attr,

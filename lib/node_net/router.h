@@ -27,7 +27,7 @@ int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn **cn);
 
 int router_conn_each(struct nn_router *rt,
         int (*cb)(struct nn_conn *cn, void *a0), 
-        struct nn_cmd *cmd);
+        struct nn_pkt *pkt);
 
 enum nn_state router_get_state(struct nn_router *rt);
 int router_set_state(struct nn_router *rt, enum nn_state state);

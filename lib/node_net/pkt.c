@@ -10,76 +10,76 @@
 
 #include "util/log.h"
 
-#include "node_net/cmd.h"
+#include "node_net/pkt.h"
 
-struct nn_cmd {
-    enum nn_cmd_cmd id;
+struct nn_pkt {
+    enum nn_pkt_pkt id;
     void *pdata;
     int data_no;
     struct nn_io_conf *conf;
     //uint32_t seq_no;
 };
 
-enum nn_cmd_cmd cmd_get_id(struct nn_cmd *cmd)
+enum nn_pkt_pkt pkt_get_id(struct nn_pkt *pkt)
 {
-    return cmd->id;
+    return pkt->id;
 }
 
-struct nn_cmd *cmd_init(enum nn_cmd_cmd id, void *pdata, int data_no,
+struct nn_pkt *pkt_init(enum nn_pkt_pkt id, void *pdata, int data_no,
         int sendto_no, int sendto_type, int sendto_id)
 {
-    struct nn_cmd *cmd;
+    struct nn_pkt *pkt;
     struct nn_io_conf *conf;
 
-    PCHK(LWARN, cmd, malloc(sizeof(*cmd)));
-    if(!cmd){
+    PCHK(LWARN, pkt, malloc(sizeof(*pkt)));
+    if(!pkt){
         goto err;
     }
-    cmd->id = id;
-    cmd->pdata = pdata;
-    cmd->data_no = data_no;
-    cmd->conf = NULL;
+    pkt->id = id;
+    pkt->pdata = pdata;
+    pkt->data_no = data_no;
+    pkt->conf = NULL;
 
     PCHK(LWARN, conf, malloc(sizeof(*conf)));
     if(!conf){
-        cmd_free(cmd);
-        cmd = NULL;
+        pkt_free(pkt);
+        pkt = NULL;
         goto err;
     }
     conf->sendto_no = sendto_no;
     conf->sendto_type = sendto_type;
     conf->sendto_id = sendto_id;
 
-    cmd->conf = conf;
+    pkt->conf = conf;
 
 err:
 
-    return cmd;
+    return pkt;
 }
 
-struct nn_cmd *cmd_clone(struct nn_cmd *cmd)
+struct nn_pkt *pkt_clone(struct nn_pkt *pkt)
 {
-    struct nn_cmd *clone;
+    struct nn_pkt *clone;
     struct nn_io_conf *conf;
 
     PCHK(LWARN, clone, malloc(sizeof(*clone)));
     if(!clone){
         goto err;
     }
-    clone->id = cmd->id;
-    clone->pdata = cmd->pdata;
-    clone->data_no = cmd->data_no;
+    clone->id = pkt->id;
+    clone->pdata = pkt->pdata;
+    clone->data_no = pkt->data_no;
     clone->conf = NULL;
 
     PCHK(LWARN, conf, malloc(sizeof(*conf)));
     if(!conf){
-        cmd_free(clone);
+        pkt_free(clone);
         clone = NULL;
         goto err;
     }
-    conf->sendto_no = cmd->conf->sendto_no;
-    conf->sendto_type = cmd->conf->sendto_type;
-    conf->sendto_id = cmd->conf->sendto_id;
+    conf->sendto_no = pkt->conf->sendto_no;
+    conf->sendto_type = pkt->conf->sendto_type;
+    conf->sendto_id = pkt->conf->sendto_id;
 
     clone->conf = conf;
 
@@ -87,13 +87,13 @@ err:
     return clone;
 }
 
-int cmd_free(struct nn_cmd *cmd)
+int pkt_free(struct nn_pkt *pkt)
 {
-    if(cmd){
-        if(cmd->conf){
-            free(cmd->conf);
+    if(pkt){
+        if(pkt->conf){
+            free(pkt->conf);
         }
-        free(cmd);
+        free(pkt);
     }
 
     return 0;

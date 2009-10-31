@@ -37,10 +37,10 @@ void *lproc_middle(void *arg)
     }
 
     void *buf = NULL;
-    void *cmd_buf = NULL;
+    void *pkt_buf = NULL;
     struct nn_node *h = arg;
     struct timespec buf_check_timespec;
-    struct timespec cmd_check_timespec;
+    struct timespec pkt_check_timespec;
 
     void (*user_func)(struct nn_node *h, void *buf, int len, void *pdata) =
         node_get_codep(h);
@@ -51,8 +51,8 @@ void *lproc_middle(void *arg)
 
         buf_check_timespec.tv_sec = 0;
         buf_check_timespec.tv_nsec = 10000000;
-        cmd_check_timespec.tv_sec = 0;
-        cmd_check_timespec.tv_nsec = 10000000;
+        pkt_check_timespec.tv_sec = 0;
+        pkt_check_timespec.tv_nsec = 10000000;
 
         if((attr & NN_NODE_ATTR_NO_INPUT)){
             /* call user function */
@@ -73,11 +73,11 @@ void *lproc_middle(void *arg)
         }
 
         /* incoming commands */
-        cmd_buf = node_read_in_cmd(h, &cmd_check_timespec);
-        if(cmd_buf){
-            printf("!!! Got a cmd_buf\rt ");
+        pkt_buf = node_read_in_pkt(h, &pkt_check_timespec);
+        if(pkt_buf){
+            printf("!!! Got a pkt_buf\rt ");
             //exit(1);
-            //free(cmd_buf);
+            //free(pkt_buf);
             //break;
             // process and free
         }else{
