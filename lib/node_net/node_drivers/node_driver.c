@@ -13,7 +13,7 @@ struct node_driver_ops *node_driver_get_ops(int type)
 
     switch(type){
         case NN_NODE_TYPE_THREAD:
-            ops = node_driver_thread_get_ops();
+            //ops = node_driver_thread_get_ops();
             break;
        // case NN_NODE_DRIVER__LPROC:
        //     r = node_driver_lproc_init(n);

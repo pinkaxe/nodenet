@@ -174,6 +174,16 @@ int nn_router_set_pkt_cb(struct nn_router *rt, io_pkt_req_cb_t cb)
     return r;
 }
 
+int nn_node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt)
+{
+    return node_add_tx_pkt(n, pkt);
+}
+
+int nn_node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt)
+{
+    return node_get_tx_pkt(n, pkt);
+}
+
 //int nn_router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
 //{
 //    int r;

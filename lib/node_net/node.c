@@ -33,6 +33,9 @@ struct nn_node {
     enum nn_node_attr attr;
     enum nn_state state;
 
+    struct que *rx_pkts;   /* pkt's coming in */
+    struct que *tx_pkts;   /* pkt's going out */
+
     /* rel */
     struct ll *conn;      /* all conn connected to via conn's */
     struct ll *grp_conns;     /* all groups connected to via conn's */
@@ -74,8 +77,8 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     }
     DBG_STRUCT_INIT(n);
 
-    n->ops = node_driver_get_ops(n->type);
-    assert(n->ops);
+    //n->ops = node_driver_get_ops(n->type);
+    //assert(n->ops);
 
     PCHK(LWARN, n->grp_conns, ll_init());
     if(!n->grp_conns){
@@ -85,6 +88,18 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
 
     PCHK(LWARN, n->conn, ll_init());
     if(!n->conn){
+        PCHK(LWARN, r, node_free(n));
+        goto err;
+    }
+
+    PCHK(LWARN, n->rx_pkts, que_init(100));
+    if(!(n->rx_pkts)){
+        PCHK(LWARN, r, node_free(n));
+        goto err;
+    }
+
+    PCHK(LWARN, n->tx_pkts, que_init(100));
+    if(!(n->tx_pkts)){
         PCHK(LWARN, r, node_free(n));
         goto err;
     }
@@ -112,8 +127,10 @@ int node_free(struct nn_node *n)
     struct ll_iter *iter;
     int fail = 0;
     int r = 0;
+    struct timespec ts = {0, 0};
 
     struct nn_node_grp *ng;
+    struct nn_pkt *pkt;
 
     node_isok(n);
 
@@ -136,6 +153,22 @@ int node_free(struct nn_node *n)
 
         ll_iter_free(iter);
 
+    }
+
+    if(n->rx_pkts){
+        while((pkt=que_get(n->rx_pkts, &ts))){
+            pkt_free(pkt);
+        }
+        ICHK(LWARN, r, que_free(n->rx_pkts));
+        if(r) fail++;
+    }
+
+    if(n->tx_pkts){
+        while((pkt=que_get(n->tx_pkts, &ts))){
+            pkt_free(pkt);
+        }
+        ICHK(LWARN, r, que_free(n->tx_pkts));
+        if(r) fail++;
     }
 
     mutex_unlock(&n->mutex);
@@ -303,6 +336,57 @@ int node_print(struct nn_node *n)
     printf("n=%p, cn:%p, rt=%p\n", n, cn, conn_get_router(cn));
 
     NODE_CONN_ITER_POST
+
+    return 0;
+}
+
+int node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt)
+{
+    int r;
+
+
+    r = que_add(n->tx_pkts, pkt);
+
+    printf("add\n");
+
+    return r;
+}
+
+int node_add_rx_pkt(struct nn_node *n, struct nn_pkt *pkt)
+{
+    int r;
+
+    r = que_add(n->rx_pkts, pkt);
+
+    return 0;
+}
+
+int node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt)
+{
+    int r = 1;
+    struct timespec ts = {0, 1};
+
+    printf(" b get x\n");
+
+    printf(" b get\n");
+    *pkt = que_get(n->tx_pkts, &ts);
+    printf(" b get af\n");
+    if(*pkt) r = 0;
+    printf("get\n");
+
+
+    return 0;
+}
+
+int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt)
+{
+    int r = 1;
+    struct timespec ts = {0, 0};
+
+
+    *pkt = que_get(n->rx_pkts, &ts);
+    if(*pkt) r = 0;
+
 
     return 0;
 }

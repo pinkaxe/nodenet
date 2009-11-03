@@ -51,7 +51,7 @@ int ques_init(struct ques_router_init *qs)
     struct ques_router_init *_qs = qs;
 
     while((_qs->size > 0)){
-        PCHK(LWARN, *(_qs->q), que_init(8));
+        PCHK(LWARN, *(_qs->q), que_init(100));
         if(!*(_qs->q)){
             //PCHK(LWARN, r, conn_free(cn));
             //goto err;
@@ -77,9 +77,9 @@ struct nn_conn *conn_init()
     }
 
     struct ques_router_init qs[] = {
-        {&cn->rt_n_pkts, 8},
-        {&cn->n_rt_pkts, 8},
-        {&cn->n_rt_notify, 8},
+        {&cn->rt_n_pkts, 100},
+        {&cn->n_rt_pkts, 100},
+        {&cn->n_rt_notify, 100},
         {NULL, 0},
     };
 

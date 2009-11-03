@@ -104,12 +104,24 @@ again:
 
         /* rx pkt's and route */
         if(!conn_router_rx_pkt(cn, &pkt)){
+            printf("ok\n");
             conn_unlock(cn);
             router_unlock(rt);
 
             // route data
             enum nn_pkt_pkt id = pkt_get_id(pkt);
             L(LNOTICE, "Router got pkt: %d\n", id);
+
+            /* send */
+            /* decide who to route to, and route */
+            ROUTER_CONN_ITER_PRE
+
+            while(conn_router_tx_pkt(rt, conn_get_node(cn), pkt)){
+                usleep(1000);
+            }
+
+            ROUTER_CONN_ITER_POST
+
             pkt_free(pkt);
 
             router_lock(rt);

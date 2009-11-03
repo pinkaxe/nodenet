@@ -37,4 +37,7 @@ int nn_unconn(struct nn_node *n, struct nn_router *rt);
 int nn_join_grp(struct nn_node *n, struct nn_grp *g);
 int nn_quit_grp(struct nn_node *n, struct nn_grp *g);
 
+
+int nn_node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt);
+
 #endif
