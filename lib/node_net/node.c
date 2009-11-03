@@ -181,6 +181,21 @@ int node_free(struct nn_node *n)
     return fail;
 }
 
+int node_clean(struct nn_node *n)
+{
+    node_lock(n);
+
+    while(node_get_state(n) != NN_STATE_FINISHED){
+        node_cond_wait(n);
+    }
+
+    node_unlock(n);
+
+    node_free(n);
+
+    return 0;
+}
+
 
 int node_lock(struct nn_node *n)
 {
@@ -275,9 +290,31 @@ void *node_get_codep(struct nn_node *n)
     return n->code;
 }
 
+struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_router *rt)
+{
+    struct nn_conn *_cn = NULL;
+
+    NODE_CONN_ITER_PRE
+    if(conn_get_router(cn) == rt){
+        done = 1;
+        _cn = cn;
+    }
+
+    NODE_CONN_ITER_POST
+
+    return _cn;
+}
+
+
 int node_set_state(struct nn_node *n, enum nn_state state)
 {
+    node_lock(n);
+
     n->state = state;
+
+    node_cond_broadcast(n);
+    node_unlock(n);
+
     return 0;
 }
 

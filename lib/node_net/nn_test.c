@@ -51,8 +51,8 @@ void *thread1(struct nn_node *n, void *pdata)
 
 void *thread0(struct nn_node *n, void *arg)
 {
-    struct nn_pkt *pkt;
-    struct mesg *mesg;
+    //struct nn_pkt *pkt;
+    //struct mesg *mesg;
 
     for(;;){
      //   pkt = nn_node_get_rx_pkt(n);
@@ -111,14 +111,14 @@ struct nn_pkt *node0_get_pkt(void *pdata)
 
 int main(int argc, char **argv)
 {
-    int i, c;
+    int i;
     struct nn_router *rt[1];
     struct nn_node *n[1024];
     struct nn_grp *g[GRPS_NO];
-    struct nn_pkt *pkt;
+    //struct nn_pkt *pkt;
     struct dpool *dpool;
     struct mesg *mesg;
-    struct dpool_buf *dpool_buf;
+    //struct dpool_buf *dpool_buf;
 
     while(1){
 

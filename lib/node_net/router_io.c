@@ -75,8 +75,6 @@ static void *router_pkt_thread(void *arg)
 
     for(;;){
 
-        router_lock(rt);
-
 again:
         /* state changed ? */
         switch(router_get_state(rt)){
@@ -89,8 +87,8 @@ again:
             case NN_STATE_SHUTDOWN:
                 _shutdown(rt);
                 router_set_state(rt, NN_STATE_FINISHED);
-                router_cond_broadcast(rt);
-                router_unlock(rt);
+                //router_cond_broadcast(rt);
+                //router_unlock(rt);
                 thread_exit(NULL);
                 break;
             case NN_STATE_FINISHED:
@@ -98,7 +96,7 @@ again:
                 break;
         }
 
-        router_unlock(rt);
+        //router_unlock(rt);
 
         ROUTER_CONN_ITER_PRE
 
@@ -114,13 +112,15 @@ again:
 
             /* send */
             /* decide who to route to, and route */
-            ROUTER_CONN_ITER_PRE
+            {
+                ROUTER_CONN_ITER_PRE
 
-            while(conn_router_tx_pkt(rt, conn_get_node(cn), pkt)){
-                usleep(1000);
+                while(conn_router_tx_pkt(rt, conn_get_node(cn), pkt)){
+                    usleep(1000);
+                }
+
+                ROUTER_CONN_ITER_POST
             }
-
-            ROUTER_CONN_ITER_POST
 
             pkt_free(pkt);
 

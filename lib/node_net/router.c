@@ -66,6 +66,31 @@ err:
     return rt;
 }
 
+int router_lock(struct nn_router *rt)
+{
+printf("!!! lock\n");
+    mutex_lock(&rt->mutex);
+    return 0;
+}
+
+int router_unlock(struct nn_router *rt)
+{
+    mutex_unlock(&rt->mutex);
+    return 0;
+}
+
+int router_cond_wait(struct nn_router *rt)
+{
+    cond_wait(&rt->cond, &rt->mutex);
+    return 0;
+}
+
+int router_cond_broadcast(struct nn_router *rt)
+{
+    cond_broadcast(&rt->cond);
+    return 0;
+}
+
 
 int router_free(struct nn_router *rt)
 {
@@ -90,47 +115,64 @@ int router_free(struct nn_router *rt)
 }
 
 
-int router_lock(struct nn_router *rt)
+int router_clean(struct nn_router *rt)
 {
-    mutex_lock(&rt->mutex);
+    router_lock(rt);
+
+    while(router_get_state(rt) != NN_STATE_FINISHED){
+        router_cond_wait(rt);
+    }
+
+    router_unlock(rt);
+    router_free(rt);
+
     return 0;
 }
 
-int router_unlock(struct nn_router *rt)
-{
-    mutex_unlock(&rt->mutex);
-    return 0;
-}
 
-int router_cond_wait(struct nn_router *rt)
-{
-    cond_wait(&rt->cond, &rt->mutex);
-    return 0;
-}
-
-int router_cond_broadcast(struct nn_router *rt)
-{
-    cond_broadcast(&rt->cond);
-    return 0;
-}
 
 int router_set_state(struct nn_router *rt, enum nn_state state)
 {
+    router_lock(rt);
+
     rt->state = state;
+
+    router_cond_broadcast(rt);
+    router_unlock(rt);
+
     return 0;
 }
 
 enum nn_state router_get_state(struct nn_router *rt)
 {
-    return rt->state;
+    enum nn_state state;
+    router_isvalid(rt);
+
+    router_lock(rt);
+    state = rt->state;
+    router_unlock(rt);
+
+    return state;
 }
 
 int router_conn(struct nn_router *rt, struct nn_conn *cn)
 {
     int r = 1;
+
     router_isvalid(rt);
 
+    router_lock(rt);
+    conn_lock(cn);
+
     ICHK(LWARN, r, ll_add_front(rt->conn, (void **)&cn));
+    if(r) goto err;
+
+    ICHK(LWARN, r, conn_set_router(cn, rt));
+    if(r) goto err;
+
+err:
+    conn_unlock(cn);
+    router_unlock(rt);
 
     return r;
 }

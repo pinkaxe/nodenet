@@ -22,6 +22,8 @@
 #include "nn.h"
 
 
+/* router */
+
 struct nn_router *nn_router_init(void)
 {
     struct nn_router *rt;
@@ -31,20 +33,37 @@ struct nn_router *nn_router_init(void)
     return rt;
 }
 
+int nn_router_free(struct nn_router *rt)
+{
+    int r;
+
+    r = router_set_state(rt, NN_STATE_SHUTDOWN);
+
+    return r;
+}
+
+int nn_router_clean(struct nn_router *rt)
+{
+    return router_clean(rt);
+}
 
 int nn_router_set_state(struct nn_router *rt, enum nn_state state)
 {
     int r;
 
-    router_lock(rt);
-
     ICHK(LWARN, r, router_set_state(rt, state));
-    router_cond_broadcast(rt);
-
-    router_unlock(rt);
 
     return r;
 }
+
+int nn_router_print(struct nn_router *rt)
+{
+    router_print(rt);
+    return 0;
+}
+
+
+/* node */
 
 struct nn_node *nn_node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata)
@@ -56,21 +75,36 @@ struct nn_node *nn_node_init(enum nn_node_driver type, enum nn_node_attr attr,
     return n;
 }
 
+int nn_node_free(struct nn_node *n)
+{
+    return  node_set_state(n, NN_STATE_SHUTDOWN);
+}
+
+/* wait for node to be totally cleaned up */
+int nn_node_clean(struct nn_node *n)
+{
+    return node_clean(n);
+}
+
 //int nn_node_setname(struct nn_node *n, char *name);
 
 int nn_node_set_state(struct nn_node *n, enum nn_state state)
 {
     int r;
 
-    node_lock(n);
-
     ICHK(LWARN, r, node_set_state(n, state));
-    node_cond_broadcast(n);
-
-    node_unlock(n);
 
     return r;
 }
+
+int nn_node_print(struct nn_node *n)
+{
+    node_print(n);
+    return 0;
+}
+
+
+/* grp */
 
 struct nn_grp *nn_grp_init(int id)
 {
@@ -81,6 +115,14 @@ struct nn_grp *nn_grp_init(int id)
     return g;
 }
 
+int nn_grp_free(struct nn_grp *g)
+{
+    int r;
+
+    ICHK(LWARN, r, grp_free(g));
+
+    return r;
+}
 
 int nn_join_grp(struct nn_node *n, struct nn_grp *g)
 {
@@ -147,7 +189,6 @@ int nn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt *pkt
 
     r = conn_router_tx_pkt(rt, n, pkt);
 
-
     return r;
 }
 
@@ -208,142 +249,57 @@ int nn_node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt)
  *   */
 
 
-#include "util/link.h"
+//#include "util/link.h"
 
 
 int nn_conn(struct nn_node *n, struct nn_router *rt)
 {
-    int r = 0;
     struct nn_conn *cn;
+    int r = 1;
 
-    cn = conn_init();
+    PCHK(LWARN, cn, conn_init());
+    if(!cn) goto err;
 
-    /* lock router and conn */
-    router_lock(rt);
-    conn_lock(cn);
+    ICHK(LWARN, r, router_conn(rt, cn));
+    if(r){
+        free(cn);
+        goto err;
+    }
 
-    /* set router side pointers */
-    router_conn(rt, cn);
-    conn_set_router(cn, rt);
+    ICHK(LWARN, r, node_conn(n, cn));
+    if(r){
+        free(cn);
+        goto err;
+    }
 
-    /* unlock router and conn */
-    conn_unlock(cn);
-    router_unlock(rt);
-
-    /* lock node and conn */
-    node_lock(n);
-    conn_lock(cn);
-
-    /* set node side pointers */
-    node_conn(n, cn);
-    conn_set_node(cn, n);
-
-    /* unlock node and conn */
-    node_unlock(n);
-    conn_unlock(cn);
-
+err:
     return r;
 }
 
 int nn_unconn(struct nn_node *n, struct nn_router *rt)
 {
     int r = 0;
+    struct nn_conn *cn;
 
-    NODE_CONN_ITER_PRE
+    PCHK(LWARN, cn, node_get_router_conn(n, rt));
 
-    /* disconnect the node <-> conn conn */
-    node_unconn(n, cn);
-    conn_free_node(cn);
+    if(cn){
+        ICHK(LWARN, r, router_unconn(rt, cn));
+        if(r){
+            free(cn);
+            goto err;
+        }
 
-    NODE_CONN_ITER_POST
-
-    return r;
-}
-
-
-int nn_grp_free(struct nn_grp *g)
-{
-    int r;
-
-
-    ICHK(LWARN, r, grp_free(g));
-
-    return r;
-}
-
-int nn_node_free(struct nn_node *n)
-{
-    int r;
-
-    node_lock(n);
-
-    r = node_set_state(n, NN_STATE_SHUTDOWN);
-    node_cond_broadcast(n);
-
-    node_unlock(n);
-
-    return r;
-}
-
-int nn_node_clean(struct nn_node *n)
-{
-
-    node_lock(n);
-
-    while(node_get_state(n) != NN_STATE_FINISHED){
-        node_cond_wait(n);
+        ICHK(LWARN, r, node_unconn(n, cn));
+        if(r){
+            free(cn);
+            goto err;
+        }
     }
 
-    node_unlock(n);
-
-    node_free(n);
-
-    return 0;
-}
-
-int nn_node_print(struct nn_node *n)
-{
-
-    node_print(n);
-
-    return 0;
-}
-
-
-int nn_router_free(struct nn_router *rt)
-{
-    int r;
-
-    router_lock(rt);
-
-    r = router_set_state(rt, NN_STATE_SHUTDOWN);
-    router_cond_broadcast(rt);
-
-    router_unlock(rt);
+err:
+    conn_free(cn);
 
     return r;
 }
 
-int nn_router_clean(struct nn_router *rt)
-{
-
-    router_lock(rt);
-
-    while(router_get_state(rt) != NN_STATE_FINISHED){
-        router_cond_wait(rt);
-    }
-
-    router_unlock(rt);
-
-    router_free(rt);
-
-    return 0;
-}
-
-int nn_router_print(struct nn_router *rt)
-{
-
-    router_print(rt);
-
-    return 0;
-}

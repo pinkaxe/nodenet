@@ -10,6 +10,7 @@
 #include "util/link.h"
 
 #include "types.h"
+#include "router.h"
 #include "node.h"
 #include "conn.h"
 #include "pkt.h"
@@ -207,6 +208,44 @@ int conn_lock(struct nn_conn *cn)
 int conn_unlock(struct nn_conn *cn)
 {
     mutex_unlock(&cn->mutex);
+    return 0;
+}
+
+int conn_conn(struct nn_node *n, struct nn_router *rt)
+{
+    struct nn_conn *cn;
+
+    PCHK(LWARN, cn, conn_init());
+    if(!cn) goto err;
+
+    /* lock node and conn */
+    node_lock(n);
+    conn_lock(cn);
+
+    /* set node side pointers */
+    node_conn(n, cn);
+    conn_set_node(cn, n);
+
+    /* unlock node and conn */
+    node_unlock(n);
+    conn_unlock(cn);
+
+err:
+    return 0;
+}
+
+
+int conn_unconn(struct nn_node *n, struct nn_router *rt)
+{
+    NODE_CONN_ITER_PRE
+
+    // FIXME: check for == rt
+    /* disconnect the node <-> conn conn */
+    node_unconn(n, cn);
+    conn_free_node(cn);
+
+    NODE_CONN_ITER_POST
+
     return 0;
 }
 

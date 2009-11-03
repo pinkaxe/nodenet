@@ -3,7 +3,10 @@
 
 struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata);
+/* node_free only set state to shutdown, node_clean has to be called to do the
+ * final cleanup */
 int node_free(struct nn_node *node);
+int node_clean(struct nn_node *n);
 
 /* conn to routers via conns */
 int node_conn(struct nn_node *n, struct nn_conn *cn);
@@ -19,6 +22,7 @@ int node_get_attr(struct nn_node *n);
 void *node_get_pdatap(struct nn_node *n);
 void *node_get_codep(struct nn_node *n);
 enum nn_state node_get_state(struct nn_node *n);
+struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_router *rt);
 
 /* setters */
 int node_set_state(struct nn_node *n, enum nn_state state);
@@ -46,11 +50,12 @@ int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt);
  each matching router is set and can be used */
 #define NODE_CONN_ITER_PRE \
     assert(n); \
+    int done = 0; \
     struct node_conn_iter *iter; \
     struct nn_conn *cn; \
     node_lock(n); \
     iter = node_conn_iter_init(n); \
-    while(!node_conn_iter_next(iter, &cn)){ \
+    while(!done && !node_conn_iter_next(iter, &cn)){ \
         conn_lock(cn);
 
 #define NODE_CONN_ITER_POST \

@@ -16,6 +16,9 @@ struct nn_node *conn_get_node(struct nn_conn *cn);
 struct nn_router *conn_get_router(struct nn_conn *cn);
 int conn_get_state(struct nn_conn *cn);
 
+/* connections between routers and nodes */
+int conn_conn(struct nn_node *n, struct nn_router *rt);
+int conn_unconn(struct nn_node *n, struct nn_router *rt);
 
 /* router -> node pkt */
 int conn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt
