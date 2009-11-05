@@ -119,69 +119,78 @@ static void *node_io_thread(void *arg)
         thread_detach(tid);
     }
 
+    //sleep(5);
+    //printf("start pickup\n");
     for(;;){
 
-        node_lock(n);
+        //node_lock(n);
 
         /* check state */
-        switch(node_get_state(n)){
-            case NN_STATE_RUNNING:
-                break;
-            case NN_STATE_PAUSED:
-                L(LNOTICE, "Node paused: %p", n);
-                while(node_get_state(n) == NN_STATE_PAUSED){
-                    node_cond_wait(n);
-                }
-                L(LNOTICE, "Node paused state exit: %p", n);
-                break;
-            case NN_STATE_SHUTDOWN:
-                L(LNOTICE, "Node thread shutdown start: %p", n);
-                node_conn_free(n);
-                node_set_state(n, NN_STATE_FINISHED);
-                node_cond_broadcast(n);
-                node_unlock(n);
-                L(LNOTICE, "Node thread shutdown completed");
-                return NULL;
-            case NN_STATE_FINISHED:
-                L(LCRIT, "Node thread illegally in finished state");
-                break;
-        }
+     //   switch(node_get_state(n)){
+     //       case NN_STATE_RUNNING:
+     //           break;
+     //       case NN_STATE_PAUSED:
+     //           L(LNOTICE, "Node paused: %p", n);
+     //           while(node_get_state(n) == NN_STATE_PAUSED){
+     //               sleep(1);
+     //               //node_cond_wait(n);
+     //           }
+     //           L(LNOTICE, "Node paused state exit: %p", n);
+     //           break;
+     //       case NN_STATE_SHUTDOWN:
+     //           L(LNOTICE, "Node thread shutdown start: %p", n);
+     //           node_conn_free(n);
+     //           node_set_state(n, NN_STATE_FINISHED);
+     //           //node_cond_broadcast(n);
+     //           //node_unlock(n);
+     //           L(LNOTICE, "Node thread shutdown completed");
+     //           return NULL;
+     //       case NN_STATE_FINISHED:
+     //           L(LCRIT, "Node thread illegally in finished state");
+     //           break;
+     //   }
 
-        node_unlock(n);
+        //node_unlock(n);
 
         /* rx/tx pkt */
 
-        NODE_CONN_ITER_PRE
+        //NODE_CONN_ITER_PRE
 
         /* rx packet from conn and add to node */
-        if(!conn_node_rx_pkt(cn, &pkt)){
-            if(pkt){
-                L(LNOTICE, "Node rx'd pkt, call driver");
+      //  if(!conn_node_rx_pkt(cn, &pkt)){
+      //      if(pkt){
+      //          L(LNOTICE, "Node rx'd pkt, call driver");
 
-                node_add_rx_pkt(n, pkt);
+      //          node_add_rx_pkt(n, pkt);
 
-                pkt_free(pkt);
-            }
+      //          pkt_free(pkt);
+      //      }
 
-        }
+      //  }
 
         /* pick pkt's up from driver and tx to router */
         if(!node_get_tx_pkt(n, &pkt)){
+            printf("!! here, got %p\n", pkt);
+            assert(pkt);
 
-            printf("here\n");
-            conn_unlock(cn);
-            node_unlock(n);
-            conn_node_tx_pkt(n, conn_get_router(cn), pkt);
+            /* FIXME: sending to all routers ? */
+            NODE_CONN_ITER_PRE
+            printf("!! tx to router\n");
+            //conn_node_tx_pkt(n, conn_get_router(cn), pkt);
+            NODE_CONN_ITER_POST
+           // conn_unlock(cn);
+           // node_unlock(n);
+           // conn_node_tx_pkt(n, conn_get_router(cn), pkt);
 
-            node_lock(n);
-            conn_lock(cn);
+           // node_lock(n);
+           // conn_lock(cn);
        //     //ops->get_buf(n, pkt_get_data(pkt),
        //     //        pkt_get_data_len(pkt), pkt_get_pdata(pkt));
         }
 
-        NODE_CONN_ITER_POST
+        //NODE_CONN_ITER_POST
 
-        usleep(1000);
+        usleep(100000);
     }
 
 err:

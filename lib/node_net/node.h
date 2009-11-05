@@ -55,7 +55,7 @@ int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt);
     struct nn_conn *cn; \
     node_lock(n); \
     iter = node_conn_iter_init(n); \
-    while(!done && !node_conn_iter_next(iter, &cn)){ \
+    while(!node_conn_iter_next(iter, &cn)){ \
         conn_lock(cn);
 
 #define NODE_CONN_ITER_POST \

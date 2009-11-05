@@ -68,7 +68,6 @@ err:
 
 int router_lock(struct nn_router *rt)
 {
-printf("!!! lock\n");
     mutex_lock(&rt->mutex);
     return 0;
 }
@@ -179,12 +178,17 @@ err:
 
 int router_unconn(struct nn_router *rt, struct nn_conn *cn)
 {
-    int r;
+    int r = 1;
 
     router_isvalid(rt);
 
     ICHK(LWARN, r, ll_rem(rt->conn, cn));
+    if(r) goto err;
 
+    ICHK(LWARN, r, conn_free_router(cn));
+    if(r) goto err;
+
+err:
     return r;
 }
 

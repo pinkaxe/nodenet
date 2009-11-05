@@ -237,8 +237,13 @@ int node_unconn(struct nn_node *n, struct nn_conn *cn)
     node_isok(n);
 
     ICHK(LWARN, r, ll_rem(n->conn, cn));
+    if(r) goto err;
 
-    return 0;
+    ICHK(LWARN, r, conn_free_node(cn));
+    if(r) goto err;
+
+err:
+    return r;
 }
 
 
@@ -381,10 +386,27 @@ int node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt)
 {
     int r;
 
-
+    assert(pkt);
+    printf("adding %p\n", pkt);
     r = que_add(n->tx_pkts, pkt);
 
-    printf("add\n");
+    return r;
+}
+
+int node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt)
+{
+    int r = 1;
+    struct timespec ts = {0, 0};
+
+    //node_lock(n);
+
+    *pkt = que_get(n->tx_pkts, &ts);
+    if(*pkt){
+        r = 0;
+        printf("!! got\n");
+    }
+
+    //node_unlock(n);
 
     return r;
 }
@@ -395,35 +417,17 @@ int node_add_rx_pkt(struct nn_node *n, struct nn_pkt *pkt)
 
     r = que_add(n->rx_pkts, pkt);
 
-    return 0;
+    return r;
 }
 
-int node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt)
-{
-    int r = 1;
-    struct timespec ts = {0, 1};
-
-    printf(" b get x\n");
-
-    printf(" b get\n");
-    *pkt = que_get(n->tx_pkts, &ts);
-    printf(" b get af\n");
-    if(*pkt) r = 0;
-    printf("get\n");
-
-
-    return 0;
-}
 
 int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt)
 {
     int r = 1;
     struct timespec ts = {0, 0};
 
-
     *pkt = que_get(n->rx_pkts, &ts);
     if(*pkt) r = 0;
-
 
     return 0;
 }

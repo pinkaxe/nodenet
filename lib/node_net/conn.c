@@ -280,6 +280,7 @@ int conn_router_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
 
     if(link_get_state(cn->link) == LINK_STATE_ALIVE){
         *pkt = que_get(cn->n_rt_pkts, &ts);
+        printf("!! picking up: %p\n",pkt);
         if(*pkt) r = 0;
     }
 

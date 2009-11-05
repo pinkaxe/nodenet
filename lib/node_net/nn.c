@@ -257,16 +257,16 @@ int nn_conn(struct nn_node *n, struct nn_router *rt)
     struct nn_conn *cn;
     int r = 1;
 
-    PCHK(LWARN, cn, conn_init());
+    PCHK(LCRIT, cn, conn_init());
     if(!cn) goto err;
 
-    ICHK(LWARN, r, router_conn(rt, cn));
+    ICHK(LCRIT, r, router_conn(rt, cn));
     if(r){
         free(cn);
         goto err;
     }
 
-    ICHK(LWARN, r, node_conn(n, cn));
+    ICHK(LCRIT, r, node_conn(n, cn));
     if(r){
         free(cn);
         goto err;

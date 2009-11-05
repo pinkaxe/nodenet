@@ -32,7 +32,8 @@ void *thread1(struct nn_node *n, void *pdata)
 
     for(;;){
         while(!(dpool_buf=dpool_get_buf(dpool))){
-            usleep(1000);
+            sleep(1);
+            printf("!! sleeping\n");
         }
 
         mesg = dpool_buf->data;
@@ -135,8 +136,9 @@ int main(int argc, char **argv)
         /* create input nodes */
         n[0] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
                 thread1, dpool);
+        nn_conn(n[0], rt[0]);
         printf("xxx1 %p\n", dpool);
-        for(i=1; i < 100; i++){
+        for(i=1; i < 1; i++){
             n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
                     thread0, dpool);
             /* connect to router */
@@ -146,7 +148,7 @@ int main(int argc, char **argv)
         }
 
         /* set everthing state to running */
-        for(i=0; i < 100; i++){
+        for(i=0; i < 1; i++){
             nn_node_set_state(n[i], NN_STATE_RUNNING);
         }
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
@@ -165,7 +167,7 @@ int main(int argc, char **argv)
         }
         */
         while(1){
-            sleep(5);
+            sleep(2);
         }
 
         /* pause everything */
