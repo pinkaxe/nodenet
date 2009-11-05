@@ -89,6 +89,7 @@ static void *node_io_thread(void *arg)
     struct nn_pkt *pkt;
     //struct node_driver_ops *ops;
     thread_t tid;
+    int r;
 
     node_lock(n);
     user_func = node_get_codep(n);
@@ -168,15 +169,19 @@ static void *node_io_thread(void *arg)
 
       //  }
 
-        /* pick pkt's up from driver and tx to router */
+        ICHK(LDEBUG, r, node_tx_pkts(n));
+
+        ICHK(LDEBUG, r, node_rx_pkts(n));
+
+#if 0
+        /* pick pkt's up from node and move to conn */
         if(!node_get_tx_pkt(n, &pkt)){
-            printf("!! here, got %p\n", pkt);
             assert(pkt);
 
             /* FIXME: sending to all routers ? */
             NODE_CONN_ITER_PRE
             printf("!! tx to router\n");
-            //conn_node_tx_pkt(n, conn_get_router(cn), pkt);
+            //conn_node_tx_pkt(cn, pkt);
             NODE_CONN_ITER_POST
            // conn_unlock(cn);
            // node_unlock(n);
@@ -189,7 +194,8 @@ static void *node_io_thread(void *arg)
         }
 
         //NODE_CONN_ITER_POST
-
+        //
+#endif
         usleep(100000);
     }
 

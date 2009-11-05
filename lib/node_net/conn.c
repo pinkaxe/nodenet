@@ -26,7 +26,7 @@
 #define link_set_router link_set_to
 
 struct nn_conn {
-    struct link *link;
+    struct link *link; /* keep link info, rt, n, state */
     mutex_t mutex;
     cond_t cond; /* if anything changes */
 
@@ -92,6 +92,7 @@ struct nn_conn *conn_init()
     }
     assert(cn->rt_n_pkts);
     assert(cn->n_rt_pkts);
+    assert(cn->n_rt_notify);
 
     PCHK(LWARN, l, link_init());
     if(!l){
@@ -253,7 +254,18 @@ int conn_unconn(struct nn_node *n, struct nn_router *rt)
 /* buffer io functions start */
 
 
+int conn_node_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
+{
+    int r;
 
+    ICHK(LINFO, r, que_add(cn->n_rt_pkts, pkt));
+
+    L(LDEBUG, "+ conn_node_tx_pkt %p(%d)\n", pkt, r);
+
+    return r;
+}
+
+/*
 int conn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
         *pkt)
 {
@@ -272,40 +284,55 @@ int conn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
 
     return r;
 }
+*/
 
 int conn_router_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
 {
     int r = 1;
     struct timespec ts = {0, 0};
 
+        //printf("xxy\n");
     if(link_get_state(cn->link) == LINK_STATE_ALIVE){
+        //printf("xxx\n");
         *pkt = que_get(cn->n_rt_pkts, &ts);
-        printf("!! picking up: %p\n",pkt);
-        if(*pkt) r = 0;
+        if(*pkt){
+            L(LINFO, "+ conn_router_rx_pkt %p", *pkt);
+            r = 0;
+        }
     }
+
+    return r;
+}
+
+int conn_router_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
+{
+    int r;
+
+    ICHK(LINFO, r, que_add(cn->rt_n_pkts, pkt));
+    L(LDEBUG, "+ conn_router_tx_pkt %p(%d)\n", pkt, r);
 
     return r;
 }
 
 /* router -> node pkt */
-int conn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt
-        *pkt)
-{
-
-    int r = 1;
-
-    NODE_CONN_ITER_PRE
-
-    if(link_get_router(cn->link) == rt){
-        r = que_add(cn->rt_n_pkts, pkt);
-        //node_set_pkt_avail
-    }
-
-    NODE_CONN_ITER_POST
-
-    return r;
-
-}
+//int conn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt
+//        *pkt)
+//{
+//
+//    int r = 1;
+//
+//    NODE_CONN_ITER_PRE
+//
+//    if(link_get_router(cn->link) == rt){
+//        r = que_add(cn->rt_n_pkts, pkt);
+//        //node_set_pkt_avail
+//    }
+//
+//    NODE_CONN_ITER_POST
+//
+//    return r;
+//
+//}
 
 
 int conn_node_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)

@@ -40,6 +40,9 @@ int router_cond_broadcast(struct nn_router *rt);
 
 int router_print(struct nn_router *rt);
 
+int router_add_tx_pkt(struct nn_router *rt, struct nn_pkt *pkt);
+int router_tx_pkts(struct nn_router *rt);
+
 /* easy iterator pre/post
  * rt != NULL when this is called, afterwards cn for the
  matching each matching node is set and can be used */

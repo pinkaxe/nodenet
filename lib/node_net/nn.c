@@ -177,12 +177,15 @@ err:
 
 /* NOTE: tx/rx shouldn't lock anything for now */
 
+/*
 int nn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
         *pkt)
 {
     return conn_node_tx_pkt(n, rt, pkt);
 }
+*/
 
+/*
 int nn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt *pkt)
 {
     int r = 0;
@@ -191,6 +194,7 @@ int nn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt *pkt
 
     return r;
 }
+*/
 
 
 int nn_router_tx_data(struct nn_router *rt, struct nn_io_data *data)
@@ -223,6 +227,11 @@ int nn_node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt)
 int nn_node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt)
 {
     return node_get_tx_pkt(n, pkt);
+}
+
+int nn_node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt)
+{
+    return node_get_rx_pkt(n, pkt);
 }
 
 //int nn_router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)

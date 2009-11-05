@@ -39,5 +39,6 @@ int nn_quit_grp(struct nn_node *n, struct nn_grp *g);
 
 
 int nn_node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt);
+int nn_node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt);
 
 #endif

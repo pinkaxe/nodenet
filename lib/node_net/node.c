@@ -295,6 +295,61 @@ void *node_get_codep(struct nn_node *n)
     return n->code;
 }
 
+#if 0
+int node_get_locked_conn(struct nn_node *n, int n)
+{
+    assert(n);
+    int done = 0;
+    struct node_conn_iter *iter;
+    struct nn_conn *cn;
+    node_lock(n);
+
+    iter = node_conn_iter_init(n);
+    while(!node_conn_iter_next(iter, &cn)){
+        conn_lock(cn);
+    }
+}
+#endif
+
+
+int node_tx_pkts(struct nn_node *n)
+{
+    struct nn_pkt *pkt;
+
+    /* pick pkt's up from node and move to conn */
+    while(!node_get_tx_pkt(n, &pkt)){
+        assert(pkt);
+
+        // FIXME: sending to all routers
+        NODE_CONN_ITER_PRE
+        conn_node_tx_pkt(cn, pkt);
+        NODE_CONN_ITER_POST
+    }
+
+    return 0;
+}
+
+int node_rx_pkts(struct nn_node *n)
+{
+    struct nn_pkt *pkt;
+
+    NODE_CONN_ITER_PRE
+
+    /* pick pkt's up from node and move to conn */
+    if(!conn_node_rx_pkt(cn, &pkt)){
+        assert(pkt);
+
+        // FIXME: sending to all nodes
+        //node_CONN_ITER_PRE
+        node_add_rx_pkt(n, pkt);
+        //node_CONN_ITER_POST
+    }
+
+    NODE_CONN_ITER_POST
+
+    return 0;
+}
+
 struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_router *rt)
 {
     struct nn_conn *_cn = NULL;
@@ -387,8 +442,9 @@ int node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt)
     int r;
 
     assert(pkt);
-    printf("adding %p\n", pkt);
-    r = que_add(n->tx_pkts, pkt);
+    ICHK(LWARN, r, que_add(n->tx_pkts, pkt));
+
+    L(LDEBUG, "+ node_add_tx_pkt %p(%d)\n", pkt, r);
 
     return r;
 }
@@ -401,9 +457,10 @@ int node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt)
     //node_lock(n);
 
     *pkt = que_get(n->tx_pkts, &ts);
+
     if(*pkt){
+        L(LDEBUG, "+ node_get_tx_pkt %p\n", *pkt);
         r = 0;
-        printf("!! got\n");
     }
 
     //node_unlock(n);
@@ -415,7 +472,8 @@ int node_add_rx_pkt(struct nn_node *n, struct nn_pkt *pkt)
 {
     int r;
 
-    r = que_add(n->rx_pkts, pkt);
+    ICHK(LWARN, r, que_add(n->rx_pkts, pkt));
+    L(LDEBUG, "+ node_add_rx_pkt %p(%d)", pkt, r);
 
     return r;
 }
@@ -429,7 +487,7 @@ int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt)
     *pkt = que_get(n->rx_pkts, &ts);
     if(*pkt) r = 0;
 
-    return 0;
+    return r;
 }
 
 #if 0

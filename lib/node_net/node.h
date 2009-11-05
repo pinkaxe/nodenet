@@ -45,24 +45,28 @@ int node_add_rx_pkt(struct nn_node *n, struct nn_pkt *pkt);
 int node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt);
 int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt);
 
+int node_tx_pkts(struct nn_node *n);
+
 /* easy iterator pre/post
- * n != NULL when this is called, afterwards cn for
- each matching router is set and can be used */
+ * n != NULL when this is called, each iteration cn for
+ each matching router is locked and can be used */
 #define NODE_CONN_ITER_PRE \
+    { \
     assert(n); \
     int done = 0; \
     struct node_conn_iter *iter; \
     struct nn_conn *cn; \
     node_lock(n); \
     iter = node_conn_iter_init(n); \
-    while(!node_conn_iter_next(iter, &cn)){ \
+    while(!done && !node_conn_iter_next(iter, &cn)){ \
         conn_lock(cn);
 
 #define NODE_CONN_ITER_POST \
         conn_unlock(cn); \
     } \
     node_conn_iter_free(iter); \
-    node_unlock(n);
+    node_unlock(n); \
+    }
 
 
 #endif

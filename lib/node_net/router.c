@@ -25,6 +25,9 @@ struct nn_router {
     io_pkt_req_cb_t io_in_pkt_cb;
     io_data_req_cb_t io_in_data_cb;
 
+    struct que *rx_pkts;   /* pkt's coming in */
+    struct que *tx_pkts;   /* pkt's going out */
+
     enum nn_state state;
 
     mutex_t mutex;
@@ -40,6 +43,7 @@ int router_isvalid(struct nn_router *rt)
 
 struct nn_router *router_init()
 {
+    int r;
     struct nn_router *rt;
 
     PCHK(LWARN, rt, calloc(1, sizeof(*rt)));
@@ -51,6 +55,18 @@ struct nn_router *router_init()
     if(!rt->conn){
         router_free(rt);
         rt = NULL;
+        goto err;
+    }
+
+    PCHK(LWARN, rt->rx_pkts, que_init(100));
+    if(!(rt->rx_pkts)){
+        PCHK(LWARN, r, router_free(rt));
+        goto err;
+    }
+
+    PCHK(LWARN, rt->tx_pkts, que_init(100));
+    if(!(rt->tx_pkts)){
+        PCHK(LWARN, r, router_free(rt));
         goto err;
     }
 
@@ -94,6 +110,9 @@ int router_cond_broadcast(struct nn_router *rt)
 int router_free(struct nn_router *rt)
 {
     int r = 0;
+    int fail = 0;
+    struct nn_pkt *pkt;
+    struct timespec ts = {0, 0};
 
     router_isvalid(rt);
 
@@ -101,6 +120,22 @@ int router_free(struct nn_router *rt)
 
     if(rt->conn){
         ICHK(LWARN, r, ll_free(rt->conn));
+    }
+
+    if(rt->rx_pkts){
+        while((pkt=que_get(rt->rx_pkts, &ts))){
+            pkt_free(pkt);
+        }
+        ICHK(LWARN, r, que_free(rt->rx_pkts));
+        if(r) fail++;
+    }
+
+    if(rt->tx_pkts){
+        while((pkt=que_get(rt->tx_pkts, &ts))){
+            pkt_free(pkt);
+        }
+        ICHK(LWARN, r, que_free(rt->tx_pkts));
+        if(r) fail++;
     }
 
     mutex_unlock(&rt->mutex);
@@ -220,6 +255,110 @@ int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
     //rt->io_in_data_cb = cb;
     return 0;
 }
+
+int router_add_tx_pkt(struct nn_router *rt, struct nn_pkt *pkt)
+{
+    int r;
+
+    assert(pkt);
+    ICHK(LWARN, r, que_add(rt->tx_pkts, pkt));
+
+    L(LDEBUG, "+ router_add_tx_pkt %p(%d)", pkt, r);
+
+    return r;
+}
+
+int router_add_rx_pkt(struct nn_router *rt, struct nn_pkt *pkt)
+{
+    int r;
+
+    assert(pkt);
+    ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
+
+    L(LDEBUG, "+ router_add_rx_pkt %p(%d)", pkt, r);
+
+    return r;
+}
+
+static int router_get_tx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
+{
+    int r = 1;
+    struct timespec ts = {0, 0};
+
+    //router_lock(rt);
+
+    *pkt = que_get(rt->tx_pkts, &ts);
+
+    if(*pkt){
+        L(LDEBUG, "+ router_get_tx_pkt %p", *pkt);
+        r = 0;
+    }
+
+    //router_unlock(rt);
+
+    return r;
+}
+
+int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
+{
+    int r = 1;
+    struct timespec ts = {0, 0};
+
+    //router_lock(rt);
+
+    *pkt = que_get(rt->rx_pkts, &ts);
+
+    if(*pkt){
+        L(LDEBUG, "+ router_get_rx_pkt %p", *pkt);
+        r = 0;
+    }
+
+    //router_unlock(rt);
+
+    return r;
+}
+
+
+
+int router_tx_pkts(struct nn_router *rt)
+{
+    struct nn_pkt *pkt;
+
+    /* pick pkt's up from router and move to conn */
+    while(!router_get_tx_pkt(rt, &pkt)){
+        assert(pkt);
+
+        // FIXME: sending to all conn's
+
+        ROUTER_CONN_ITER_PRE
+        conn_router_tx_pkt(cn, pkt);
+        ROUTER_CONN_ITER_POST
+    }
+
+    return 0;
+}
+
+int router_rx_pkts(struct nn_router *rt)
+{
+    struct nn_pkt *pkt;
+
+    ROUTER_CONN_ITER_PRE
+
+    /* pick pkt's up from router and move to conn */
+    if(!conn_router_rx_pkt(cn, &pkt)){
+        assert(pkt);
+
+        // FIXME: sending to all routers
+        //ROUTER_CONN_ITER_PRE
+        router_add_rx_pkt(rt, pkt);
+        //ROUTER_CONN_ITER_POST
+    }
+
+    ROUTER_CONN_ITER_POST
+
+    return 0;
+}
+
 
 
 struct router_conn_iter *router_conn_iter_init(struct nn_router *rt)

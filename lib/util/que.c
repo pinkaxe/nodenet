@@ -118,7 +118,6 @@ void *que_get(struct que *h, struct timespec *ts)
     }
 
     r = h->pp[h->tail];
-    printf("!! ret %p, %d\n", r, h->tail);
 
     if(++h->tail >= h->len){
         h->tail = 0;

@@ -21,12 +21,14 @@ int conn_conn(struct nn_node *n, struct nn_router *rt);
 int conn_unconn(struct nn_node *n, struct nn_router *rt);
 
 /* router -> node pkt */
-int conn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt
-        *pkt);
+//int conn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt
+ //       *pkt);
 int conn_node_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt);
 
-int conn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
-        *pkt);
+//int conn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
+ //       *pkt);
+int conn_node_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt);
+int conn_router_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt);
 int conn_router_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt);
 
 int conn_lock(struct nn_conn *cn);

@@ -24,6 +24,7 @@ struct mesg {
 
 void *thread1(struct nn_node *n, void *pdata)
 {
+    int i = 0;
     struct dpool *dpool = pdata;
     struct dpool_buf *dpool_buf;
     struct mesg *mesg;
@@ -31,20 +32,26 @@ void *thread1(struct nn_node *n, void *pdata)
     printf("xxx %p\n", pdata);
 
     for(;;){
-        while(!(dpool_buf=dpool_get_buf(dpool))){
-            sleep(1);
-            printf("!! sleeping\n");
+        if((dpool_buf=dpool_get_buf(dpool))){
+
+            mesg = dpool_buf->data;
+            mesg->i = i++;
+
+            pkt = pkt_init(0, dpool_buf, sizeof(dpool_buf), dpool, 1,
+                    NN_SENDTO_ALL, 0);
+
+            nn_node_add_tx_pkt(n, pkt);
         }
 
-        mesg = dpool_buf->data;
-        mesg->i = 876;
-
-        pkt = pkt_init(0, dpool_buf, sizeof(dpool_buf), dpool, 1,
-                NN_SENDTO_ALL, 0);
-
-        nn_node_add_tx_pkt(n, pkt);
-
-        sleep(1);
+        while(!nn_node_get_rx_pkt(n, &pkt)){
+            struct dpool_buf *dpool_buf = pkt_get_data(pkt);
+            mesg = dpool_buf->data;
+            L(LINFO, "Got packet %p, mesg->i=%d", pkt, mesg->i);
+            /* when done call pkt_free */
+            dpool_ret_buf(dpool, dpool_buf);
+            pkt_free(pkt);
+        }
+        usleep(10000);
     }
 
     return NULL;
