@@ -13,7 +13,7 @@ enum {
 struct nn_io_conf {
     int sendto_no;  /* send to how many */
     int sendto_type; /* grp/node/all */
-    int sendto_id;  /* depend on send_to_type grp_id/node_id */
+    int sendto_id;  /* depends on sendto_type grp_id/node_id */
 };
 
 
@@ -28,7 +28,7 @@ typedef int (*io_pkt_req_cb_t)(struct nn_router *rt, struct nn_pkt *pkt);
 typedef int (*io_data_req_cb_t)(struct nn_router *rt, struct nn_io_data *data);
 
 
-struct nn_pkt *pkt_init(enum nn_pkt_pkt id, void *data, int data_len,
+struct nn_pkt *pkt_init(struct nn_node *src, void *data, int data_len,
         void *pdata, int sendto_no, int sendto_type, int sendto_id);
 int pkt_free(struct nn_pkt *pkt);
 struct nn_pkt *pkt_clone(struct nn_pkt *pkt);
@@ -37,5 +37,6 @@ enum nn_pkt_pkt pkt_get_id(struct nn_pkt *pkt);
 void *pkt_get_data(struct nn_pkt *pkt);
 int pkt_get_data_len(struct nn_pkt *pkt);
 void *pkt_get_pdata(struct nn_pkt *pkt);
+int pkt_set_src(struct nn_pkt *pkt, struct nn_node *n);
 
 #endif

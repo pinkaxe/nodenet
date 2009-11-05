@@ -23,6 +23,29 @@
 #include "node_io.h"
 #include "node_drivers/node_driver.h"
 
+
+/* easy iterator pre/post
+ * n != NULL when this is called, each iteration cn for
+ each matching router is locked and can be used */
+#define NODE_CONN_ITER_PRE \
+    { \
+    assert(n); \
+    int done = 0; \
+    struct node_conn_iter *iter; \
+    struct nn_conn *cn; \
+    node_lock(n); \
+    iter = node_conn_iter_init(n); \
+    while(!done && !node_conn_iter_next(iter, &cn)){ \
+        conn_lock(cn);
+
+#define NODE_CONN_ITER_POST \
+        conn_unlock(cn); \
+    } \
+    node_conn_iter_free(iter); \
+    node_unlock(n); \
+    }
+
+
 static int node_isok(struct nn_node *n);
 
 struct nn_node {
@@ -122,6 +145,30 @@ err:
     return n;
 }
 
+static int node_lock(struct nn_node *n)
+{
+    mutex_lock(&n->mutex);
+    return 0;
+}
+
+static int node_unlock(struct nn_node *n)
+{
+    mutex_unlock(&n->mutex);
+    return 0;
+}
+
+static int node_cond_wait(struct nn_node *n)
+{
+    cond_wait(&n->cond, &n->mutex);
+    return 0;
+}
+
+static int node_cond_broadcast(struct nn_node *n)
+{
+    cond_broadcast(&n->cond);
+    return 0;
+}
+
 int node_free(struct nn_node *n)
 {
     struct ll_iter *iter;
@@ -197,29 +244,7 @@ int node_clean(struct nn_node *n)
 }
 
 
-int node_lock(struct nn_node *n)
-{
-    mutex_lock(&n->mutex);
-    return 0;
-}
 
-int node_unlock(struct nn_node *n)
-{
-    mutex_unlock(&n->mutex);
-    return 0;
-}
-
-int node_cond_wait(struct nn_node *n)
-{
-    cond_wait(&n->cond, &n->mutex);
-    return 0;
-}
-
-int node_cond_broadcast(struct nn_node *n)
-{
-    cond_broadcast(&n->cond);
-    return 0;
-}
 
 int node_conn(struct nn_node *n, struct nn_conn *cn)
 {
@@ -295,59 +320,78 @@ void *node_get_codep(struct nn_node *n)
     return n->code;
 }
 
-#if 0
-int node_get_locked_conn(struct nn_node *n, int n)
-{
-    assert(n);
-    int done = 0;
-    struct node_conn_iter *iter;
-    struct nn_conn *cn;
-    node_lock(n);
-
-    iter = node_conn_iter_init(n);
-    while(!node_conn_iter_next(iter, &cn)){
-        conn_lock(cn);
-    }
-}
-#endif
-
-
 int node_tx_pkts(struct nn_node *n)
 {
     struct nn_pkt *pkt;
+    struct timespec ts = {0, 0};
 
     /* pick pkt's up from node and move to conn */
-    while(!node_get_tx_pkt(n, &pkt)){
+    for(;;){
+
+        node_lock(n);
+        pkt = que_get(n->tx_pkts, &ts);
+        node_unlock(n);
+
+        if(pkt){
+            L(LDEBUG, "+ got node tx_pkt %p", pkt);
+        }else{
+            goto end;
+        }
         assert(pkt);
 
         // FIXME: sending to all routers
         NODE_CONN_ITER_PRE
-        conn_node_tx_pkt(cn, pkt);
+        while(conn_node_tx_pkt(cn, pkt)){
+            conn_unlock(cn);
+            usleep(10000);
+            conn_lock(cn);
+        }
         NODE_CONN_ITER_POST
     }
 
+end:
     return 0;
 }
 
+
 int node_rx_pkts(struct nn_node *n)
 {
+    int r = 0;
     struct nn_pkt *pkt;
 
     NODE_CONN_ITER_PRE
 
-    /* pick pkt's up from node and move to conn */
+    /* pick pkt's up from conn and move to node */
     if(!conn_node_rx_pkt(cn, &pkt)){
         assert(pkt);
 
         // FIXME: sending to all nodes
-        //node_CONN_ITER_PRE
-        node_add_rx_pkt(n, pkt);
-        //node_CONN_ITER_POST
+        ICHK(LWARN, r, que_add(n->rx_pkts, pkt));
+        L(LDEBUG, "+ node_add_rx_pkt %p(%d)", pkt, r);
     }
 
     NODE_CONN_ITER_POST
 
-    return 0;
+    return r;
+}
+
+int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt)
+{
+    int r = 1;
+    struct timespec ts = {0, 0};
+
+    node_lock(n);
+
+    *pkt = que_get(n->rx_pkts, &ts);
+
+    node_unlock(n);
+
+    if(*pkt){
+        L(LDEBUG, "+ node_get_rx_pkt %p", *pkt);
+        r = 0;
+    }
+
+    return r;
 }
 
 struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_router *rt)
@@ -442,53 +486,56 @@ int node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt)
     int r;
 
     assert(pkt);
+
+    node_lock(n);
+
     ICHK(LWARN, r, que_add(n->tx_pkts, pkt));
+
+    node_unlock(n);
 
     L(LDEBUG, "+ node_add_tx_pkt %p(%d)\n", pkt, r);
 
     return r;
 }
 
+#if 0
 int node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt)
 {
     int r = 1;
     struct timespec ts = {0, 0};
 
-    //node_lock(n);
+    node_lock(n);
 
     *pkt = que_get(n->tx_pkts, &ts);
 
+    node_unlock(n);
+
     if(*pkt){
-        L(LDEBUG, "+ node_get_tx_pkt %p\n", *pkt);
+        L(LDEBUG, "+ node_get_tx_pkt %p", *pkt);
         r = 0;
     }
 
-    //node_unlock(n);
-
     return r;
 }
+#endif
 
+/*
 int node_add_rx_pkt(struct nn_node *n, struct nn_pkt *pkt)
 {
     int r;
 
+    //node_lock(n);
+
     ICHK(LWARN, r, que_add(n->rx_pkts, pkt));
+
+    //node_unlock(n);
+
     L(LDEBUG, "+ node_add_rx_pkt %p(%d)", pkt, r);
 
     return r;
 }
+*/
 
-
-int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt)
-{
-    int r = 1;
-    struct timespec ts = {0, 0};
-
-    *pkt = que_get(n->rx_pkts, &ts);
-    if(*pkt) r = 0;
-
-    return r;
-}
 
 #if 0
 /* check that the conn's it points to points back */

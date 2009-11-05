@@ -129,7 +129,7 @@ int nn_join_grp(struct nn_node *n, struct nn_grp *g)
     int r;
 
     grp_lock(g);
-    node_lock(n);
+    //node_lock(n);
 
     ICHK(LWARN, r, node_join_grp(n, g));
     if(r){
@@ -144,7 +144,7 @@ int nn_join_grp(struct nn_node *n, struct nn_grp *g)
     }
 
 err:
-    node_unlock(n);
+    //node_unlock(n);
     grp_unlock(g);
 
     return r;
@@ -155,7 +155,7 @@ int nn_quit_grp(struct nn_node *n, struct nn_grp *g)
     int r;
 
     grp_lock(g);
-    node_lock(n);
+    //node_lock(n);
 
     ICHK(LWARN, r, grp_rem_node(g, n));
     if(r){
@@ -168,7 +168,7 @@ int nn_quit_grp(struct nn_node *n, struct nn_grp *g)
     }
 
 err:
-    node_unlock(n);
+    //node_unlock(n);
     grp_unlock(g);
 
     return r;
@@ -224,10 +224,12 @@ int nn_node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt)
     return node_add_tx_pkt(n, pkt);
 }
 
+/*
 int nn_node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt)
 {
     return node_get_tx_pkt(n, pkt);
 }
+*/
 
 int nn_node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt)
 {

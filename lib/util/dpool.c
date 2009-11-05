@@ -61,7 +61,7 @@ struct dpool *dpool_create(size_t bufsize, size_t max_no, int opt)
 
             h->bufs[i]->id = i;
             h->bufs[i]->data = malloc(h->bufsize);
-            h->bufs[i]->ref_cnt = 1;
+            h->bufs[i]->ref_cnt = 2;
 
             if(!h->bufs[i]->data){
                 dpool_free(h);

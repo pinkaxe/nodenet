@@ -13,7 +13,7 @@
 #include "node_net/pkt.h"
 
 struct nn_pkt {
-    enum nn_pkt_pkt id;
+    struct nn_node *src;
     void *data;
     int data_len;
     void *pdata;
@@ -21,9 +21,9 @@ struct nn_pkt {
     //uint32_t seq_len;
 };
 
-enum nn_pkt_pkt pkt_get_id(struct nn_pkt *pkt)
+struct nn_node *pkt_get_src(struct nn_pkt *pkt)
 {
-    return pkt->id;
+    return pkt->src;
 }
 
 void *pkt_get_data(struct nn_pkt *pkt)
@@ -41,7 +41,7 @@ void *pkt_get_pdata(struct nn_pkt *pkt)
     return pkt->pdata;
 }
 
-struct nn_pkt *pkt_init(enum nn_pkt_pkt id, void *data, int data_len,
+struct nn_pkt *pkt_init(struct nn_node *src, void *data, int data_len,
         void *pdata, int sendto_no, int sendto_type, int sendto_id)
 {
     struct nn_pkt *pkt;
@@ -51,7 +51,7 @@ struct nn_pkt *pkt_init(enum nn_pkt_pkt id, void *data, int data_len,
     if(!pkt){
         goto err;
     }
-    pkt->id = id;
+    pkt->src = src;
     pkt->data = data;
     pkt->data_len = data_len;
     pkt->pdata = pdata;
@@ -74,11 +74,11 @@ err:
     return pkt;
 }
 
-int pkt_set_id(struct nn_pkt *pkt, enum nn_pkt_pkt id)
+int pkt_set_src(struct nn_pkt *pkt, struct nn_node *n)
 {
     int r = 0;
 
-    pkt->id = id;
+    pkt->src = n;
 
     return r;
 }
@@ -94,9 +94,10 @@ struct nn_pkt *pkt_clone(struct nn_pkt *pkt)
     if(!clone){
         goto err;
     }
-    clone->id = pkt->id;
-    clone->pdata = pkt->pdata;
+    clone->src = pkt->src;
+    clone->data = pkt->data;
     clone->data_len = pkt->data_len;
+    clone->pdata = pkt->pdata;
     clone->conf = NULL;
 
     PCHK(LWARN, conf, malloc(sizeof(*conf)));

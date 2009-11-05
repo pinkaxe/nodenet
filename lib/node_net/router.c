@@ -18,6 +18,27 @@
 #include "conn.h"
 #include "router.h"
 
+/* easy iterator pre/post
+ * rt != NULL when this is called, afterwards cn for the
+ matching each matching node is set and can be used */
+#define ROUTER_CONN_ITER_PRE \
+    { \
+    assert(rt); \
+    int done = 0; \
+    struct router_conn_iter *iter = NULL; \
+    struct nn_conn *cn; \
+    router_lock(rt); \
+    iter = router_conn_iter_init(rt); \
+    while(!done && !router_conn_iter_next(iter, &cn)){ \
+        conn_lock(cn);
+
+#define ROUTER_CONN_ITER_POST \
+        conn_unlock(cn); \
+    } \
+    router_conn_iter_free(iter); \
+    router_unlock(rt); \
+    }
+
 
 struct nn_router {
     struct ll *conn; /* all the conn's */
@@ -261,7 +282,12 @@ int router_add_tx_pkt(struct nn_router *rt, struct nn_pkt *pkt)
     int r;
 
     assert(pkt);
+
+    router_lock(rt);
+
     ICHK(LWARN, r, que_add(rt->tx_pkts, pkt));
+
+    router_unlock(rt);
 
     L(LDEBUG, "+ router_add_tx_pkt %p(%d)", pkt, r);
 
@@ -273,7 +299,12 @@ int router_add_rx_pkt(struct nn_router *rt, struct nn_pkt *pkt)
     int r;
 
     assert(pkt);
+
+    router_lock(rt);
+
     ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
+
+    router_unlock(rt);
 
     L(LDEBUG, "+ router_add_rx_pkt %p(%d)", pkt, r);
 
@@ -285,16 +316,17 @@ static int router_get_tx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
     int r = 1;
     struct timespec ts = {0, 0};
 
-    //router_lock(rt);
+    router_lock(rt);
 
     *pkt = que_get(rt->tx_pkts, &ts);
+
+    router_unlock(rt);
 
     if(*pkt){
         L(LDEBUG, "+ router_get_tx_pkt %p", *pkt);
         r = 0;
     }
 
-    //router_unlock(rt);
 
     return r;
 }
@@ -304,16 +336,16 @@ int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
     int r = 1;
     struct timespec ts = {0, 0};
 
-    //router_lock(rt);
+    router_lock(rt);
 
     *pkt = que_get(rt->rx_pkts, &ts);
+
+    router_unlock(rt);
 
     if(*pkt){
         L(LDEBUG, "+ router_get_rx_pkt %p", *pkt);
         r = 0;
     }
-
-    //router_unlock(rt);
 
     return r;
 }
@@ -322,7 +354,7 @@ int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
 
 int router_tx_pkts(struct nn_router *rt)
 {
-    struct nn_pkt *pkt;
+    struct nn_pkt *pkt, *clone;
 
     /* pick pkt's up from router and move to conn */
     while(!router_get_tx_pkt(rt, &pkt)){
@@ -331,8 +363,15 @@ int router_tx_pkts(struct nn_router *rt)
         // FIXME: sending to all conn's
 
         ROUTER_CONN_ITER_PRE
-        conn_router_tx_pkt(cn, pkt);
+        clone = pkt_clone(pkt);
+        while(conn_router_tx_pkt(cn, clone)){
+            conn_unlock(cn);
+            usleep(10000);
+            conn_lock(cn);
+        }
         ROUTER_CONN_ITER_POST
+
+        pkt_free(pkt);
     }
 
     return 0;
@@ -348,9 +387,14 @@ int router_rx_pkts(struct nn_router *rt)
     if(!conn_router_rx_pkt(cn, &pkt)){
         assert(pkt);
 
+        conn_unlock(cn);
+        router_unlock(rt);
         // FIXME: sending to all routers
         //ROUTER_CONN_ITER_PRE
         router_add_rx_pkt(rt, pkt);
+
+        router_lock(rt);
+        conn_lock(cn);
         //ROUTER_CONN_ITER_POST
     }
 

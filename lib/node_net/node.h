@@ -33,40 +33,20 @@ int node_conn_iter_free(struct node_conn_iter *iter);
 int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn);
 
 /* locking */
-int node_lock(struct nn_node *n);
-int node_unlock(struct nn_node *n);
-int node_cond_wait(struct nn_node *n);
-int node_cond_broadcast(struct nn_node *n);
+//int node_lock(struct nn_node *n);
+//int node_unlock(struct nn_node *n);
+//int node_cond_wait(struct nn_node *n);
+//int node_cond_broadcast(struct nn_node *n);
 
 int node_print(struct nn_node *n);
 
 int node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt);
 int node_add_rx_pkt(struct nn_node *n, struct nn_pkt *pkt);
-int node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt);
+//int node_get_tx_pkt(struct nn_node *n, struct nn_pkt **pkt);
 int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt);
 
 int node_tx_pkts(struct nn_node *n);
-
-/* easy iterator pre/post
- * n != NULL when this is called, each iteration cn for
- each matching router is locked and can be used */
-#define NODE_CONN_ITER_PRE \
-    { \
-    assert(n); \
-    int done = 0; \
-    struct node_conn_iter *iter; \
-    struct nn_conn *cn; \
-    node_lock(n); \
-    iter = node_conn_iter_init(n); \
-    while(!done && !node_conn_iter_next(iter, &cn)){ \
-        conn_lock(cn);
-
-#define NODE_CONN_ITER_POST \
-        conn_unlock(cn); \
-    } \
-    node_conn_iter_free(iter); \
-    node_unlock(n); \
-    }
+int node_rx_pkts(struct nn_node *n);
 
 
 #endif

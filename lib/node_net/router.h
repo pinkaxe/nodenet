@@ -33,35 +33,18 @@ int router_conn_each(struct nn_router *rt,
 enum nn_state router_get_state(struct nn_router *rt);
 int router_set_state(struct nn_router *rt, enum nn_state state);
 
-int router_(struct nn_router *rt);
-int router_un(struct nn_router *rt);
-int router_cond_wait(struct nn_router *rt);
-int router_cond_broadcast(struct nn_router *rt);
+//int router_lock(struct nn_router *rt);
+//int router_unlock(struct nn_router *rt);
+//int router_cond_wait(struct nn_router *rt);
+//int router_cond_broadcast(struct nn_router *rt);
 
 int router_print(struct nn_router *rt);
 
+int router_rx_pkts(struct nn_router *rt);
+int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt);
+
 int router_add_tx_pkt(struct nn_router *rt, struct nn_pkt *pkt);
 int router_tx_pkts(struct nn_router *rt);
-
-/* easy iterator pre/post
- * rt != NULL when this is called, afterwards cn for the
- matching each matching node is set and can be used */
-#define ROUTER_CONN_ITER_PRE \
-    assert(rt); \
-    struct router_conn_iter *iter = NULL; \
-    struct nn_conn *cn; \
-    router_lock(rt); \
-    iter = router_conn_iter_init(rt); \
-    while(!router_conn_iter_next(iter, &cn)){ \
-        conn_lock(cn);
-
-#define ROUTER_CONN_ITER_POST \
-        conn_unlock(cn); \
-    } \
-    router_conn_iter_free(iter); \
-    router_unlock(rt);
-
-
 
 
 #endif

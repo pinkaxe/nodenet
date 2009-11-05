@@ -212,6 +212,7 @@ int conn_unlock(struct nn_conn *cn)
     return 0;
 }
 
+#if 0
 int conn_conn(struct nn_node *n, struct nn_router *rt)
 {
     struct nn_conn *cn;
@@ -249,6 +250,7 @@ int conn_unconn(struct nn_node *n, struct nn_router *rt)
 
     return 0;
 }
+#endif
 
 
 /* buffer io functions start */
@@ -344,7 +346,6 @@ int conn_node_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
     if(link_get_state(cn->link) == LINK_STATE_ALIVE){
         *pkt = que_get(cn->rt_n_pkts, &ts);
         if(*pkt){
-            printf("pkt: %p\n", *pkt);
             r = 0;
         }
     }
