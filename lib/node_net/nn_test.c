@@ -31,7 +31,6 @@ void *thread1(struct nn_node *n, void *pdata)
     struct buf *buf;
     struct nn_pkt *pkt;
 
-    return NULL;
 #if 0
         /* build internal packet */
     for(;;){
@@ -53,6 +52,31 @@ void *thread1(struct nn_node *n, void *pdata)
 #endif
 
     for(;;){
+
+        switch(node_get_state(n)){
+            case NN_STATE_RUNNING:
+                break;
+            case NN_STATE_PAUSED:
+                L(LNOTICE, "Node paused: %p", n);
+                while(node_get_state(n) == NN_STATE_PAUSED){
+                    sleep(1);
+                    //node_cond_wait(n);
+                }
+                L(LNOTICE, "Node paused state exit: %p", n);
+                break;
+            case NN_STATE_SHUTDOWN:
+                L(LNOTICE, "@@@@ Node ext thread shutdown start: %p", n);
+                //node_conn_free(n);
+                node_set_state(n, NN_STATE_SHUTDOWN2);
+                //node_cond_broadcast(n);
+                //node_unlock(n);
+                L(LNOTICE, "@@@@@ Node ext thread shutdown completed");
+                return NULL;
+            case NN_STATE_FINISHED:
+                L(LCRIT, "Node thread illegally in finished state");
+                break;
+        }
+
         if((dpool_buf=dpool_get_buf(dpool))){
             /* */
             //buf = dpool_buf_get_datap(dpool_buf);
@@ -90,9 +114,34 @@ void *thread0(struct nn_node *n, void *pdata)
     struct dpool *dpool = pdata;
     struct nn_pkt *pkt;
     struct buf *buf;
-    return NULL;
 
     for(;;){
+        /* check state */
+
+        switch(node_get_state(n)){
+            case NN_STATE_RUNNING:
+                break;
+            case NN_STATE_PAUSED:
+                L(LNOTICE, "Node paused: %p", n);
+                while(node_get_state(n) == NN_STATE_PAUSED){
+                    sleep(1);
+                    //node_cond_wait(n);
+                }
+                L(LNOTICE, "Node paused state exit: %p", n);
+                break;
+            case NN_STATE_SHUTDOWN:
+                L(LNOTICE, "@@@@ Node ext thread shutdown start: %p", n);
+                //node_conn_free(n);
+                node_set_state(n, NN_STATE_SHUTDOWN2);
+                //node_cond_broadcast(n);
+                //node_unlock(n);
+                L(LNOTICE, "@@@@@ Node ext thread shutdown completed");
+                return NULL;
+            case NN_STATE_FINISHED:
+                L(LCRIT, "Node thread illegally in finished state");
+                break;
+        }
+
         while(!nn_node_get_rx_pkt(n, &pkt)){
             struct dpool_buf *dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
@@ -168,8 +217,9 @@ int main(int argc, char **argv)
         }
         */
         //while(1){
-            sleep(2);
+            //sleep(2);
         //}
+            sleep(0);
 
         /* pause everything */
         for(i=0; i < 2; i++){

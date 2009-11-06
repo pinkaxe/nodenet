@@ -42,16 +42,7 @@ static int node_conn_free(struct nn_node *n)
     iter = node_conn_iter_init(n);
     /* remove the conns to routers */
     while(!node_conn_iter_next(iter, &cn)){
-
-        //conn_lock(cn);
-
-        //r = node_unconn(n, cn);
         r = conn_free_node(cn);
-        //conn_unlock(cn);
-
-       // if(r == 1){
-       //     conn_free(cn);
-       // }
     }
     node_conn_iter_free(iter);
 
@@ -131,7 +122,11 @@ static void *node_io_thread(void *arg)
                 L(LNOTICE, "Node paused state exit: %p", n);
                 break;
             case NN_STATE_SHUTDOWN:
+            case NN_STATE_SHUTDOWN2:
                 L(LNOTICE, "Node thread shutdown start: %p", n);
+                while(node_get_state(n) != NN_STATE_SHUTDOWN2){
+                    sleep(1);
+                }
                 node_conn_free(n);
                 node_set_state(n, NN_STATE_FINISHED);
                 //node_cond_broadcast(n);
