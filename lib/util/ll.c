@@ -187,7 +187,7 @@ int ll_iter_next(struct ll_iter *iter, void **data)
 /* return ll_node */
 static struct ll_node *ll_next_node(struct ll *h,  void **iter)
 {
-    void *r = NULL;
+    struct ll_node *r = NULL;
     struct ll_node *_iter;
 
     if(!(*iter)){
@@ -195,7 +195,7 @@ static struct ll_node *ll_next_node(struct ll *h,  void **iter)
         *iter = h->start;
         _iter = *iter;
         if(_iter){
-            r = _iter->data;
+            r = _iter;
         }
     }
     return r;
