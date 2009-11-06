@@ -37,7 +37,6 @@ enum nn_state {
     NN_STATE_RUNNING,
     NN_STATE_PAUSED,
     NN_STATE_SHUTDOWN,
-    NN_STATE_SHUTDOWN2,
     NN_STATE_FINISHED,
 };
 

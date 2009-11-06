@@ -30,6 +30,7 @@ void *thread1(struct nn_node *n, void *pdata)
     struct dpool_buf *dpool_buf;
     struct buf *buf;
     struct nn_pkt *pkt;
+    enum nn_state state;
 
 #if 0
         /* build internal packet */
@@ -53,30 +54,14 @@ void *thread1(struct nn_node *n, void *pdata)
 
     for(;;){
 
-        switch(node_get_state(n)){
-            case NN_STATE_RUNNING:
-                break;
-            case NN_STATE_PAUSED:
-                L(LNOTICE, "Node paused: %p", n);
-                while(node_get_state(n) == NN_STATE_PAUSED){
-                    sleep(1);
-                    //node_cond_wait(n);
-                }
-                L(LNOTICE, "Node paused state exit: %p", n);
-                break;
-            case NN_STATE_SHUTDOWN:
-                L(LNOTICE, "@@@@ Node ext thread shutdown start: %p", n);
-                //node_conn_free(n);
-                node_set_state(n, NN_STATE_SHUTDOWN2);
-                //node_cond_broadcast(n);
-                //node_unlock(n);
-                L(LNOTICE, "@@@@@ Node ext thread shutdown completed");
-                return NULL;
-            case NN_STATE_FINISHED:
-                L(LCRIT, "Node thread illegally in finished state");
-                break;
+        /* do state */
+        state = node_do_state(n);
+        if(state == NN_STATE_SHUTDOWN){
+            // cleanup if need to
+            return NULL;
         }
 
+        /* send packets */
         if((dpool_buf=dpool_get_buf(dpool))){
             /* */
             //buf = dpool_buf_get_datap(dpool_buf);
@@ -90,11 +75,12 @@ void *thread1(struct nn_node *n, void *pdata)
 
             /* add to outgoing tx buffers */
             while(nn_node_add_tx_pkt(n, pkt)){
+                // FIXME:
                 usleep(10000);
             }
         }
-        sleep(1);
 
+        /* receive packets */
         while(!nn_node_get_rx_pkt(n, &pkt)){
             struct dpool_buf *dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
@@ -114,35 +100,20 @@ void *thread0(struct nn_node *n, void *pdata)
     struct dpool *dpool = pdata;
     struct nn_pkt *pkt;
     struct buf *buf;
+    enum nn_state state;
 
     for(;;){
         /* check state */
 
-        switch(node_get_state(n)){
-            case NN_STATE_RUNNING:
-                break;
-            case NN_STATE_PAUSED:
-                L(LNOTICE, "Node paused: %p", n);
-                while(node_get_state(n) == NN_STATE_PAUSED){
-                    sleep(1);
-                    //node_cond_wait(n);
-                }
-                L(LNOTICE, "Node paused state exit: %p", n);
-                break;
-            case NN_STATE_SHUTDOWN:
-                L(LNOTICE, "@@@@ Node ext thread shutdown start: %p", n);
-                //node_conn_free(n);
-                node_set_state(n, NN_STATE_SHUTDOWN2);
-                //node_cond_broadcast(n);
-                //node_unlock(n);
-                L(LNOTICE, "@@@@@ Node ext thread shutdown completed");
-                return NULL;
-            case NN_STATE_FINISHED:
-                L(LCRIT, "Node thread illegally in finished state");
-                break;
+        state = node_do_state(n);
+        if(state == NN_STATE_SHUTDOWN){
+            // cleanup if need to
+            return NULL;
         }
 
+
         while(!nn_node_get_rx_pkt(n, &pkt)){
+            /* incoming packet */
             struct dpool_buf *dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
             L(LINFO, "Got buf->i=%d", buf->i);
@@ -219,7 +190,7 @@ int main(int argc, char **argv)
         //while(1){
             //sleep(2);
         //}
-            sleep(0);
+            sleep(3);
 
         /* pause everything */
         for(i=0; i < 2; i++){

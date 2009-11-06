@@ -446,6 +446,40 @@ enum nn_state node_get_state(struct nn_node *n)
     return n->state;
 }
 
+int node_do_state(struct nn_node *n)
+{
+    enum nn_state state;
+
+    node_lock(n);
+
+    switch((state=node_get_state(n))){
+        case NN_STATE_RUNNING:
+            break;
+        case NN_STATE_PAUSED:
+            L(LNOTICE, "Node paused: %p", n);
+            while(node_get_state(n) == NN_STATE_PAUSED){
+                node_unlock(n);
+                sleep(1);
+                node_lock(n);
+                //node_cond_wait(n);
+            }
+            L(LNOTICE, "Node paused state exit: %p", n);
+            break;
+        case NN_STATE_SHUTDOWN:
+            L(LNOTICE, "Node thread shutdown start: %p", n);
+            node_unlock(n);
+            L(LNOTICE, "Node thread shutdown completed");
+            break;
+        case NN_STATE_FINISHED:
+            L(LCRIT, "Node thread illegally in finished state");
+            break;
+    }
+
+    node_unlock(n);
+
+    return state;
+}
+
 /* iter */
 
 struct node_conn_iter *node_conn_iter_init(struct nn_node *rt)

@@ -72,27 +72,20 @@ static void *start_user_thread(void *arg)
 static void *node_io_thread(void *arg)
 {
     struct nn_node *n = arg;
-    struct timespec buf_check_timespec;
-    struct timespec pkt_check_timespec;
     void *(*user_func)(struct nn_node *n, void *pdata);
     void *pdata;
     int attr;
     //struct node_driver_ops *ops;
     thread_t tid;
     int r;
+    enum nn_state state;
 
     user_func = node_get_codep(n);
     pdata = node_get_pdatap(n);
     attr = node_get_attr(n);
 
     //ops = node_driver_get_ops(node_get_type(n));
-
     L(LNOTICE, "Node thread starting: %p", n);
-
-    buf_check_timespec.tv_sec = 0;
-    buf_check_timespec.tv_nsec = 10000000;
-    pkt_check_timespec.tv_sec = 0;
-    pkt_check_timespec.tv_nsec = 1000000;
 
     if(user_func){
         struct node_pdata *arg;
@@ -104,38 +97,17 @@ static void *node_io_thread(void *arg)
         arg->n = n;
         arg->pdata = pdata;
         thread_create(&tid, NULL, start_user_thread, arg);
-        thread_detach(tid);
+        //thread_detach(tid);
     }
 
     for(;;){
 
-        /* check state */
-        switch(node_get_state(n)){
-            case NN_STATE_RUNNING:
-                break;
-            case NN_STATE_PAUSED:
-                L(LNOTICE, "Node paused: %p", n);
-                while(node_get_state(n) == NN_STATE_PAUSED){
-                    sleep(1);
-                    //node_cond_wait(n);
-                }
-                L(LNOTICE, "Node paused state exit: %p", n);
-                break;
-            case NN_STATE_SHUTDOWN:
-            case NN_STATE_SHUTDOWN2:
-                L(LNOTICE, "Node thread shutdown start: %p", n);
-                while(node_get_state(n) != NN_STATE_SHUTDOWN2){
-                    sleep(1);
-                }
-                node_conn_free(n);
-                node_set_state(n, NN_STATE_FINISHED);
-                //node_cond_broadcast(n);
-                //node_unlock(n);
-                L(LNOTICE, "Node thread shutdown completed");
-                return NULL;
-            case NN_STATE_FINISHED:
-                L(LCRIT, "Node thread illegally in finished state");
-                break;
+        state = node_do_state(n);
+        if(state == NN_STATE_SHUTDOWN){
+            thread_join(tid, NULL);
+            node_conn_free(n);
+            node_set_state(n, NN_STATE_FINISHED);
+            return NULL;
         }
 
         ICHK(LDEBUG, r, node_tx_pkts(n));

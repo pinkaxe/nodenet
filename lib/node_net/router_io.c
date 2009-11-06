@@ -86,7 +86,6 @@ again:
                 goto again;
                 break;
             case NN_STATE_SHUTDOWN:
-            case NN_STATE_SHUTDOWN2:
                 _shutdown(rt);
                 router_set_state(rt, NN_STATE_FINISHED);
                 //router_cond_broadcast(rt);

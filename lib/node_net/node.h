@@ -27,6 +27,8 @@ struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_router *rt);
 /* setters */
 int node_set_state(struct nn_node *n, enum nn_state state);
 
+int node_do_state(struct nn_node *n);
+
 /* iter */
 struct node_conn_iter *node_conn_iter_init(struct nn_node *rt);
 int node_conn_iter_free(struct node_conn_iter *iter);
