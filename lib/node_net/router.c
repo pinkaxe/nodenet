@@ -241,8 +241,7 @@ int router_unconn(struct nn_router *rt, struct nn_conn *cn)
     ICHK(LWARN, r, ll_rem(rt->conn, cn));
     if(r) goto err;
 
-    ICHK(LWARN, r, conn_free_router(cn));
-    if(r) goto err;
+    r = conn_free_router(cn);
 
 err:
     return r;

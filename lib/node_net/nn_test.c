@@ -193,24 +193,24 @@ int main(int argc, char **argv)
             }
         }
         */
-        while(1){
+       // while(1){
             sleep(2);
-        }
+        //}
 
         /* pause everything */
-        for(i=0; i < 100; i++){
+        for(i=0; i < 2; i++){
             nn_node_set_state(n[i], NN_STATE_PAUSED);
         }
         nn_router_set_state(rt[0], NN_STATE_PAUSED);
 
         /* run everything */
-        for(i=0; i < 100; i++){
+        for(i=0; i < 2; i++){
             nn_node_set_state(n[i], NN_STATE_RUNNING);
         }
         nn_router_set_state(rt[0], NN_STATE_RUNNING);
 
 
-        for(i=0; i < 100; i++){
+        for(i=0; i < 2; i++){
             /* unconn not needed but ok */
             //nn_unconn(n[i], rt[0]);
             nn_node_free(n[i]);
@@ -220,18 +220,18 @@ int main(int argc, char **argv)
         nn_grp_free(g[1]);
         nn_grp_free(g[2]);
 
-        nn_router_free(rt[0]);
+//        nn_router_free(rt[0]);
 
-        for(i=0; i < 100; i++){
+        for(i=0; i < 2; i++){
             nn_node_clean(n[i]);
         }
 
-        nn_router_clean(rt[0]);
+ //       nn_router_clean(rt[0]);
 
         dpool_free(dpool);
 
         printf("loop done\n");
-        usleep(100000);
+        usleep(2000);
     }
     return 0;
 }

@@ -45,7 +45,7 @@ static int node_conn_free(struct nn_node *n)
 
         conn_lock(cn);
 
-        node_unconn(n, cn);
+        //r = node_unconn(n, cn);
         r = conn_free_node(cn);
         conn_unlock(cn);
 

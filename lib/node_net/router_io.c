@@ -26,8 +26,8 @@ static int router_conn_free(struct nn_router *rt)
 
         conn_lock(cn);
 
-        router_unconn(rt, cn);
-        r = conn_free_router(cn);
+        r = router_unconn(rt, cn);
+        //r = conn_free_router(cn);
 
         conn_unlock(cn);
 

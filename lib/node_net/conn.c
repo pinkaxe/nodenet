@@ -100,6 +100,7 @@ struct nn_conn *conn_init()
         goto err;
     }
     cn->link = l;
+    printf("xx %p\n", cn->link);
 
     mutex_init(&cn->mutex, NULL);
 
@@ -156,6 +157,8 @@ int conn_free_node(struct nn_conn *cn)
     int r;
 
     r = link_free_node(cn->link);
+    if(r == 1) conn_free(cn);
+
     return r;
 }
 
@@ -164,6 +167,7 @@ int conn_free_router(struct nn_conn *cn)
     int r;
 
     r = link_free_router(cn->link);
+    if(r == 1) conn_free(cn);
 
     return r;
 }
