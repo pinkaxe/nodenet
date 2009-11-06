@@ -184,6 +184,20 @@ int node_free(struct nn_node *n)
     mutex_lock(&n->mutex);
 
     if(n->conn){
+        /*
+        iter = ll_iter_init(n->conn);
+
+        while(!ll_iter_next(iter, (void **)&conn)){
+            ICHK(LWARN, r, ll_rem(n->conn, ng));
+            free(ng);
+        }
+        ICHK(LWARN, r, ll_free(n->conn));
+        if(r) fail++;
+
+        ll_iter_free(iter);
+        */
+
+        printf("!! freeing n->conn %p\n", n->conn);
         ICHK(LWARN, r, ll_free(n->conn));
         if(r) fail++;
     }
@@ -251,7 +265,12 @@ int node_conn(struct nn_node *n, struct nn_conn *cn)
     int r = 1;
 
     ICHK(LWARN, r, ll_add_front(n->conn, (void **)&cn));
+    if(r) goto err;
 
+    ICHK(LWARN, r, conn_set_node(cn, n));
+    if(r) goto err;
+
+err:
     return r;
 }
 

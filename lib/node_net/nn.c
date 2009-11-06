@@ -287,7 +287,7 @@ err:
     return r;
 }
 
-int nn_unconn(struct nn_node *n, struct nn_router *rt)
+int xnn_unconn(struct nn_node *n, struct nn_router *rt)
 {
     int r = 0;
     struct nn_conn *cn;

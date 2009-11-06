@@ -203,9 +203,9 @@ enum nn_state router_get_state(struct nn_router *rt)
     enum nn_state state;
     router_isvalid(rt);
 
-    router_lock(rt);
+    //router_lock(rt);
     state = rt->state;
-    router_unlock(rt);
+    //router_unlock(rt);
 
     return state;
 }

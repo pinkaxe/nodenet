@@ -43,15 +43,15 @@ static int node_conn_free(struct nn_node *n)
     /* remove the conns to routers */
     while(!node_conn_iter_next(iter, &cn)){
 
-        conn_lock(cn);
+        //conn_lock(cn);
 
         //r = node_unconn(n, cn);
         r = conn_free_node(cn);
-        conn_unlock(cn);
+        //conn_unlock(cn);
 
-        if(r == 1){
-            conn_free(cn);
-        }
+       // if(r == 1){
+       //     conn_free(cn);
+       // }
     }
     node_conn_iter_free(iter);
 

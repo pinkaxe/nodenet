@@ -147,6 +147,7 @@ int conn_free(struct nn_conn *cn)
         mutex_destroy(&cn->mutex);
     }
 
+    printf("!! freeing cn %p\n", cn);
     free(cn);
 
     return fail;
@@ -157,7 +158,10 @@ int conn_free_node(struct nn_conn *cn)
     int r;
 
     r = link_free_node(cn->link);
-    if(r == 1) conn_free(cn);
+    if(r == 1){ 
+        cn->link = NULL;
+        conn_free(cn);
+    }
 
     return r;
 }
@@ -167,7 +171,10 @@ int conn_free_router(struct nn_conn *cn)
     int r;
 
     r = link_free_router(cn->link);
-    if(r == 1) conn_free(cn);
+    if(r == 1){
+        cn->link = NULL;
+        conn_free(cn);
+    }
 
     return r;
 }

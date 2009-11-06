@@ -24,16 +24,16 @@ static int router_conn_free(struct nn_router *rt)
 
     while(!router_conn_iter_next(iter, &cn)){
 
-        conn_lock(cn);
+        //conn_lock(cn);
 
         r = router_unconn(rt, cn);
         //r = conn_free_router(cn);
 
-        conn_unlock(cn);
+        //conn_unlock(cn);
 
-        if(r == 1){
-            conn_free(cn);
-        }
+       // if(r == 1){
+       //     conn_free(cn);
+       // }
 
     }
 
