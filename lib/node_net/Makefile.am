@@ -9,8 +9,6 @@ libnode_net_la_SOURCES = \
 			 node_io.h \
 			 router.c \
 			 router.h \
-			 router_io.c \
-			 router_io.h \
 			 conn.c \
 			 conn.h \
 			 grp.c \
