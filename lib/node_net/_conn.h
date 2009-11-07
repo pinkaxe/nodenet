@@ -1,6 +1,12 @@
 #ifndef _NN_CONN_H__
 #define _NN_CONN_H__
 
+/* private functions, should only be used
+ * conn.c - to init and free new connections 
+ * router.c - to conn/unconn from conn
+ * node.c - to conn/unconn from conn
+ */
+
 struct nn_conn *_conn_init();
 int _conn_free(struct nn_conn *cn);
 int _conn_free_node(struct nn_conn *cn);
