@@ -79,6 +79,7 @@ void *thread1(struct nn_node *n, void *pdata)
                 usleep(10000);
             }
         }
+        usleep(100000);
 
         /* receive packets */
         while(!nn_node_get_rx_pkt(n, &pkt)){
@@ -89,7 +90,8 @@ void *thread1(struct nn_node *n, void *pdata)
             dpool_ret_buf(dpool, dpool_buf);
             pkt_free(pkt);
         }
-        usleep(10000);
+        //usleep(10000);
+        sched_yield();
     }
 
     return NULL;
@@ -104,13 +106,11 @@ void *thread0(struct nn_node *n, void *pdata)
 
     for(;;){
         /* check state */
-
         state = node_do_state(n);
         if(state == NN_STATE_SHUTDOWN){
             // cleanup if need to
             return NULL;
         }
-
 
         while(!nn_node_get_rx_pkt(n, &pkt)){
             /* incoming packet */
@@ -121,7 +121,8 @@ void *thread0(struct nn_node *n, void *pdata)
             dpool_ret_buf(dpool, dpool_buf);
             pkt_free(pkt);
         }
-        usleep(10000);
+
+        sched_yield();
     }
 
     return NULL;

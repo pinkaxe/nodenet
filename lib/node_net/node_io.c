@@ -114,7 +114,7 @@ static void *node_io_thread(void *arg)
 
         ICHK(LDEBUG, r, node_rx_pkts(n));
 
-        usleep(100000);
+        sched_yield();
     }
 
 err:
