@@ -15,7 +15,7 @@
 
 #include "types.h"
 #include "pkt.h"
-#include "conn.h"
+#include "_conn.h"
 #include "router.h"
 
 
@@ -31,10 +31,10 @@
     router_lock(rt); \
     iter = router_conn_iter_init(rt); \
     while(!done && !router_conn_iter_next(iter, &cn)){ \
-        conn_lock(cn);
+        _conn_lock(cn);
 
 #define ROUTER_CONN_ITER_POST \
-        conn_unlock(cn); \
+        _conn_unlock(cn); \
     } \
     router_conn_iter_free(iter); \
     router_unlock(rt); \
@@ -226,16 +226,16 @@ int router_conn(struct nn_router *rt, struct nn_conn *cn)
     router_isvalid(rt);
 
     router_lock(rt);
-    conn_lock(cn);
+    _conn_lock(cn);
 
     ICHK(LWARN, r, ll_add_front(rt->conn, (void **)&cn));
     if(r) goto err;
 
-    ICHK(LWARN, r, conn_set_router(cn, rt));
+    ICHK(LWARN, r, _conn_set_router(cn, rt));
     if(r) goto err;
 
 err:
-    conn_unlock(cn);
+    _conn_unlock(cn);
     router_unlock(rt);
 
     return r;
@@ -250,7 +250,7 @@ int router_unconn(struct nn_router *rt, struct nn_conn *cn)
     ICHK(LWARN, r, ll_rem(rt->conn, cn));
     if(r) goto err;
 
-    r = conn_free_router(cn);
+    r = _conn_free_router(cn);
 
 err:
     return r;
@@ -263,7 +263,7 @@ int router_print(struct nn_router *rt)
     ROUTER_CONN_ITER_PRE
 
     printf("router->conn\t");
-    printf("rt=%p, cn:%p, n=%p\n", rt, cn, conn_get_node(cn));
+    printf("rt=%p, cn:%p, n=%p\n", rt, cn, _conn_get_node(cn));
 
     ROUTER_CONN_ITER_POST
 
@@ -394,10 +394,10 @@ static int router_tx_pkts(struct nn_router *rt)
 
         ROUTER_CONN_ITER_PRE
         clone = pkt_clone(pkt);
-        while(conn_router_tx_pkt(cn, clone)){
-            conn_unlock(cn);
+        while(_conn_router_tx_pkt(cn, clone)){
+            _conn_unlock(cn);
             usleep(10000);
-            conn_lock(cn);
+            _conn_lock(cn);
         }
         ROUTER_CONN_ITER_POST
 
@@ -414,17 +414,17 @@ static int router_rx_pkts(struct nn_router *rt)
     ROUTER_CONN_ITER_PRE
 
     /* pick pkt's up from router and move to conn */
-    if(!conn_router_rx_pkt(cn, &pkt)){
+    if(!_conn_router_rx_pkt(cn, &pkt)){
         assert(pkt);
 
-        conn_unlock(cn);
+        _conn_unlock(cn);
         router_unlock(rt);
         // FIXME: sending to all routers
         //ROUTER_CONN_ITER_PRE
         router_add_rx_pkt(rt, pkt);
 
         router_lock(rt);
-        conn_lock(cn);
+        _conn_lock(cn);
         //ROUTER_CONN_ITER_POST
     }
 
@@ -518,9 +518,9 @@ static int router_conn_each(struct nn_router *rt,
 
     iter = router_conn_iter_init(rt);
     while(!router_conn_iter_next(iter, &cn)){
-        conn_lock(cn);
+        _conn_lock(cn);
         r = cb(cn, pkt);
-        conn_unlock(cn);
+        _conn_unlock(cn);
         if(r){
             break;
         }

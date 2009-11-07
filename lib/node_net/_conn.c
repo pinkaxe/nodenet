@@ -10,9 +10,7 @@
 #include "util/link.h"
 
 #include "types.h"
-#include "router.h"
-#include "node.h"
-#include "conn.h"
+#include "_conn.h"
 #include "pkt.h"
 
 /* rename functions for this file */
@@ -54,7 +52,7 @@ int ques_init(struct ques_router_init *qs)
     while((_qs->size > 0)){
         PCHK(LWARN, *(_qs->q), que_init(100));
         if(!*(_qs->q)){
-            //PCHK(LWARN, r, conn_free(cn));
+            //PCHK(LWARN, r, _conn_free(cn));
             //goto err;
             // FIXME: free?
             r = 1;
@@ -66,7 +64,7 @@ int ques_init(struct ques_router_init *qs)
     return r;
 }
 
-struct nn_conn *conn_init()
+struct nn_conn *_conn_init()
 {
     int r = 0;
     struct nn_conn *cn;
@@ -86,7 +84,7 @@ struct nn_conn *conn_init()
 
     r = ques_init(qs);
     if(r){
-        conn_free(cn);
+        _conn_free(cn);
         cn = NULL;
         goto err;
     }
@@ -96,7 +94,7 @@ struct nn_conn *conn_init()
 
     PCHK(LWARN, l, link_init());
     if(!l){
-        PCHK(LWARN, r, conn_free(cn));
+        PCHK(LWARN, r, _conn_free(cn));
         goto err;
     }
     cn->link = l;
@@ -109,7 +107,7 @@ err:
     return cn;
 }
 
-int conn_free(struct nn_conn *cn)
+int _conn_free(struct nn_conn *cn)
 {
     int r = 0;
     int fail = 0;
@@ -153,109 +151,109 @@ int conn_free(struct nn_conn *cn)
     return fail;
 }
 
-int conn_free_node(struct nn_conn *cn)
+int _conn_free_node(struct nn_conn *cn)
 {
     int r;
 
     r = link_free_node(cn->link);
     if(r == 1){ 
         cn->link = NULL;
-        conn_free(cn);
+        _conn_free(cn);
     }
 
     return r;
 }
 
-int conn_free_router(struct nn_conn *cn)
+int _conn_free_router(struct nn_conn *cn)
 {
     int r;
 
     r = link_free_router(cn->link);
     if(r == 1){
         cn->link = NULL;
-        conn_free(cn);
+        _conn_free(cn);
     }
 
     return r;
 }
 
 
-int conn_set_node(struct nn_conn *cn, struct nn_node *n)
+int _conn_set_node(struct nn_conn *cn, struct nn_node *n)
 {
     return link_set_from(cn->link, n);
 }
 
-int conn_set_router(struct nn_conn *cn, struct nn_router *rt)
+int _conn_set_router(struct nn_conn *cn, struct nn_router *rt)
 {
     return link_set_router(cn->link, rt);
 }
 
-int conn_set_state(struct nn_conn *cn, int state)
+int _conn_set_state(struct nn_conn *cn, int state)
 {
     return link_set_state(cn->link, state);
 }
 
-struct nn_node *conn_get_node(struct nn_conn *cn)
+struct nn_node *_conn_get_node(struct nn_conn *cn)
 {
     return link_get_node(cn->link);
 }
 
-struct nn_router *conn_get_router(struct nn_conn *cn)
+struct nn_router *_conn_get_router(struct nn_conn *cn)
 {
     return link_get_router(cn->link);
 }
 
-int conn_get_state(struct nn_conn *cn)
+int _conn_get_state(struct nn_conn *cn)
 {
     return link_get_state(cn->link);
 }
 
 
-int conn_lock(struct nn_conn *cn)
+int _conn_lock(struct nn_conn *cn)
 {
     mutex_lock(&cn->mutex);
     return 0;
 }
 
-int conn_unlock(struct nn_conn *cn)
+int _conn_unlock(struct nn_conn *cn)
 {
     mutex_unlock(&cn->mutex);
     return 0;
 }
 
 #if 0
-int conn_conn(struct nn_node *n, struct nn_router *rt)
+int _conn_conn(struct nn_node *n, struct nn_router *rt)
 {
     struct nn_conn *cn;
 
-    PCHK(LWARN, cn, conn_init());
+    PCHK(LWARN, cn, _conn_init());
     if(!cn) goto err;
 
     /* lock node and conn */
     node_lock(n);
-    conn_lock(cn);
+    _conn_lock(cn);
 
     /* set node side pointers */
     node_conn(n, cn);
-    conn_set_node(cn, n);
+    _conn_set_node(cn, n);
 
     /* unlock node and conn */
     node_unlock(n);
-    conn_unlock(cn);
+    _conn_unlock(cn);
 
 err:
     return 0;
 }
 
 
-int conn_unconn(struct nn_node *n, struct nn_router *rt)
+int _conn_unconn(struct nn_node *n, struct nn_router *rt)
 {
     NODE_CONN_ITER_PRE
 
     // FIXME: check for == rt
     /* disconnect the node <-> conn conn */
     node_unconn(n, cn);
-    conn_free_node(cn);
+    _conn_free_node(cn);
 
     NODE_CONN_ITER_POST
 
@@ -267,19 +265,19 @@ int conn_unconn(struct nn_node *n, struct nn_router *rt)
 /* buffer io functions start */
 
 
-int conn_node_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
+int _conn_node_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
 {
     int r;
 
     ICHK(LINFO, r, que_add(cn->n_rt_pkts, pkt));
 
-    L(LDEBUG, "+ conn_node_tx_pkt %p(%d)\n", pkt, r);
+    L(LDEBUG, "+ _conn_node_tx_pkt %p(%d)\n", pkt, r);
 
     return r;
 }
 
 /*
-int conn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
+int _conn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
         *pkt)
 {
     int r = 0;
@@ -299,7 +297,7 @@ int conn_node_tx_pkt(struct nn_node *n, struct nn_router *rt, struct nn_pkt
 }
 */
 
-int conn_router_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
+int _conn_router_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
 {
     int r = 1;
     struct timespec ts = {0, 0};
@@ -309,7 +307,7 @@ int conn_router_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
         //printf("xxx\n");
         *pkt = que_get(cn->n_rt_pkts, &ts);
         if(*pkt){
-            L(LINFO, "+ conn_router_rx_pkt %p", *pkt);
+            L(LINFO, "+ _conn_router_rx_pkt %p", *pkt);
             r = 0;
         }
     }
@@ -317,18 +315,18 @@ int conn_router_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
     return r;
 }
 
-int conn_router_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
+int _conn_router_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
 {
     int r;
 
     ICHK(LINFO, r, que_add(cn->rt_n_pkts, pkt));
-    L(LDEBUG, "+ conn_router_tx_pkt %p(%d)\n", pkt, r);
+    L(LDEBUG, "+ _conn_router_tx_pkt %p(%d)\n", pkt, r);
 
     return r;
 }
 
 /* router -> node pkt */
-//int conn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt
+//int _conn_router_tx_pkt(struct nn_router *rt, struct nn_node *n, struct nn_pkt
 //        *pkt)
 //{
 //
@@ -348,7 +346,7 @@ int conn_router_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
 //}
 
 
-int conn_node_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
+int _conn_node_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
 {
     int r = 1;
     struct timespec ts = {0, 0};

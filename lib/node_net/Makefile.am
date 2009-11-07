@@ -9,12 +9,12 @@ libnode_net_la_SOURCES = \
 			 router.h \
 			 conn.c \
 			 conn.h \
+			 _conn.c \
+			 _conn.h \
 			 grp.c \
 			 grp.h \
 			 pkt.c \
 			 pkt.h \
-			 nn.c \
-			 nn.h \
 			 node_drivers/node_driver.c \
 			 node_drivers/node_driver.h \
 			 node_drivers/thread.c \

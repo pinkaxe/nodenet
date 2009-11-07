@@ -17,10 +17,9 @@
 
 #include "types.h"
 #include "pkt.h"
-#include "conn.h"
+#include "_conn.h"
 
 #include "node.h"
-#include "node_io.h"
 #include "node_drivers/node_driver.h"
 
 
@@ -86,10 +85,10 @@ static int node_isok(struct nn_node *n);
     node_lock(n); \
     iter = node_conn_iter_init(n); \
     while(!done && !node_conn_iter_next(iter, &cn)){ \
-        conn_lock(cn);
+        _conn_lock(cn);
 
 #define NODE_CONN_ITER_POST \
-        conn_unlock(cn); \
+        _conn_unlock(cn); \
     } \
     node_conn_iter_free(iter); \
     node_unlock(n); \
@@ -265,7 +264,7 @@ int node_conn(struct nn_node *n, struct nn_conn *cn)
     ICHK(LWARN, r, ll_add_front(n->conn, (void **)&cn));
     if(r) goto err;
 
-    ICHK(LWARN, r, conn_set_node(cn, n));
+    ICHK(LWARN, r, _conn_set_node(cn, n));
     if(r) goto err;
 
 err:
@@ -281,7 +280,7 @@ int node_unconn(struct nn_node *n, struct nn_conn *cn)
     ICHK(LWARN, r, ll_rem(n->conn, cn));
     if(r) goto err;
 
-    ICHK(LWARN, r, conn_free_node(cn));
+    ICHK(LWARN, r, _conn_free_node(cn));
     if(r) goto err;
 
 err:
@@ -358,10 +357,10 @@ int node_tx_pkts(struct nn_node *n)
 
         // FIXME: sending to all routers
         NODE_CONN_ITER_PRE
-        while(conn_node_tx_pkt(cn, pkt)){
-            conn_unlock(cn);
+        while(_conn_node_tx_pkt(cn, pkt)){
+            _conn_unlock(cn);
             usleep(10000);
-            conn_lock(cn);
+            _conn_lock(cn);
         }
         NODE_CONN_ITER_POST
     }
@@ -379,7 +378,7 @@ int node_rx_pkts(struct nn_node *n)
     NODE_CONN_ITER_PRE
 
     /* pick pkt's up from conn and move to node */
-    if(!conn_node_rx_pkt(cn, &pkt)){
+    if(!_conn_node_rx_pkt(cn, &pkt)){
         assert(pkt);
 
         // FIXME: sending to all nodes
@@ -416,7 +415,7 @@ struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_router *rt)
     struct nn_conn *_cn = NULL;
 
     NODE_CONN_ITER_PRE
-    if(conn_get_router(cn) == rt){
+    if(_conn_get_router(cn) == rt){
         done = 1;
         _cn = cn;
     }
@@ -506,7 +505,7 @@ int node_print(struct nn_node *n)
     NODE_CONN_ITER_PRE
 
     printf("node->conn\t");
-    printf("n=%p, cn:%p, rt=%p\n", n, cn, conn_get_router(cn));
+    printf("n=%p, cn:%p, rt=%p\n", n, cn, _conn_get_router(cn));
 
     NODE_CONN_ITER_POST
 
@@ -602,7 +601,7 @@ static int node_conn_free_all(struct nn_node *n)
     iter = node_conn_iter_init(n);
     /* remove the conns to routers */
     while(!node_conn_iter_next(iter, &cn)){
-        r = conn_free_node(cn);
+        r = _conn_free_node(cn);
     }
     node_conn_iter_free(iter);
 

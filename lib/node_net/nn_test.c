@@ -6,13 +6,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "util/log.h"
 #include "util/dpool.h"
 
 #include "node_net/types.h"
 #include "node_net/pkt.h"
-#include "node_net/nn.h"
+
+#include "node_net/router.h"
+#include "node_net/node.h"
+#include "node_net/conn.h"
+#include "node_net/grp.h"
 
 #define ok(x){ \
     assert(x); \
@@ -74,7 +79,7 @@ void *thread1(struct nn_node *n, void *pdata)
                     NN_SENDTO_ALL, 0);
 
             /* add to outgoing tx buffers */
-            while(nn_node_add_tx_pkt(n, pkt)){
+            while(node_add_tx_pkt(n, pkt)){
                 // FIXME:
                 usleep(10000);
             }
@@ -82,7 +87,7 @@ void *thread1(struct nn_node *n, void *pdata)
         usleep(100000);
 
         /* receive packets */
-        while(!nn_node_get_rx_pkt(n, &pkt)){
+        while(!node_get_rx_pkt(n, &pkt)){
             struct dpool_buf *dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
             L(LINFO, "Got buf->i=%d", buf->i);
@@ -112,7 +117,7 @@ void *thread0(struct nn_node *n, void *pdata)
             return NULL;
         }
 
-        while(!nn_node_get_rx_pkt(n, &pkt)){
+        while(!node_get_rx_pkt(n, &pkt)){
             /* incoming packet */
             struct dpool_buf *dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
@@ -145,35 +150,35 @@ int main(int argc, char **argv)
 
         dpool = dpool_create(sizeof(*buf), 100, 0);
 
-        rt[0] = nn_router_init();
+        rt[0] = router_init();
         ok(rt[0]);
 
         for(i=0; i < GRPS_NO; i++){
-            g[i] = nn_grp_init(i);
+            g[i] = grp_init(i);
             ok(g[i]);
         }
 
         /* create input nodes */
-        n[0] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
+        n[0] = node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
                 thread1, dpool);
-        nn_conn(n[0], rt[0]);
-        n[1] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
+        conn_conn(n[0], rt[0]);
+        n[1] = node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
                 thread0, dpool);
-        nn_conn(n[1], rt[0]);
+        conn_conn(n[1], rt[0]);
        // for(i=1; i < 1; i++){
        //     n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
        //             thread0, dpool);
        //     /* connect to router */
-       //     nn_conn(n[i], rt[0]);
+       //     conn_conn(n[i], rt[0]);
        //     //nn_join_grp(n[i], g[1]);
        //     ok(n[i]);
        // }
 
         /* set everthing state to running */
         for(i=0; i < 2; i++){
-            nn_node_set_state(n[i], NN_STATE_RUNNING);
+            node_set_state(n[i], NN_STATE_RUNNING);
         }
-        nn_router_set_state(rt[0], NN_STATE_RUNNING);
+        router_set_state(rt[0], NN_STATE_RUNNING);
 
         /* send a pkt from the router */
         /*
@@ -195,34 +200,34 @@ int main(int argc, char **argv)
 
         /* pause everything */
         for(i=0; i < 2; i++){
-            nn_node_set_state(n[i], NN_STATE_PAUSED);
+            node_set_state(n[i], NN_STATE_PAUSED);
         }
-        nn_router_set_state(rt[0], NN_STATE_PAUSED);
+        router_set_state(rt[0], NN_STATE_PAUSED);
 
         /* run everything */
         for(i=0; i < 2; i++){
-            nn_node_set_state(n[i], NN_STATE_RUNNING);
+            node_set_state(n[i], NN_STATE_RUNNING);
         }
-        nn_router_set_state(rt[0], NN_STATE_RUNNING);
+        router_set_state(rt[0], NN_STATE_RUNNING);
 
 
         for(i=0; i < 2; i++){
             /* unconn not needed but ok */
-            //nn_unconn(n[i], rt[0]);
-            nn_node_free(n[i]);
+            //conn_unconn(n[i], rt[0]);
+            node_set_state(n[i], NN_STATE_SHUTDOWN);
         }
 
-        nn_grp_free(g[0]);
-        nn_grp_free(g[1]);
-        nn_grp_free(g[2]);
+        grp_free(g[0]);
+        grp_free(g[1]);
+        grp_free(g[2]);
 
-        nn_router_free(rt[0]);
+        router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
         for(i=0; i < 2; i++){
-            nn_node_clean(n[i]);
+            node_clean(n[i]);
         }
 
-        nn_router_clean(rt[0]);
+        router_clean(rt[0]);
 
         dpool_free(dpool);
 
