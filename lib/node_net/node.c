@@ -24,30 +24,6 @@
 #include "node_drivers/node_driver.h"
 
 
-/* easy iterator pre/post
- * n != NULL when this is called, each iteration cn for
- each matching router is locked and can be used */
-#define NODE_CONN_ITER_PRE \
-    { \
-    assert(n); \
-    int done = 0; \
-    struct node_conn_iter *iter; \
-    struct nn_conn *cn; \
-    node_lock(n); \
-    iter = node_conn_iter_init(n); \
-    while(!done && !node_conn_iter_next(iter, &cn)){ \
-        conn_lock(cn);
-
-#define NODE_CONN_ITER_POST \
-        conn_unlock(cn); \
-    } \
-    node_conn_iter_free(iter); \
-    node_unlock(n); \
-    }
-
-
-static int node_isok(struct nn_node *n);
-
 struct nn_node {
 
     DBG_STRUCT_START
@@ -79,6 +55,47 @@ struct nn_node {
     DBG_STRUCT_END
 };
 
+static void *node_thread(void *arg);
+static int node_conn_free_all(struct nn_node *n);
+static void *start_user_thread(void *arg);
+
+static int node_lock(struct nn_node *n);
+static int node_unlock(struct nn_node *n);
+static int node_cond_wait(struct nn_node *n);
+static int node_cond_broadcast(struct nn_node *n);
+
+static int node_tx_pkts(struct nn_node *n);
+static int node_rx_pkts(struct nn_node *n);
+
+/* iter */
+static struct node_conn_iter *node_conn_iter_init(struct nn_node *rt);
+static int node_conn_iter_free(struct node_conn_iter *iter);
+static int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn);
+
+static int node_isok(struct nn_node *n);
+
+/* easy iterator pre/post
+ * n != NULL when this is called, each iteration cn for
+ each matching router is locked and can be used */
+#define NODE_CONN_ITER_PRE \
+    { \
+    assert(n); \
+    int done = 0; \
+    struct node_conn_iter *iter; \
+    struct nn_conn *cn; \
+    node_lock(n); \
+    iter = node_conn_iter_init(n); \
+    while(!done && !node_conn_iter_next(iter, &cn)){ \
+        conn_lock(cn);
+
+#define NODE_CONN_ITER_POST \
+        conn_unlock(cn); \
+    } \
+    node_conn_iter_free(iter); \
+    node_unlock(n); \
+    }
+
+
 
 /* for nn_node->grp_conns ll */
 struct nn_node_grp {
@@ -93,6 +110,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
 {
     int r;
     struct nn_node *n;
+    thread_t tid;
 
     PCHK(LWARN, n, calloc(1, sizeof(*n)));
     if(!n){
@@ -139,35 +157,15 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     n->state = NN_STATE_PAUSED;
 
     node_isok(n);
-    ICHK(LWARN, r, node_io_run(n));
+
+    /* start the node thread that will handle coms from and to node */
+    thread_create(&tid, NULL, node_thread, n);
+    thread_detach(tid);
 
 err:
     return n;
 }
 
-static int node_lock(struct nn_node *n)
-{
-    mutex_lock(&n->mutex);
-    return 0;
-}
-
-static int node_unlock(struct nn_node *n)
-{
-    mutex_unlock(&n->mutex);
-    return 0;
-}
-
-static int node_cond_wait(struct nn_node *n)
-{
-    cond_wait(&n->cond, &n->mutex);
-    return 0;
-}
-
-static int node_cond_broadcast(struct nn_node *n)
-{
-    cond_broadcast(&n->cond);
-    return 0;
-}
 
 int node_free(struct nn_node *n)
 {
@@ -480,25 +478,6 @@ int node_do_state(struct nn_node *n)
     return state;
 }
 
-/* iter */
-
-struct node_conn_iter *node_conn_iter_init(struct nn_node *rt)
-{
-    return (struct node_conn_iter *)ll_iter_init(rt->conn);
-}
-
-int node_conn_iter_free(struct node_conn_iter *iter)
-{
-    return ll_iter_free((struct ll_iter *)iter);
-}
-
-int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn)
-{
-    return ll_iter_next((struct ll_iter *)iter, (void **)cn);
-}
-
-
-
 /** debug functions **/
 
 static int node_isok(struct nn_node *n)
@@ -549,6 +528,144 @@ int node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt)
     L(LDEBUG, "+ node_add_tx_pkt %p(%d)\n", pkt, r);
 
     return r;
+}
+
+/* static start */
+
+struct node_pdata {
+    void *(*user_func)(struct nn_node *n, void *pdata);
+    struct nn_node *n;
+    void *pdata;
+};
+
+/* rx input from conn, call user functions, tx output to conn  */
+static void *node_thread(void *arg)
+{
+    struct nn_node *n = arg;
+    void *(*user_func)(struct nn_node *n, void *pdata);
+    void *pdata;
+    int attr;
+    //struct node_driver_ops *ops;
+    thread_t tid;
+    int r;
+    enum nn_state state;
+
+    user_func = node_get_codep(n);
+    pdata = node_get_pdatap(n);
+    attr = node_get_attr(n);
+
+    //ops = node_driver_get_ops(node_get_type(n));
+    L(LNOTICE, "Node thread starting: %p", n);
+
+    if(user_func){
+        struct node_pdata *arg;
+        PCHK(LWARN, arg, malloc(sizeof(*arg)));
+        if(!arg){
+            goto err;
+        }
+        arg->user_func = user_func;
+        arg->n = n;
+        arg->pdata = pdata;
+        thread_create(&tid, NULL, start_user_thread, arg);
+        //thread_detach(tid);
+    }
+
+    for(;;){
+
+        state = node_do_state(n);
+        if(state == NN_STATE_SHUTDOWN){
+            thread_join(tid, NULL);
+            node_conn_free_all(n);
+            node_set_state(n, NN_STATE_FINISHED);
+            return NULL;
+        }
+
+        ICHK(LDEBUG, r, node_tx_pkts(n));
+
+        ICHK(LDEBUG, r, node_rx_pkts(n));
+
+        sched_yield();
+    }
+
+err:
+    L(LNOTICE, "Node thread ended: %p", n);
+    return NULL;
+}
+
+/* free all node sides of all n->conn's and g->... */
+static int node_conn_free_all(struct nn_node *n)
+{
+    int r = 0;
+    struct node_conn_iter *iter;
+    struct nn_conn *cn;
+
+    iter = node_conn_iter_init(n);
+    /* remove the conns to routers */
+    while(!node_conn_iter_next(iter, &cn)){
+        r = conn_free_node(cn);
+    }
+    node_conn_iter_free(iter);
+
+    return r;
+
+}
+
+
+static void *start_user_thread(void *arg)
+{
+    struct node_pdata *info = arg;
+    void *(*user_func)(struct nn_node *n, void *pdata) = info->user_func;
+    struct nn_node *n = info->n;
+    void *pdata = info->pdata;
+
+    free(arg);
+
+    return user_func(n, pdata);
+}
+
+
+/* iter */
+static struct node_conn_iter *node_conn_iter_init(struct nn_node *rt)
+{
+    return (struct node_conn_iter *)ll_iter_init(rt->conn);
+}
+
+static int node_conn_iter_free(struct node_conn_iter *iter)
+{
+    return ll_iter_free((struct ll_iter *)iter);
+}
+
+static int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn)
+{
+    return ll_iter_next((struct ll_iter *)iter, (void **)cn);
+}
+
+
+
+
+
+static int node_lock(struct nn_node *n)
+{
+    mutex_lock(&n->mutex);
+    return 0;
+}
+
+static int node_unlock(struct nn_node *n)
+{
+    mutex_unlock(&n->mutex);
+    return 0;
+}
+
+static int node_cond_wait(struct nn_node *n)
+{
+    cond_wait(&n->cond, &n->mutex);
+    return 0;
+}
+
+static int node_cond_broadcast(struct nn_node *n)
+{
+    cond_broadcast(&n->cond);
+    return 0;
 }
 
 #if 0

@@ -76,12 +76,14 @@ static int router_get_tx_pkt(struct nn_router *rt, struct nn_pkt **pkt);
 
 static struct router_conn_iter *router_conn_iter_init(struct nn_router *rt);
 static int router_conn_iter_free(struct router_conn_iter *iter);
-static int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn **cn);
+static int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn
+        **cn);
+
+#if 0
 static int router_conn_each(struct nn_router *rt,
         int (*cb)(struct nn_conn *cn, void *a0), 
         struct nn_pkt *pkt);
-
-
+#endif
 
 int router_isvalid(struct nn_router *rt)
 {
@@ -502,6 +504,7 @@ static int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn *
     return ll_iter_next((struct ll_iter *)iter, (void **)cn);
 }
 
+#if 0
 static int router_conn_each(struct nn_router *rt,
         int (*cb)(struct nn_conn *cn, void *a0),
         struct nn_pkt *pkt)
@@ -529,6 +532,7 @@ static int router_conn_each(struct nn_router *rt,
     return r;
 
 }
+#endif
 
 static int router_lock(struct nn_router *rt)
 {

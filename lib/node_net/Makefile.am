@@ -5,8 +5,6 @@ libnode_net_la_SOURCES = \
 			 types.h \
 			 node.c \
 			 node.h \
-			 node_io.c \
-			 node_io.h \
 			 router.c \
 			 router.h \
 			 conn.c \
