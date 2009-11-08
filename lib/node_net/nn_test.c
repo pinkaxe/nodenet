@@ -56,6 +56,8 @@ void *thread1(struct nn_node *n, void *pdata)
     // send data
     send_data(n, buf, 1, NN_SENDTO_ALL, 0);
 #endif
+    //node_set_refcnt_cb(struct nn_node *n, void (*cb)(struct nn_node *n, int));
+
 
     for(;;){
 
@@ -66,6 +68,11 @@ void *thread1(struct nn_node *n, void *pdata)
             return NULL;
         }
 
+        while(node_tx(n, dpool_buf, sizeof(*dpool_buf), dpool, 1,
+                    NN_SENDTO_ALL, 0)){
+            usleep(10000);
+        }
+
         /* send packets */
         if((dpool_buf=dpool_get_buf(dpool))){
             /* */
@@ -74,17 +81,24 @@ void *thread1(struct nn_node *n, void *pdata)
             /* set buf */
             buf->i = i++;
 
-            /* build internal packet */
-            pkt = pkt_init(n, dpool_buf, sizeof(dpool_buf), dpool, 1,
-                    NN_SENDTO_ALL, 0);
-
-            /* add to outgoing tx buffers */
-            while(node_add_tx_pkt(n, pkt)){
-                // FIXME:
+            while(node_tx(n, dpool_buf, sizeof(*dpool_buf), dpool, 1,
+                        NN_SENDTO_ALL, 0)){
                 usleep(10000);
             }
+            //buf_cleanup_f);
+            //node_set_tx_conf(1, NN_SENDTO_ALL, 0);
+
         }
         usleep(100000);
+
+        while(){
+            node_rx(n, &dpool_buf, &len, &pdata);
+
+            buf = dpool_buf->data;
+            L(LINFO, "Got buf->i=%d", buf->i);
+
+            dpool_ret_buf(dpool, dpool_buf);
+        }
 
         /* receive packets */
         while(!node_get_rx_pkt(n, &pkt)){

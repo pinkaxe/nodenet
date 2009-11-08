@@ -512,6 +512,28 @@ int node_print(struct nn_node *n)
     return 0;
 }
 
+int node_tx(struct nn_node *n, void *data, int data_len, void *pdata, int
+        sendto_no, int sendto_type, int sendto_id)
+{
+    struct nn_pkt *pkt;
+    int r = 1;
+
+
+    /* build packet */
+    PCHK(LWARN, pkt, pkt_init(n, data, data_len, pdata, 1, NN_SENDTO_ALL, 0));
+    assert(pkt);
+
+    node_lock(n);
+
+    ICHK(LWARN, r, que_add(n->tx_pkts, pkt));
+
+    node_unlock(n);
+
+    L(LDEBUG, "+ node_tx %p(%d)\n", pkt, r);
+
+    return r;
+}
+
 int node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt)
 {
     int r;

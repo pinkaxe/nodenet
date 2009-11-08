@@ -17,6 +17,7 @@ struct nn_pkt {
     void *data;
     int data_len;
     void *pdata;
+    int refcnt;
     struct nn_io_conf *conf;
     //uint32_t seq_len;
 };
@@ -55,6 +56,7 @@ struct nn_pkt *pkt_init(struct nn_node *src, void *data, int data_len,
     pkt->data = data;
     pkt->data_len = data_len;
     pkt->pdata = pdata;
+    pkt->refcnt = 1;
     pkt->conf = NULL;
 
     PCHK(LWARN, conf, malloc(sizeof(*conf)));
@@ -98,6 +100,7 @@ struct nn_pkt *pkt_clone(struct nn_pkt *pkt)
     clone->data = pkt->data;
     clone->data_len = pkt->data_len;
     clone->pdata = pkt->pdata;
+    clone->refcnt = pkt->refcnt;
     clone->conf = NULL;
 
     PCHK(LWARN, conf, malloc(sizeof(*conf)));
@@ -119,11 +122,30 @@ err:
 int pkt_free(struct nn_pkt *pkt)
 {
     if(pkt){
-        if(pkt->conf){
-            free(pkt->conf);
+        if(!--pkt->refcnt){
+            if(pkt->conf){
+                free(pkt->conf);
+            }
+            free(pkt);
         }
-        free(pkt);
     }
 
     return 0;
+}
+
+int pkt_set_refcnt(struct nn_pkt *pkt)
+{
+}
+
+int pkt_get_refcnt(struct nn_pkt *pkt)
+{
+}
+
+int pkt_reuse(struct nn_pkt *pkt)
+{
+    if(pkt->refcnt == 1){
+        // yes
+    }else{
+        // no
+    }
 }
