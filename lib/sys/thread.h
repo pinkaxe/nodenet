@@ -15,9 +15,9 @@
 { \
 	int ret; \
 	if((ret=(call)) != 0){ \
-        printf("cunt\n"); \
 		log4(LERR, "%s:%d:%s Error: %s\n", __FILE__, __LINE__, \
 			#call, strerror(ret)); \
+        exit(0); \
 	} \
 }
 

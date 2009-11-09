@@ -59,7 +59,7 @@ struct nn_router {
 /* this type don't exist, just for type checking */
 struct router_conn_iter;
 
-static void *router_thread(void *arg);
+void *router_thread(void *arg);
 static int router_conn_free_all(struct nn_router *rt);
 
 static int router_lock(struct nn_router *rt);
@@ -132,7 +132,7 @@ struct nn_router *router_init()
 
     /* start router_thread */
     thread_create(&tid, NULL, router_thread, rt);
-    thread_detach(tid);
+
 err:
     return rt;
 }
@@ -305,13 +305,14 @@ int router_add_rx_pkt(struct nn_router *rt, struct nn_pkt *pkt)
 
 
 /* pick up pkts coming to router, and router to other node's, main loop */
-static void *router_thread(void *arg)
+void *router_thread(void *arg)
 {
     //struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
-    struct nn_pkt *pkt;
 
     L(LNOTICE, "Router thread starting");
+
+    thread_detach(thread_self());
 
     for(;;){
 
@@ -350,12 +351,6 @@ again:
         /* rx packets from conn */
         router_rx_pkts(rt);
 
-        /* route to appropriate nodes */
-        while(!router_get_rx_pkt(rt, &pkt)){
-            assert(pkt);
-            router_add_tx_pkt(rt, pkt);
-        }
-
         /* tx packet to conn */
         router_tx_pkts(rt);
 
@@ -384,24 +379,23 @@ static int router_conn_free_all(struct nn_router *rt)
 
 static int router_tx_pkts(struct nn_router *rt)
 {
-    struct nn_pkt *pkt, *clone;
+    struct nn_pkt *pkt;
 
     /* pick pkt's up from router and move to conn */
-    while(!router_get_tx_pkt(rt, &pkt)){
+    while(!router_get_rx_pkt(rt, &pkt)){
         assert(pkt);
 
-        // FIXME: sending to all conn's
-
         ROUTER_CONN_ITER_PRE
-        clone = pkt_clone(pkt);
-        while(_conn_router_tx_pkt(cn, clone)){
+
+        /* FIXME: sending to all */
+        pkt_inc_refcnt(pkt, 1);
+        while(_conn_router_tx_pkt(cn, pkt)){
             _conn_unlock(cn);
             usleep(10000);
             _conn_lock(cn);
         }
-        ROUTER_CONN_ITER_POST
 
-        pkt_free(pkt);
+        ROUTER_CONN_ITER_POST
     }
 
     return 0;

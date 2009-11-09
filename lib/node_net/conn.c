@@ -10,6 +10,7 @@
 #include "util/log.h"
 
 #include "types.h"
+#include "pkt.h"
 #include "router.h"
 #include "node.h"
 #include "_conn.h"

@@ -11,6 +11,7 @@
 #include "util/que.h"
 
 #include "types.h"
+#include "pkt.h"
 #include "node.h"
 #include "node_net/types.h"
 #include "node_driver.h"

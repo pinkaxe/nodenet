@@ -28,6 +28,12 @@ struct buf {
 };
 
 
+static int dpool_free_cb(void *dpool, void *dpool_buf)
+{
+    printf("!!!!!!!!!!dpool_free_cb\n");
+    return dpool_ret_buf(dpool, dpool_buf);
+}
+
 void *thread1(struct nn_node *n, void *pdata)
 {
     int i = 0;
@@ -68,11 +74,6 @@ void *thread1(struct nn_node *n, void *pdata)
             return NULL;
         }
 
-        while(node_tx(n, dpool_buf, sizeof(*dpool_buf), dpool, 1,
-                    NN_SENDTO_ALL, 0)){
-            usleep(10000);
-        }
-
         /* send packets */
         if((dpool_buf=dpool_get_buf(dpool))){
             /* */
@@ -82,16 +83,14 @@ void *thread1(struct nn_node *n, void *pdata)
             buf->i = i++;
 
             while(node_tx(n, dpool_buf, sizeof(*dpool_buf), dpool, 1,
-                        NN_SENDTO_ALL, 0)){
+                        NN_SENDTO_ALL, 0, dpool_free_cb)){
                 usleep(10000);
             }
-            //buf_cleanup_f);
-            //node_set_tx_conf(1, NN_SENDTO_ALL, 0);
-
         }
         usleep(100000);
 
-        while(){
+        /*
+        while(1){
             node_rx(n, &dpool_buf, &len, &pdata);
 
             buf = dpool_buf->data;
@@ -99,6 +98,7 @@ void *thread1(struct nn_node *n, void *pdata)
 
             dpool_ret_buf(dpool, dpool_buf);
         }
+        */
 
         /* receive packets */
         while(!node_get_rx_pkt(n, &pkt)){
@@ -106,7 +106,7 @@ void *thread1(struct nn_node *n, void *pdata)
             buf = dpool_buf->data;
             L(LINFO, "Got buf->i=%d", buf->i);
             /* when done call pkt_free */
-            dpool_ret_buf(dpool, dpool_buf);
+            //dpool_ret_buf(dpool, dpool_buf);
             pkt_free(pkt);
         }
         //usleep(10000);
@@ -137,7 +137,7 @@ void *thread0(struct nn_node *n, void *pdata)
             buf = dpool_buf->data;
             L(LINFO, "Got buf->i=%d", buf->i);
             /* when done call pkt_free */
-            dpool_ret_buf(dpool, dpool_buf);
+            //dpool_ret_buf(dpool, dpool_buf);
             pkt_free(pkt);
         }
 
@@ -166,6 +166,7 @@ int main(int argc, char **argv)
 
         rt[0] = router_init();
         ok(rt[0]);
+        abort();
 
         for(i=0; i < GRPS_NO; i++){
             g[i] = grp_init(i);
