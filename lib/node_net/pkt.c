@@ -27,6 +27,8 @@ struct nn_pkt {
     cond_t cond;
 };
 
+static int pkt_lock(struct nn_pkt *pkt);
+static int pkt_unlock(struct nn_pkt *pkt);
 
 struct nn_pkt *pkt_init(struct nn_node *src, void *data, int data_len, void
         *pdata, int sendto_no, int sendto_type, int sendto_id, buf_free_cb_f
@@ -104,21 +106,34 @@ err:
 
 int pkt_free(struct nn_pkt *pkt)
 {
+
     if(pkt){
+
+        pkt_lock(pkt);
+
         if(--pkt->refcnt <= 0){
             if(pkt->buf_free_cb){
                 pkt->buf_free_cb(pkt->pdata, pkt->data);
             }
 
-            cond_destroy(&pkt->cond);
-            mutex_destroy(&pkt->mutex);
-
             if(pkt->conf){
                 free(pkt->conf);
             }
+
+            pkt_unlock(pkt);
+
+            cond_destroy(&pkt->cond);
+            mutex_destroy(&pkt->mutex);
+
             free(pkt);
+            pkt = NULL;
+        }
+
+        if(pkt){
+            pkt_unlock(pkt);
         }
     }
+
 
     return 0;
 }
@@ -126,48 +141,103 @@ int pkt_free(struct nn_pkt *pkt)
 
 struct nn_node *pkt_get_src(struct nn_pkt *pkt)
 {
-    return pkt->src;
+    struct nn_node *n;
+
+    pkt_lock(pkt);
+
+    n = pkt->src;
+
+    pkt_unlock(pkt);
+
+    return n;
 }
 
 void *pkt_get_data(struct nn_pkt *pkt)
 {
-    return pkt->data;
+    void *r;
+
+    pkt_lock(pkt);
+
+    r = pkt->data;
+
+    pkt_unlock(pkt);
+
+    return r;
 }
 
 int pkt_get_data_len(struct nn_pkt *pkt)
 {
-    return pkt->data_len;
+    int r;
+
+    pkt_lock(pkt);
+
+    r = pkt->data_len;
+
+    pkt_unlock(pkt);
+
+    return r;
 }
 
 void *pkt_get_pdata(struct nn_pkt *pkt)
 {
-    return pkt->pdata;
+    void *r;
+
+    pkt_lock(pkt);
+
+    r = pkt->pdata;
+
+    pkt_unlock(pkt);
 }
 
 int pkt_set_src(struct nn_pkt *pkt, struct nn_node *n)
 {
     int r = 0;
 
+    pkt_lock(pkt);
+
     pkt->src = n;
+
+    pkt_unlock(pkt);
 
     return r;
 }
 
 int pkt_set_refcnt(struct nn_pkt *pkt, int refcnt)
 {
+    pkt_lock(pkt);
+
     pkt->refcnt = refcnt;
+
+    pkt_unlock(pkt);
+
     return 0;
 }
 
 int pkt_get_refcnt(struct nn_pkt *pkt)
 {
-    return pkt->refcnt;
+    int r;
+
+    pkt_lock(pkt);
+
+    r = pkt->refcnt;
+
+    pkt_unlock(pkt);
+
+    return r;
 }
 
 int pkt_inc_refcnt(struct nn_pkt *pkt, int inc)
 {
+    int r;
+
+    pkt_lock(pkt);
+
     pkt->refcnt += inc;
-    return pkt->refcnt;
+    r = pkt->refcnt;
+
+    pkt_unlock(pkt);
+
+    return r;
 }
 
 /* 0 -> can reuse */
@@ -178,4 +248,15 @@ int pkt_reuse(struct nn_pkt *pkt)
     }else{
         return 1;
     }
+}
+
+static int pkt_lock(struct nn_pkt *pkt)
+{
+    mutex_lock(pkt);
+    return 0;
+}
+
+static int pkt_unlock(struct nn_pkt *pkt)
+{
+    mutex_unlock(pkt);
 }
