@@ -166,7 +166,6 @@ int main(int argc, char **argv)
 
         rt[0] = router_init();
         ok(rt[0]);
-        abort();
 
         for(i=0; i < GRPS_NO; i++){
             g[i] = grp_init(i);
