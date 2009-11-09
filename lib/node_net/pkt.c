@@ -45,7 +45,7 @@ struct nn_pkt *pkt_init(struct nn_node *src, void *data, int data_len, void
     pkt->data = data;
     pkt->data_len = data_len;
     pkt->pdata = pdata;
-    pkt->refcnt = 0;
+    pkt->refcnt = 1;
     pkt->conf = NULL;
     pkt->buf_free_cb = buf_free_cb;
 
@@ -76,6 +76,8 @@ struct nn_pkt *pkt_clone(struct nn_pkt *pkt)
     struct nn_pkt *clone;
     struct nn_pkt_conf *conf;
 
+    pkt_lock(pkt);
+
     PCHK(LWARN, clone, malloc(sizeof(*clone)));
     if(!clone){
         goto err;
@@ -101,6 +103,7 @@ struct nn_pkt *pkt_clone(struct nn_pkt *pkt)
     clone->conf = conf;
 
 err:
+    pkt_unlock(pkt);
     return clone;
 }
 
@@ -111,6 +114,7 @@ int pkt_free(struct nn_pkt *pkt)
 
         pkt_lock(pkt);
 
+        printf("!!!! pkt_free: %d\n", pkt->refcnt);
         if(--pkt->refcnt <= 0){
             if(pkt->buf_free_cb){
                 pkt->buf_free_cb(pkt->pdata, pkt->data);
@@ -202,16 +206,6 @@ int pkt_set_src(struct nn_pkt *pkt, struct nn_node *n)
     return r;
 }
 
-int pkt_set_refcnt(struct nn_pkt *pkt, int refcnt)
-{
-    pkt_lock(pkt);
-
-    pkt->refcnt = refcnt;
-
-    pkt_unlock(pkt);
-
-    return 0;
-}
 
 int pkt_get_refcnt(struct nn_pkt *pkt)
 {
@@ -240,6 +234,20 @@ int pkt_inc_refcnt(struct nn_pkt *pkt, int inc)
     return r;
 }
 
+int pkt_dec_refcnt(struct nn_pkt *pkt, int dec)
+{
+    int r;
+
+    pkt_lock(pkt);
+
+    pkt->refcnt -= dec;
+    r = pkt->refcnt;
+
+    pkt_unlock(pkt);
+
+    return r;
+}
+
 /* 0 -> can reuse */
 int pkt_reuse(struct nn_pkt *pkt)
 {
@@ -252,11 +260,12 @@ int pkt_reuse(struct nn_pkt *pkt)
 
 static int pkt_lock(struct nn_pkt *pkt)
 {
-    mutex_lock(pkt);
+    mutex_lock(&pkt->mutex);
     return 0;
 }
 
 static int pkt_unlock(struct nn_pkt *pkt)
 {
-    mutex_unlock(pkt);
+    mutex_unlock(&pkt->mutex);
+    return 0;
 }

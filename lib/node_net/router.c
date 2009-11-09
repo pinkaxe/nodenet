@@ -396,6 +396,10 @@ static int router_tx_pkts(struct nn_router *rt)
         }
 
         ROUTER_CONN_ITER_POST
+
+        /* free for the orignal packet */
+        pkt_free(pkt);
+
     }
 
     return 0;
