@@ -191,6 +191,8 @@ void *pkt_get_pdata(struct nn_pkt *pkt)
     r = pkt->pdata;
 
     pkt_unlock(pkt);
+
+    return  r;
 }
 
 int pkt_set_src(struct nn_pkt *pkt, struct nn_node *n)

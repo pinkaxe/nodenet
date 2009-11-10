@@ -381,9 +381,12 @@ static int router_tx_pkts(struct nn_router *rt)
 {
     struct nn_pkt *pkt;
 
+    int z = 0;
     /* pick pkt's up from router and move to conn */
     while(!router_get_rx_pkt(rt, &pkt)){
         assert(pkt);
+
+        /* ROUTING */
 
         ROUTER_CONN_ITER_PRE
 
@@ -393,6 +396,9 @@ static int router_tx_pkts(struct nn_router *rt)
             _conn_unlock(cn);
             usleep(10000);
             _conn_lock(cn);
+        }
+        if(z++ % 3){
+            done = 1;
         }
 
         ROUTER_CONN_ITER_POST

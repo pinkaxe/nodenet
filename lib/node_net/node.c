@@ -18,6 +18,7 @@
 #include "types.h"
 #include "pkt.h"
 #include "_conn.h"
+#include "_grp_rel.h"
 
 #include "node.h"
 #include "node_drivers/node_driver.h"
@@ -57,6 +58,7 @@ struct nn_node {
 
 static void *node_thread(void *arg);
 static int node_conn_free_all(struct nn_node *n);
+static int node_grp_rel_free_all(struct nn_node *n);
 static void *start_user_thread(void *arg);
 
 static int node_lock(struct nn_node *n);
@@ -71,6 +73,10 @@ static int node_rx_pkts(struct nn_node *n);
 static struct node_conn_iter *node_conn_iter_init(struct nn_node *rt);
 static int node_conn_iter_free(struct node_conn_iter *iter);
 static int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn);
+
+static struct node_grp_rel_iter *node_grp_rel_iter_init(struct nn_node *rt);
+static int node_grp_rel_iter_free(struct node_grp_rel_iter *iter);
+static int node_grp_rel_iter_next(struct node_grp_rel_iter *iter, struct nn_grp_rel **cn);
 
 static int node_isok(struct nn_node *n);
 
@@ -95,6 +101,24 @@ static int node_isok(struct nn_node *n);
     node_unlock(n); \
     }
 
+
+#define NODE_GRP_REL_ITER_PRE \
+    { \
+    assert(n); \
+    int done = 0; \
+    struct node_grp_rel_iter *iter; \
+    struct nn_grp_rel *grp_rel; \
+    node_lock(n); \
+    iter = node_grp_rel_iter_init(n); \
+    while(!done && !node_grp_rel_iter_next(iter, &grp_rel)){ \
+        _grp_rel_lock(grp_rel);
+
+#define NODE_GRP_REL_ITER_POST \
+        _grp_rel_unlock(grp_rel); \
+    } \
+    node_grp_rel_iter_free(iter); \
+    node_unlock(n); \
+    }
 
 
 /* for nn_node->grp_conns ll */
@@ -121,14 +145,14 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     //n->ops = node_driver_get_ops(n->type);
     //assert(n->ops);
 
-    PCHK(LWARN, n->grp_conns, ll_init());
-    if(!n->grp_conns){
+    PCHK(LWARN, n->conn, ll_init());
+    if(!n->conn){
         PCHK(LWARN, r, node_free(n));
         goto err;
     }
 
-    PCHK(LWARN, n->conn, ll_init());
-    if(!n->conn){
+    PCHK(LWARN, n->grp_conns, ll_init());
+    if(!n->grp_conns){
         PCHK(LWARN, r, node_free(n));
         goto err;
     }
@@ -174,7 +198,7 @@ int node_free(struct nn_node *n)
     int r = 0;
     struct timespec ts = {0, 0};
 
-    struct nn_node_grp *ng;
+    struct nn_grp_rel *grp_rel;
     struct nn_pkt *pkt;
 
     node_isok(n);
@@ -182,36 +206,13 @@ int node_free(struct nn_node *n)
     mutex_lock(&n->mutex);
 
     if(n->conn){
-        /*
-        iter = ll_iter_init(n->conn);
-
-        while(!ll_iter_next(iter, (void **)&conn)){
-            ICHK(LWARN, r, ll_rem(n->conn, ng));
-            free(ng);
-        }
-        ICHK(LWARN, r, ll_free(n->conn));
-        if(r) fail++;
-
-        ll_iter_free(iter);
-        */
-
-        printf("!! freeing n->conn %p\n", n->conn);
         ICHK(LWARN, r, ll_free(n->conn));
         if(r) fail++;
     }
 
     if(n->grp_conns){
-        iter = ll_iter_init(n->grp_conns);
-
-        while(!ll_iter_next(iter, (void **)&ng)){
-            ICHK(LWARN, r, ll_rem(n->grp_conns, ng));
-            free(ng);
-        }
         ICHK(LWARN, r, ll_free(n->grp_conns));
         if(r) fail++;
-
-        ll_iter_free(iter);
-
     }
 
     if(n->rx_pkts){
@@ -262,6 +263,8 @@ int node_conn(struct nn_node *n, struct nn_conn *cn)
 {
     int r = 1;
 
+    node_lock(n);
+
     ICHK(LWARN, r, ll_add_front(n->conn, (void **)&cn));
     if(r) goto err;
 
@@ -269,6 +272,7 @@ int node_conn(struct nn_node *n, struct nn_conn *cn)
     if(r) goto err;
 
 err:
+    node_unlock(n);
     return r;
 }
 
@@ -278,6 +282,8 @@ int node_unconn(struct nn_node *n, struct nn_conn *cn)
 
     node_isok(n);
 
+    node_lock(n);
+
     ICHK(LWARN, r, ll_rem(n->conn, cn));
     if(r) goto err;
 
@@ -285,34 +291,60 @@ int node_unconn(struct nn_node *n, struct nn_conn *cn)
     if(r) goto err;
 
 err:
+    node_unlock(n);
     return r;
 }
 
 
-int node_join_grp(struct nn_node *n, struct nn_grp *g)
+struct nn_grp_rel *node_get_grp_rel(struct nn_node *n, struct nn_grp *g)
 {
-    int r = 1;
-    struct nn_node_grp *eg;
+    struct nn_grp_rel *_grp_rel = NULL;
 
-    PCHK(LWARN, eg, malloc(sizeof(*eg)));
-    if(!eg){
-        goto err;
+    NODE_GRP_REL_ITER_PRE
+
+    if(_grp_rel_get_grp(grp_rel) == g){
+        done = 1;
+        _grp_rel = grp_rel;
     }
 
-    eg->grp = g;
-    ICHK(LWARN, r, ll_add_front(n->grp_conns, (void **)&eg));
+    NODE_GRP_REL_ITER_POST
+
+    return _grp_rel;
+}
+
+int node_join_grp(struct nn_node *n, struct nn_grp_rel *grp_rel)
+{
+    int r = 1;
+
+    node_lock(n);
+
+    ICHK(LWARN, r, ll_add_front(n->grp_conns, (void **)&grp_rel));
+    if(r) goto err;
+
+    ICHK(LWARN, r, _grp_rel_set_node(grp_rel, n));
+    if(r) goto err;
 
 err:
+    node_unlock(n);
     return r;
 }
 
-int node_quit_grp(struct nn_node *n, struct nn_grp *g)
+int node_quit_grp(struct nn_node *n, struct nn_grp_rel *grp_rel)
 {
     int r;
 
     node_isok(n);
 
-    ICHK(LWARN, r, ll_rem(n->grp_conns, g));
+    node_lock(n);
+
+    ICHK(LWARN, r, ll_rem(n->grp_conns, grp_rel));
+    if(r) goto err;
+
+    ICHK(LWARN, r, _grp_rel_free_node(grp_rel));
+    if(r) goto err;
+
+err:
+    node_unlock(n);
     return 0;
 }
 
@@ -600,6 +632,7 @@ static void *node_thread(void *arg)
         if(state == NN_STATE_SHUTDOWN){
             thread_join(tid, NULL);
             node_conn_free_all(n);
+            node_grp_rel_free_all(n);
             node_set_state(n, NN_STATE_FINISHED);
             return NULL;
         }
@@ -634,6 +667,24 @@ static int node_conn_free_all(struct nn_node *n)
 
 }
 
+/* free all node sides of all n->conn's and g->... */
+static int node_grp_rel_free_all(struct nn_node *n)
+{
+    int r = 0;
+    struct node_grp_rel_iter *iter;
+    struct nn_grp_rel *grp_rel;
+
+    iter = node_grp_rel_iter_init(n);
+    /* remove the grp_rel's to grp's */
+    while(!node_grp_rel_iter_next(iter, &grp_rel)){
+        r = _grp_rel_free_node(grp_rel);
+    }
+    node_grp_rel_iter_free(iter);
+
+    return r;
+
+}
+
 
 static void *start_user_thread(void *arg)
 {
@@ -662,6 +713,21 @@ static int node_conn_iter_free(struct node_conn_iter *iter)
 static int node_conn_iter_next(struct node_conn_iter *iter, struct nn_conn **cn)
 {
     return ll_iter_next((struct ll_iter *)iter, (void **)cn);
+}
+
+static struct node_grp_rel_iter *node_grp_rel_iter_init(struct nn_node *n)
+{
+    return (struct node_grp_rel_iter *)ll_iter_init(n->grp_conns);
+}
+
+static int node_grp_rel_iter_free(struct node_grp_rel_iter *iter)
+{
+    return ll_iter_free((struct ll_iter *)iter);
+}
+
+static int node_grp_rel_iter_next(struct node_grp_rel_iter *iter, struct nn_grp_rel **grp_rel)
+{
+    return ll_iter_next((struct ll_iter *)iter, (void **)grp_rel);
 }
 
 

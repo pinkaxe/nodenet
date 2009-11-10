@@ -11,8 +11,9 @@ int node_conn(struct nn_node *n, struct nn_conn *cn);
 int node_unconn(struct nn_node *n, struct nn_conn *cn);
 
 /* grp memb. */
-int node_join_grp(struct nn_node *n, struct nn_grp *g);
-int node_quit_grp(struct nn_node *n, struct nn_grp *g);
+int node_join_grp(struct nn_node *n, struct nn_grp_rel *grp_rel);
+int node_quit_grp(struct nn_node *n, struct nn_grp_rel *grp_rel);
+struct nn_grp_rel *node_get_grp_rel(struct nn_node *n, struct nn_grp *g);
 
 /* getters */
 int node_get_type(struct nn_node *n);

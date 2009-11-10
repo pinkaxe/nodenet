@@ -18,6 +18,7 @@
 #include "node_net/node.h"
 #include "node_net/conn.h"
 #include "node_net/grp.h"
+#include "node_net/grp_rel.h"
 
 #define ok(x){ \
     assert(x); \
@@ -118,7 +119,7 @@ void *thread1(struct nn_node *n, void *pdata)
 
 void *thread0(struct nn_node *n, void *pdata)
 {
-    struct dpool *dpool = pdata;
+    //struct dpool *dpool = pdata;
     struct nn_pkt *pkt;
     struct buf *buf;
     enum nn_state state;
@@ -176,9 +177,11 @@ int main(int argc, char **argv)
         n[0] = node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
                 thread1, dpool);
         conn_conn(n[0], rt[0]);
+        grp_join(n[0], g[0]);
         n[1] = node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
                 thread0, dpool);
         conn_conn(n[1], rt[0]);
+        grp_join(n[1], g[0]);
        // for(i=1; i < 1; i++){
        //     n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
        //             thread0, dpool);
@@ -231,9 +234,9 @@ int main(int argc, char **argv)
             node_set_state(n[i], NN_STATE_SHUTDOWN);
         }
 
-        grp_free(g[0]);
-        grp_free(g[1]);
-        grp_free(g[2]);
+        for(i=0; i < GRPS_NO; i++){
+            grp_free(g[i]);
+        }
 
         router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
