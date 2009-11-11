@@ -49,13 +49,11 @@ int grp_quit(struct nn_node *n, struct nn_grp *grp)
     if(grp_rel){
         ICHK(LWARN, r, grp_rem_grp_rel(grp, grp_rel));
         if(r){
-            free(grp_rel);
             goto err;
         }
 
         ICHK(LWARN, r, node_quit_grp(n, grp_rel));
         if(r){
-            free(grp_rel);
             goto err;
         }
     }

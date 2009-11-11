@@ -380,31 +380,46 @@ static int router_conn_free_all(struct nn_router *rt)
 static int router_tx_pkts(struct nn_router *rt)
 {
     struct nn_pkt *pkt;
+    struct nn_grp *g;
+    int dest_no;
+    int c;
+    int send_to;
 
-    int z = 0;
     /* pick pkt's up from router and move to conn */
     while(!router_get_rx_pkt(rt, &pkt)){
         assert(pkt);
 
-        /* ROUTING */
+        g = pkt_get_dest(pkt);
+        dest_no = pkt_get_dest_no(pkt);
+        c = 0;
+        send_to = 0;
+
+        /* ROUTING: IMPROVE:!! */
 
         ROUTER_CONN_ITER_PRE
 
-        /* FIXME: sending to all */
-        pkt_inc_refcnt(pkt, 1);
-        while(_conn_router_tx_pkt(cn, pkt)){
-            _conn_unlock(cn);
-            usleep(10000);
-            _conn_lock(cn);
-        }
-        if(z++ % 3){
-            done = 1;
+        if(!grp_is_memb(g, _conn_get_node(cn))){
+            pkt_inc_refcnt(pkt, 1);
+            while(_conn_router_tx_pkt(cn, pkt)){
+                _conn_unlock(cn);
+                usleep(10000);
+                _conn_lock(cn);
+            }
+            send_to++;
+            if(dest_no && ++c >= dest_no){
+                done = 1;
+            }
         }
 
         ROUTER_CONN_ITER_POST
 
-        /* free for the orignal packet */
-        pkt_free(pkt);
+        if(!send_to){
+            /* not send, add back */
+            router_add_rx_pkt(rt, &pkt);
+        }else{
+            /* free for the orignal packet */
+            pkt_free(pkt);
+        }
 
     }
 

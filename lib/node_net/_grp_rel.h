@@ -10,6 +10,9 @@ int _grp_rel_set_node(struct nn_grp_rel *grp_rel, struct nn_node *n);
 int _grp_rel_set_grp(struct nn_grp_rel *grp_rel, struct nn_grp *rt);
 //int grp_rel_set_state(struct nn_grp_rel *grp_rel, enum nn_grp_rel_state state);
 
+int _grp_rel_set_times(struct nn_grp_rel *grp_rel, int times);
+int _grp_rel_dec_times(struct nn_grp_rel *grp_rel, int dec);
+
 struct nn_node *_grp_rel_get_node(struct nn_grp_rel *grp_rel);
 struct nn_grp *_grp_rel_get_grp(struct nn_grp_rel *grp_rel);
 int _grp_rel_get_state(struct nn_grp_rel *grp_rel);

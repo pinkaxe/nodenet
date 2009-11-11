@@ -16,6 +16,8 @@
 
 struct nn_pkt {
     struct nn_node *src;
+    struct nn_grp *dest;
+    int dest_no;
     void *data;
     int data_len;
     void *pdata;
@@ -30,9 +32,8 @@ struct nn_pkt {
 static int pkt_lock(struct nn_pkt *pkt);
 static int pkt_unlock(struct nn_pkt *pkt);
 
-struct nn_pkt *pkt_init(struct nn_node *src, void *data, int data_len, void
-        *pdata, int sendto_no, int sendto_type, int sendto_id, buf_free_cb_f
-        buf_free_cb)
+struct nn_pkt *pkt_init(struct nn_node *src, struct nn_grp *dest, int dest_no,
+        void *data, int data_len, void *pdata, buf_free_cb_f buf_free_cb)
 {
     struct nn_pkt *pkt;
     struct nn_pkt_conf *conf;
@@ -42,6 +43,8 @@ struct nn_pkt *pkt_init(struct nn_node *src, void *data, int data_len, void
         goto err;
     }
     pkt->src = src;
+    pkt->dest = dest;
+    pkt->dest_no = dest_no;
     pkt->data = data;
     pkt->data_len = data_len;
     pkt->pdata = pdata;
@@ -56,9 +59,7 @@ struct nn_pkt *pkt_init(struct nn_node *src, void *data, int data_len, void
         pkt = NULL;
         goto err;
     }
-    conf->sendto_no = sendto_no;
-    conf->sendto_type = sendto_type;
-    conf->sendto_id = sendto_id;
+    //conf->sendto_no = sendto_no;
 
     pkt->conf = conf;
 
@@ -83,6 +84,7 @@ struct nn_pkt *pkt_clone(struct nn_pkt *pkt)
         goto err;
     }
     clone->src = pkt->src;
+    clone->dest = pkt->dest;
     clone->data = pkt->data;
     clone->data_len = pkt->data_len;
     clone->pdata = pkt->pdata;
@@ -97,8 +99,8 @@ struct nn_pkt *pkt_clone(struct nn_pkt *pkt)
         goto err;
     }
     conf->sendto_no = pkt->conf->sendto_no;
-    conf->sendto_type = pkt->conf->sendto_type;
-    conf->sendto_id = pkt->conf->sendto_id;
+    //conf->sendto_type = pkt->conf->sendto_type;
+   // conf->sendto_id = pkt->conf->sendto_id;
 
     clone->conf = conf;
 
@@ -154,6 +156,32 @@ struct nn_node *pkt_get_src(struct nn_pkt *pkt)
     pkt_unlock(pkt);
 
     return n;
+}
+
+struct nn_grp *pkt_get_dest(struct nn_pkt *pkt)
+{
+    struct nn_grp *g;
+
+    pkt_lock(pkt);
+
+    g = pkt->dest;
+
+    pkt_unlock(pkt);
+
+    return g;
+}
+
+int pkt_get_dest_no(struct nn_pkt *pkt)
+{
+    int r;
+
+    pkt_lock(pkt);
+
+    r = pkt->dest_no;
+
+    pkt_unlock(pkt);
+
+    return r;
 }
 
 void *pkt_get_data(struct nn_pkt *pkt)

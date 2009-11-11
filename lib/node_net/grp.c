@@ -27,12 +27,16 @@ struct nn_grp {
     int id;
     int grp_rel_no;
     mutex_t mutex;
+    int attr;
 };
 
 static struct grp_grp_rel_iter *grp_grp_rel_iter_init(struct nn_grp *g);
 static int grp_grp_rel_iter_free(struct grp_grp_rel_iter *iter);
 static int grp_grp_rel_iter_next(struct grp_grp_rel_iter *iter, struct
         nn_grp_rel **grp_rel);
+
+static int grp_lock(struct nn_grp *g);
+static int grp_unlock(struct nn_grp *g);
 
 
 #define GRP_GRP_REL_ITER_PRE \
@@ -95,14 +99,6 @@ int grp_free(struct nn_grp *g)
 
     grp_isok(g);
 
-#if 0
-    GRP_GRP_REL_ITER_PRE
-
-    ICHK(LWARN, r, ll_rem(g->grp_rel, _grp_rel));
-
-    GRP_GRP_REL_ITER_POST
-#endif
-
     if(g->grp_rel){
         GRP_GRP_REL_ITER_PRE
 
@@ -121,41 +117,32 @@ int grp_free(struct nn_grp *g)
     mutex_destroy(&g->mutex);
     free(g);
 
-        /*
-    mutex_lock(&g->mutex);
-
-    iter = ll_iter_init(g->grp_rel);
-    if(g){
-        if(g->grp_rel){
-            // rem and free first
-            while(!ll_iter_next(iter, (void **)&m)){
-                ICHK(LWARN, r, ll_rem(g->grp_rel, m));
-                free(m);
-            }
-            ICHK(LWARN, r, ll_free(g->grp_rel));
-        }
-        ll_iter_free(iter);
-
-        mutex_unlock(&g->mutex);
-        mutex_destroy(&g->mutex);
-        free(g);
-    }
-    */
-
     return 0;
 }
 
 
-int grp_lock(struct nn_grp *g)
+int grp_set_attr(struct nn_grp *g, int attr)
 {
-    mutex_lock(&g->mutex);
+    grp_lock(g);
+
+    g->attr = attr;
+
+    grp_unlock(g);
+
     return 0;
 }
 
-int grp_unlock(struct nn_grp *g)
+int grp_get_attr(struct nn_grp *g)
 {
-    mutex_unlock(&g->mutex);
-    return 0;
+    int r;
+
+    grp_lock(g);
+
+    r = g->attr;
+
+    grp_unlock(g);
+
+    return r;
 }
 
 int grp_add_grp_rel(struct nn_grp *g, struct nn_grp_rel *grp_rel)
@@ -244,6 +231,53 @@ int grp_isgrp_rel(struct nn_grp *g, struct nn_grp_rel *grp_rel)
     return r;
 }
 
+int grp_is_memb(struct nn_grp *g, struct nn_node *n)
+{
+    int r = 1;
+    struct nn_grp_rel *grp_rel;
+    struct ll_iter *iter;
+
+    grp_isok(g);
+
+
+    iter = ll_iter_init(g->grp_rel);
+    while(!ll_iter_next(iter, (void **)&grp_rel)){
+        if(_grp_rel_get_node(grp_rel) == n){
+            /* if buffers limited */
+            if(_grp_rel_dec_times(grp_rel, 1) == -1){
+                /* in group but no more accepting from this group */
+                continue;
+            }
+            r = 0;
+            break;
+        }
+    }
+    ll_iter_free(iter);
+
+    return r;
+}
+
+
+#if 0
+int grp_route(struct nn_grp *g, struct nn_pkt *pkt)
+{
+
+    GRP_GRP_REL_ITER_PRE
+
+    pkt_inc_refcnt(pkt, 1);
+    while(_conn_router_tx_pkt(cn, pkt)){
+        _conn_unlock(cn);
+        usleep(10000);
+        _conn_lock(cn);
+    }
+    if(dest_no && ++c >= dest_no){
+        done = 1;
+    }
+
+    GRP_GRP_REL_ITER_POST
+}
+#endif
+
 static struct grp_grp_rel_iter *grp_grp_rel_iter_init(struct nn_grp *g)
 {
     return (struct grp_grp_rel_iter *)ll_iter_init(g->grp_rel);
@@ -258,4 +292,16 @@ static int grp_grp_rel_iter_next(struct grp_grp_rel_iter *iter, struct
         nn_grp_rel **grp_rel)
 {
     return ll_iter_next((struct ll_iter *)iter, (void **)grp_rel);
+}
+
+static int grp_lock(struct nn_grp *g)
+{
+    mutex_lock(&g->mutex);
+    return 0;
+}
+
+static int grp_unlock(struct nn_grp *g)
+{
+    mutex_unlock(&g->mutex);
+    return 0;
 }

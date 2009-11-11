@@ -27,6 +27,8 @@ struct nn_grp_rel {
     struct link *link; /* keep link info, grp, n, state */
     mutex_t mutex;
     cond_t cond; /* if anything changes */
+    /* how many times things can be sent to this node through this group */
+    int times; /* -1 = not times left, -2 = unlimited */
 };
 
 
@@ -47,6 +49,7 @@ struct nn_grp_rel *_grp_rel_init()
         goto err;
     }
     grp_rel->link = l;
+    grp_rel->times = -2;
 
     mutex_init(&grp_rel->mutex, NULL);
 
@@ -127,6 +130,23 @@ int _grp_rel_get_state(struct nn_grp_rel *grp_rel)
     return link_get_state(grp_rel->link);
 }
 
+int _grp_rel_set_times(struct nn_grp_rel *grp_rel, int times)
+{
+    grp_rel->times = times;
+    return 0;
+}
+
+int _grp_rel_dec_times(struct nn_grp_rel *grp_rel, int dec)
+{
+    if(grp_rel->times != -2){
+        grp_rel->times -= dec;
+        if(grp_rel->times < -1){
+            grp_rel->times = -1;
+        }
+    }
+
+    return grp_rel->times;
+}
 
 int _grp_rel_lock(struct nn_grp_rel *grp_rel)
 {

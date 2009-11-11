@@ -193,12 +193,10 @@ err:
 
 int node_free(struct nn_node *n)
 {
-    struct ll_iter *iter;
     int fail = 0;
     int r = 0;
     struct timespec ts = {0, 0};
 
-    struct nn_grp_rel *grp_rel;
     struct nn_pkt *pkt;
 
     node_isok(n);
@@ -348,6 +346,20 @@ err:
     return 0;
 }
 
+int node_allow_grp(struct nn_node *n, struct nn_grp *g, int times)
+{
+    NODE_GRP_REL_ITER_PRE
+
+    if(_grp_rel_get_grp(grp_rel) == g){
+        _grp_rel_set_times(grp_rel, times);
+        done = 1;
+    }
+
+    NODE_GRP_REL_ITER_POST
+
+    return 0;
+}
+
 
 int node_get_type(struct nn_node *n)
 {
@@ -414,9 +426,8 @@ int node_rx_pkts(struct nn_node *n)
     if(!_conn_node_rx_pkt(cn, &pkt)){
         assert(pkt);
 
-        // FIXME: sending to all nodes
         ICHK(LWARN, r, que_add(n->rx_pkts, pkt));
-        L(LDEBUG, "+ node_add_rx_pkt %p(%d)", pkt, r);
+        L(LDEBUG, "+ node_rx_pkt %p(%d)", pkt, r);
     }
 
     NODE_CONN_ITER_POST
@@ -546,17 +557,9 @@ int node_print(struct nn_node *n)
 }
 
 
-int node_tx(struct nn_node *n, void *data, int data_len, void *pdata, int
-        sendto_no, int sendto_type, int sendto_id, buf_free_cb_f buf_free_cb)
+int node_tx(struct nn_node *n, struct nn_pkt *pkt)
 {
-    struct nn_pkt *pkt;
     int r = 1;
-
-
-    /* build packet */
-    PCHK(LWARN, pkt, pkt_init(n, data, data_len, pdata, 1, NN_SENDTO_ALL, 0,
-                buf_free_cb));
-    assert(pkt);
 
     node_lock(n);
 

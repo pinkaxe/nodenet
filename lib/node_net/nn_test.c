@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <pthread.h>
+#include <string.h>
 
 #include "util/log.h"
 #include "util/dpool.h"
@@ -28,11 +29,20 @@ struct buf {
     int i;
 };
 
+#define GRPS_NO 3
+struct nn_grp *g[GRPS_NO];
+
 
 static int dpool_free_cb(void *dpool, void *dpool_buf)
 {
     printf("!!!!!!!!!!dpool_free_cb\n");
     return dpool_ret_buf(dpool, dpool_buf);
+}
+
+static int free_cb(void *none, void *buf)
+{
+    free(buf);
+    return 0;
 }
 
 void *thread1(struct nn_node *n, void *pdata)
@@ -44,6 +54,7 @@ void *thread1(struct nn_node *n, void *pdata)
     struct nn_pkt *pkt;
     enum nn_state state;
 
+return NULL;
 #if 0
         /* build internal packet */
     for(;;){
@@ -83,8 +94,12 @@ void *thread1(struct nn_node *n, void *pdata)
             /* set buf */
             buf->i = i++;
 
-            while(node_tx(n, dpool_buf, sizeof(*dpool_buf), dpool, 1,
-                        NN_SENDTO_ALL, 0, dpool_free_cb)){
+            /* build packet */
+            PCHK(LWARN, pkt, pkt_init(n, g[0], 1, dpool_buf, sizeof(*dpool_buf),
+                        dpool, dpool_free_cb));
+            assert(pkt);
+
+            while(node_tx(n, pkt)){
                 usleep(10000);
             }
         }
@@ -123,6 +138,7 @@ void *thread0(struct nn_node *n, void *pdata)
     struct nn_pkt *pkt;
     struct buf *buf;
     enum nn_state state;
+return NULL;
 
     for(;;){
         /* check state */
@@ -148,14 +164,209 @@ void *thread0(struct nn_node *n, void *pdata)
     return NULL;
 }
 
-#define GRPS_NO 3
+#define SOCK_TEST(call) \
+    if((call) == -1){ \
+        L(LERR, "%s:%d:%s Error: %s\n", \
+            __FILE__, __LINE__, #call, strerror(errno)); \
+    }
+
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<netdb.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
+
+
+
+void *server(struct nn_node *n, void *pdata)
+{
+    struct dpool *dpool = pdata;
+    struct dpool_buf *dpool_buf;
+    struct buf *buf;
+    struct nn_pkt *pkt;
+    enum nn_state state;
+    int r;
+
+
+    int port = 4848;
+    int max = 10;
+    int tr = 1;
+    struct   sockaddr_in sin;
+    struct   sockaddr_in cin;
+    socklen_t addrlen;
+    int fd, cfd;
+
+    /* start listening server */
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_port = htons(port);
+
+    SOCK_TEST(fd = socket(AF_INET, SOCK_STREAM, 0));
+    SOCK_TEST(bind(fd, (struct sockaddr *) &sin, sizeof(sin)));
+    SOCK_TEST(setsockopt(fd, SOL_SOCKET,SO_REUSEADDR, &tr, sizeof(int)));
+    SOCK_TEST(listen(fd, max) == -1);
+
+    int flags;
+    if (-1 == (flags = fcntl(fd, F_GETFL, 0))){
+        flags = 0;
+    }
+    ICHK(LWARN, r, fcntl(fd, F_SETFL, flags | O_NONBLOCK));
+
+    addrlen = sizeof(cin);
+
+    for(;;){
+
+        state = node_do_state(n);
+        if(state == NN_STATE_SHUTDOWN){
+            // cleanup if need to
+            close(fd);
+            return NULL;
+        }
+
+        cfd = accept(fd, (struct sockaddr *)  &cin, &addrlen);
+        if(cfd == -1){
+            if(errno == EAGAIN || errno == EWOULDBLOCK){
+                // nothing available
+            }
+        }else{
+            L(LINFO, "Connection from: %s:%d",
+                    inet_ntoa(cin.sin_addr),ntohs(cin.sin_port));
+
+            /* send fd to worker thread */
+            if((dpool_buf=dpool_get_buf(dpool))){
+                /* */
+                //buf = dpool_buf_get_datap(dpool_buf);
+                buf = dpool_buf->data;
+                /* set buf */
+                buf->i = cfd;
+
+
+                /* build packet */
+                PCHK(LWARN, pkt, pkt_init(n, g[0], 1, dpool_buf, sizeof(*dpool_buf),
+                            dpool, dpool_free_cb));
+                assert(pkt);
+
+                if(node_tx(n, pkt)){
+                    // fail
+                    pkt_free(pkt);
+                    close(fd);
+                }
+            }
+        }
+
+
+        sched_yield();
+    }
+
+    return NULL;
+}
+
+void *connection(struct nn_node *n, void *pdata)
+{
+    //struct dpool *dpool = pdata;
+    struct dpool_buf *dpool_buf;
+    enum nn_state state;
+    size_t c;
+    struct nn_pkt *pkt;
+    int buf_len;
+    struct buf *buf_req;
+    int fd = 0;
+    unsigned char *buf_in = NULL;
+    unsigned char *buf_out = NULL;
+
+
+    for(;;){
+
+        /* only allow one from group */
+        node_allow_grp(n, g[0], 1);
+        node_allow_grp(n, g[1], 0);
+
+        if(!node_get_rx_pkt(n, &pkt)){
+
+            node_allow_grp(n, g[1], -2);
+
+            printf("!!! ok\n");
+            dpool_buf = pkt_get_data(pkt);
+            buf_req = dpool_buf->data;
+            fd = buf_req->i;
+            L(LINFO, "Starting fd=%d", fd);
+            pkt_free(pkt);
+            //grp_quit(n, g[0]);
+
+            int flags;
+            int r;
+            if (-1 == (flags = fcntl(fd, F_GETFL, 0))){
+                flags = 0;
+            }
+            ICHK(LWARN, r, fcntl(fd, F_SETFL, flags | O_NONBLOCK));
+
+            for(;;){
+
+                state = node_do_state(n);
+                if(state == NN_STATE_SHUTDOWN){
+                    // cleanup if need to
+                    close(fd);
+                    if(buf_in) free(buf_in);
+                    return NULL;
+                }
+
+                if(!buf_in){
+                    buf_in = malloc(1024);
+                }
+
+                if((c=read(fd, buf_in, 1024)) && c != -1){
+                    /* */
+                    //buf_len = dpool_buf->data_len;
+                    buf_len = c;
+                    buf_in[c] = '\0';
+
+                    printf("!!!!! tx %s(%d)\n", buf_in, c);
+                    if(!strncmp(buf_in, "quit", 4)){
+                        break;
+                    }
+
+                    PCHK(LWARN, pkt, pkt_init(n, g[1], 0, buf_in, buf_len, NULL, free_cb));
+                    assert(pkt);
+
+                    while(node_tx(n, pkt)){
+                        usleep(10000);
+                    }
+                    buf_in = NULL;
+                }
+
+                /* receive packets and write to client */
+                while(!node_get_rx_pkt(n, &pkt)){
+                    //struct dpool_buf *dpool_buf = pkt_get_data(pkt);
+                    buf_out = pkt_get_data(pkt);
+                    printf("!!!! writing: %s\n", buf_out);
+                    //sleep(5);
+                    write(fd, buf_out, strlen(buf_out));
+                    /* when done call pkt_free */
+                    //dpool_ret_buf(dpool, dpool_buf);
+                    pkt_free(pkt);
+                }
+
+                sched_yield();
+            }
+
+            close(fd);
+            fd = 0;
+        }
+    }
+
+    return NULL;
+}
+
 
 int main(int argc, char **argv)
 {
     int i;
     struct nn_router *rt[1];
     struct nn_node *n[1024];
-    struct nn_grp *g[GRPS_NO];
     //struct nn_pkt *pkt;
     struct dpool *dpool;
     struct buf *buf;
@@ -173,15 +384,38 @@ int main(int argc, char **argv)
             ok(g[i]);
         }
 
+        grp_set_attr(g[0], 1);
+
         /* create input nodes */
+/*
         n[0] = node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
                 thread1, dpool);
         conn_conn(n[0], rt[0]);
         grp_join(n[0], g[0]);
+
         n[1] = node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
                 thread0, dpool);
         conn_conn(n[1], rt[0]);
         grp_join(n[1], g[0]);
+*/
+
+        n[0] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
+        conn_conn(n[0], rt[0]);
+        grp_join(n[0], g[0]);
+        grp_join(n[0], g[1]);
+
+        n[1] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
+        conn_conn(n[1], rt[0]);
+        grp_join(n[1], g[0]);
+        grp_join(n[1], g[1]);
+
+        n[2] = node_init(NN_NODE_TYPE_THREAD, 0, server, dpool);
+        conn_conn(n[2], rt[0]);
+        grp_join(n[2], g[2]);
+
+        //conn_conn(n[1], rt[0]);
+        //grp_join(n[1], g[0]);
+
        // for(i=1; i < 1; i++){
        //     n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
        //             thread0, dpool);
@@ -192,7 +426,7 @@ int main(int argc, char **argv)
        // }
 
         /* set everthing state to running */
-        for(i=0; i < 2; i++){
+        for(i=0; i < 3; i++){
             node_set_state(n[i], NN_STATE_RUNNING);
         }
         router_set_state(rt[0], NN_STATE_RUNNING);
@@ -211,24 +445,24 @@ int main(int argc, char **argv)
         }
         */
         //while(1){
-            //sleep(2);
+            //sleep(3);
         //}
-            sleep(3);
+            sleep(10000);
 
         /* pause everything */
-        for(i=0; i < 2; i++){
+        for(i=0; i < 3; i++){
             node_set_state(n[i], NN_STATE_PAUSED);
         }
         router_set_state(rt[0], NN_STATE_PAUSED);
 
         /* run everything */
-        for(i=0; i < 2; i++){
+        for(i=0; i < 3; i++){
             node_set_state(n[i], NN_STATE_RUNNING);
         }
         router_set_state(rt[0], NN_STATE_RUNNING);
 
 
-        for(i=0; i < 2; i++){
+        for(i=0; i < 3; i++){
             /* unconn not needed but ok */
             //conn_unconn(n[i], rt[0]);
             node_set_state(n[i], NN_STATE_SHUTDOWN);
@@ -240,7 +474,7 @@ int main(int argc, char **argv)
 
         router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
-        for(i=0; i < 2; i++){
+        for(i=0; i < 3; i++){
             node_clean(n[i]);
         }
 
