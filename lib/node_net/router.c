@@ -23,7 +23,7 @@
  * rt != NULL when this is called, afterwards cn for the
  matching each matching node is set and can be used */
 
-#define ROUTER_GRP_ITER_PRE \
+#define ROUTER_GRP_ITER_PRE(rt) \
     { \
     assert(rt); \
     int done = 0; \
@@ -33,13 +33,13 @@
     iter = router_grp_iter_init(rt); \
     while(!done && !router_grp_iter_next(iter, &g)){ \
 
-#define ROUTER_GRP_ITER_POST \
+#define ROUTER_GRP_ITER_POST(rt) \
     } \
     router_grp_iter_free(iter); \
     router_unlock(rt); \
     }
 
-#define GRP_CONN_ITER_PRE \
+#define GRP_CONN_ITER_PRE(g) \
     { \
     assert(g); \
     int done = 0; \
@@ -48,21 +48,16 @@
     iter = grp_conn_iter_init(g); \
     while(!done && !grp_conn_iter_next(iter, &cn)){ \
 
-#define GRP_CONN_ITER_POST \
+#define GRP_CONN_ITER_POST(g) \
     } \
     grp_conn_iter_free(iter); \
     }
 
-        //_conn_lock(cn);
-       // _conn_unlock(cn); \
 
 /* each group has it's own list of connections and rx/tx bufs */
 struct nn_grp {
     int id;
     struct ll *conn; /* all the conn's */
-
-    struct que *rx_pkts;   /* pkt's coming in */
-    struct que *tx_pkts;   /* pkt's going out */
 
     //mutex_t mutex;
     //cond_t cond;
@@ -77,6 +72,9 @@ struct nn_grp {
 struct nn_router{
     struct ll *grp;
     enum nn_state state;
+
+    struct que *rx_pkts;   /* pkt's coming in */
+    struct que *tx_pkts;   /* pkt's going out */
 
     mutex_t mutex;
     cond_t cond;
@@ -125,6 +123,7 @@ int router_isvalid(struct nn_router *rt)
 
 struct nn_router *router_init()
 {
+    int r;
     struct nn_router *rt;
     thread_t tid;
 
@@ -139,6 +138,19 @@ struct nn_router *router_init()
         rt = NULL;
         goto err;
     }
+
+    PCHK(LWARN, rt->rx_pkts, que_init(100));
+    if(!(rt->rx_pkts)){
+        PCHK(LWARN, r, router_free(rt));
+        goto err;
+    }
+
+    PCHK(LWARN, rt->tx_pkts, que_init(100));
+    if(!(rt->tx_pkts)){
+        PCHK(LWARN, r, router_free(rt));
+        goto err;
+    }
+
 
     // FIXME: err checking
     mutex_init(&rt->mutex, NULL);
@@ -159,12 +171,32 @@ err:
 int router_free(struct nn_router *rt)
 {
     int r = 0;
+    struct nn_pkt *pkt;
+    struct timespec ts = {0, 0};
+    int fail;
 
     router_isvalid(rt);
 
     mutex_lock(&rt->mutex);
 
     if(rt->grp){
+
+        if(rt->rx_pkts){
+            while((pkt=que_get(rt->rx_pkts, &ts))){
+                pkt_free(pkt);
+            }
+            ICHK(LWARN, r, que_free(rt->rx_pkts));
+            if(r) fail++;
+        }
+
+        if(rt->tx_pkts){
+            while((pkt=que_get(rt->tx_pkts, &ts))){
+                pkt_free(pkt);
+            }
+            ICHK(LWARN, r, que_free(rt->tx_pkts));
+            if(r) fail++;
+        }
+
 
         ICHK(LWARN, r, ll_free(rt->grp));
     }
@@ -200,18 +232,6 @@ int router_add_grp(struct nn_router *rt, int id)
         goto err;
     }
 
-    PCHK(LWARN, g->rx_pkts, que_init(100));
-    if(!(g->rx_pkts)){
-        PCHK(LWARN, r, router_rem_grp(rt, id));
-        goto err;
-    }
-
-    PCHK(LWARN, g->tx_pkts, que_init(100));
-    if(!(g->tx_pkts)){
-        PCHK(LWARN, r, router_rem_grp(rt, id));
-        goto err;
-    }
-
     /* add newly created grp */
     ICHK(LWARN, r, ll_add_front(rt->grp, (void **)&g));
     if(r){
@@ -233,10 +253,8 @@ int router_rem_grp(struct nn_router *rt, int id)
 {
     int r;
     int fail = -1;
-    struct nn_pkt *pkt;
-    struct timespec ts = {0, 0};
 
-    ROUTER_GRP_ITER_PRE
+    ROUTER_GRP_ITER_PRE(rt);
 
     if(g->id == id){
 
@@ -247,22 +265,6 @@ int router_rem_grp(struct nn_router *rt, int id)
             ICHK(LWARN, r, ll_free(g->conn));
         }
 
-        if(g->rx_pkts){
-            while((pkt=que_get(g->rx_pkts, &ts))){
-                pkt_free(pkt);
-            }
-            ICHK(LWARN, r, que_free(g->rx_pkts));
-            if(r) fail++;
-        }
-
-        if(g->tx_pkts){
-            while((pkt=que_get(g->tx_pkts, &ts))){
-                pkt_free(pkt);
-            }
-            ICHK(LWARN, r, que_free(g->tx_pkts));
-            if(r) fail++;
-        }
-
         if(!fail){
             ICHK(LWARN, r, ll_rem(rt->grp, g));
             if(r) fail++;
@@ -271,7 +273,7 @@ int router_rem_grp(struct nn_router *rt, int id)
         free(g);
     }
 
-    ROUTER_GRP_ITER_POST
+    ROUTER_GRP_ITER_POST(rt);
 
     return fail;
 }
@@ -280,14 +282,14 @@ struct nn_grp *router_get_grp(struct nn_router *rt, int id)
 {
     struct nn_grp *_g = NULL;
 
-    ROUTER_GRP_ITER_PRE
+    ROUTER_GRP_ITER_PRE(rt);
 
     if(g->id == id){
         _g = g;
         done = 1;
     }
 
-    ROUTER_GRP_ITER_POST
+    ROUTER_GRP_ITER_POST(rt);
 
     return _g;
 }
@@ -338,28 +340,24 @@ int router_conn(struct nn_router *rt, int grp_id, struct nn_conn *cn)
 
     router_isvalid(rt);
 
-    ROUTER_GRP_ITER_PRE
+    ROUTER_GRP_ITER_PRE(rt);
 
     if(g->id == grp_id){
 
         fail = 0;
 
-        _conn_lock(cn);
 
         ICHK(LWARN, r, ll_add_front(g->conn, (void **)&cn));
         if(r) fail++;
 
-        ICHK(LWARN, r, _conn_set_router(cn, g));
+        ICHK(LWARN, r, _conn_set_router(cn, g, grp_id));
         if(r) fail++;
-
-        _conn_unlock(cn);
 
         done = 1;
     }
 
-    ROUTER_GRP_ITER_POST
+    ROUTER_GRP_ITER_POST(rt);
 
-    _conn_unlock(cn);
     router_unlock(rt);
 
     return r;
@@ -372,25 +370,22 @@ int router_unconn(struct nn_router *rt, int grp_id, struct nn_conn *cn)
 
     router_isvalid(rt);
 
-    ROUTER_GRP_ITER_PRE
+    ROUTER_GRP_ITER_PRE(rt);
 
     if(g->id == grp_id){
         fail = 0;
 
-        _conn_lock(cn);
 
         ICHK(LWARN, r, ll_rem(g->conn, cn));
         if(r) fail++;
 
         r = _conn_free_router(cn);
 
-        _conn_unlock(cn);
-
         done = 1;
     }
 
 
-    ROUTER_GRP_ITER_POST
+    ROUTER_GRP_ITER_POST(rt);
 
     return r;
 }
@@ -426,24 +421,21 @@ int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
     return 0;
 }
 
+#endif
+
 int router_add_rx_pkt(struct nn_router *rt, struct nn_pkt *pkt)
 {
     int r;
 
     assert(pkt);
 
-    router_lock(rt);
-
     ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
-
-    router_unlock(rt);
 
     L(LDEBUG, "+ router_add_rx_pkt %p(%d)", pkt, r);
 
     return r;
 }
 
-#endif
 
 
 /* pick up pkts coming to router, and router to other node's, main loop */
@@ -491,10 +483,10 @@ again:
         router_unlock(rt);
 
         /* rx packets from conn */
-        //router_rx_pkts(rt);
+        router_rx_pkts(rt);
 
         /* tx packet to conn */
-        //router_tx_pkts(rt);
+        router_tx_pkts(rt);
 
         sched_yield();
 
@@ -511,8 +503,9 @@ static int router_conn_free_all(struct nn_router *rt)
     //struct router_grp_iter *iter;
     //struct nn_conn *cn;
 
-    ROUTER_GRP_ITER_PRE
-    GRP_CONN_ITER_PRE
+    ROUTER_GRP_ITER_PRE(rt);
+
+    GRP_CONN_ITER_PRE(g);
 
     //r = router_unconn(rt, g->id, cn);
 
@@ -521,13 +514,13 @@ static int router_conn_free_all(struct nn_router *rt)
 
     r = _conn_free_router(cn);
 
-    GRP_CONN_ITER_POST
+    GRP_CONN_ITER_POST(g);
 
     router_unlock(rt);
     router_rem_grp(rt, g->id);
     router_lock(rt);
 
-    ROUTER_GRP_ITER_POST
+    ROUTER_GRP_ITER_POST(rt);
 
 
 /*
@@ -540,56 +533,64 @@ static int router_conn_free_all(struct nn_router *rt)
     return fail;
 }
 
-#if 0
 
 static int router_tx_pkts(struct nn_router *rt)
 {
     struct nn_pkt *pkt;
-    struct nn_grp *g;
+    int dest_grp_id;
     int dest_no;
     int c;
     int send_to;
+
 
     /* pick pkt's up from router and move to conn */
     while(!router_get_rx_pkt(rt, &pkt)){
         assert(pkt);
 
-        g = pkt_get_dest(pkt);
+        dest_grp_id = pkt_get_dest_grp_id(pkt);
         dest_no = pkt_get_dest_no(pkt);
         c = 0;
         send_to = 0;
 
         /* ROUTING: IMPROVE:!! */
 
-        router_grp_iter_PRE
+        ROUTER_GRP_ITER_PRE(rt);
 
+        if(g->id == dest_grp_id){
 
-/*
-        if(!grp_is_memb(g, _conn_get_node(cn))){
+            GRP_CONN_ITER_PRE(g);
+
             pkt_inc_refcnt(pkt, 1);
-            while(_conn_router_tx_pkt(cn, pkt)){
-                _conn_unlock(cn);
-                usleep(10000);
-                _conn_lock(cn);
+            if(!_conn_router_tx_pkt(cn, pkt)){
+                send_to++;
+                if(dest_no && ++c >= dest_no){
+                    done = 1;
+                }
+            }else{
+                pkt_inc_refcnt(pkt, -1);
             }
-            send_to++;
-            if(dest_no && ++c >= dest_no){
-                done = 1;
-            }
-        }
-*/
 
-        router_grp_iter_POST
+
+            GRP_CONN_ITER_POST(g);
+
+            done = 1;
+        }
+
+        ROUTER_GRP_ITER_POST(rt);
+        printf("!!! routing 2\n");
+
+        //ROUTER_GRP_ITER_POST
 
         if(!send_to){
             /* not send, add back */
-            router_add_rx_pkt(rt, &pkt);
+            //router_add_rx_pkt(rt, pkt);
         }else{
             /* free for the orignal packet */
             pkt_free(pkt);
         }
 
     }
+
 
     return 0;
 }
@@ -598,28 +599,31 @@ static int router_rx_pkts(struct nn_router *rt)
 {
     struct nn_pkt *pkt;
 
-    router_grp_iter_PRE
+
+    ROUTER_GRP_ITER_PRE(rt);
+    GRP_CONN_ITER_PRE(g);
 
     /* pick pkt's up from router and move to conn */
     if(!_conn_router_rx_pkt(cn, &pkt)){
         assert(pkt);
 
-        _conn_unlock(cn);
-        router_unlock(rt);
+
+        //router_unlock(rt);
         // FIXME: sending to all routers
         //router_grp_iter_PRE
         router_add_rx_pkt(rt, pkt);
 
-        router_lock(rt);
-        _conn_lock(cn);
+        //router_lock(rt);
         //router_grp_iter_POST
     }
 
-    router_grp_iter_POST
+    GRP_CONN_ITER_POST(g);
+    ROUTER_GRP_ITER_POST(rt);
 
     return 0;
 }
 
+#if 0
 static int router_add_tx_pkt(struct nn_router *rt, struct nn_pkt *pkt)
 {
     int r;
@@ -656,17 +660,18 @@ static int router_get_tx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
 
     return r;
 }
+#endif
 
 static int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
 {
     int r = 1;
     struct timespec ts = {0, 0};
 
-    router_lock(rt);
+    //router_lock(rt);
 
     *pkt = que_get(rt->rx_pkts, &ts);
 
-    router_unlock(rt);
+    //router_unlock(rt);
 
     if(*pkt){
         L(LDEBUG, "+ router_get_rx_pkt %p", *pkt);
@@ -675,7 +680,6 @@ static int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
 
     return r;
 }
-#endif
 
 static struct router_grp_iter *router_grp_iter_init(struct nn_router *rt)
 {
@@ -721,9 +725,7 @@ static int router_conn_each(struct nn_router *rt,
 
     iter = router_grp_iter_init(rt);
     while(!router_grp_iter_next(iter, &cn)){
-        _conn_lock(cn);
         r = cb(cn, pkt);
-        _conn_unlock(cn);
         if(r){
             break;
         }

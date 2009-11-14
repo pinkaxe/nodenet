@@ -30,9 +30,13 @@ struct buf {
 };
 
 #define GRPS_NO 3
+
+#define GRP_SERVER 0
+#define GRP_CONN_HANDLERS 1
+#define GRP_MAIN_CHANNEL 2
+
 struct nn_grp *g[GRPS_NO];
 
-#if 0
 
 static int dpool_free_cb(void *dpool, void *dpool_buf)
 {
@@ -55,7 +59,7 @@ void *thread1(struct nn_node *n, void *pdata)
     struct nn_pkt *pkt;
     enum nn_state state;
 
-return NULL;
+
 #if 0
         /* build internal packet */
     for(;;){
@@ -96,7 +100,7 @@ return NULL;
             buf->i = i++;
 
             /* build packet */
-            PCHK(LWARN, pkt, pkt_init(n, g[0], 1, dpool_buf, sizeof(*dpool_buf),
+            PCHK(LWARN, pkt, pkt_init(n, GRP_MAIN_CHANNEL, 1, dpool_buf, sizeof(*dpool_buf),
                         dpool, dpool_free_cb));
             assert(pkt);
 
@@ -245,10 +249,9 @@ void *server(struct nn_node *n, void *pdata)
                 /* set buf */
                 buf->i = cfd;
 
-
                 /* build packet */
-                PCHK(LWARN, pkt, pkt_init(n, g[0], 1, dpool_buf, sizeof(*dpool_buf),
-                            dpool, dpool_free_cb));
+                PCHK(LWARN, pkt, pkt_init(n, GRP_CONN_HANDLERS, 1, dpool_buf,
+                            sizeof(*dpool_buf), dpool, dpool_free_cb));
                 assert(pkt);
 
                 if(node_tx(n, pkt)){
@@ -265,6 +268,7 @@ void *server(struct nn_node *n, void *pdata)
 
     return NULL;
 }
+
 
 void *connection(struct nn_node *n, void *pdata)
 {
@@ -283,90 +287,93 @@ void *connection(struct nn_node *n, void *pdata)
     for(;;){
 
         /* set how many to allow from which group */
-        node_allow_grp(n, g[0], 1);
-        node_allow_grp(n, g[1], 0);
+        node_set_rx_cnt(n, GRP_CONN_HANDLERS, 1); /* get one conn first, get
+                                                     dec each time a buffer is rx */
+        node_set_rx_cnt(n, GRP_MAIN_CHANNEL, 0);
 
-        if(!node_get_rx_pkt(n, &pkt)){
-
-            node_allow_grp(n, g[1], -2);
-
-            printf("!!! ok\n");
-            dpool_buf = pkt_get_data(pkt);
-            buf_req = dpool_buf->data;
-            fd = buf_req->i;
-            L(LINFO, "Starting fd=%d", fd);
-            pkt_free(pkt);
-            //grp_quit(n, g[0]);
-
-            int flags;
-            int r;
-            if (-1 == (flags = fcntl(fd, F_GETFL, 0))){
-                flags = 0;
+        while(node_get_rx_pkt(n, &pkt)){
+            state = node_do_state(n);
+            if(state == NN_STATE_SHUTDOWN){
+                // cleanup if need to
+                return NULL;
             }
-            ICHK(LWARN, r, fcntl(fd, F_SETFL, flags | O_NONBLOCK));
-
-            for(;;){
-
-                state = node_do_state(n);
-                if(state == NN_STATE_SHUTDOWN){
-                    // cleanup if need to
-                    close(fd);
-                    if(buf_in) free(buf_in);
-                    return NULL;
-                }
-
-                if(!buf_in){
-                    buf_in = malloc(1024);
-                }
-
-                if((c=read(fd, buf_in, 1024)) && c != -1){
-                    /* */
-                    //buf_len = dpool_buf->data_len;
-                    buf_len = c;
-                    buf_in[c] = '\0';
-
-                    printf("!!!!! tx %s(%d)\n", buf_in, c);
-                    if(!strncmp(buf_in, "quit", 4)){
-                        break;
-                    }
-
-                    PCHK(LWARN, pkt, pkt_init(n, g[1], 0, buf_in, buf_len,
-                                NULL, free_cb));
-                    assert(pkt);
-
-                    while(node_tx(n, pkt)){
-                        usleep(10000);
-                    }
-                    buf_in = NULL;
-                }
-
-                /* receive packets and write to client */
-                while(!node_get_rx_pkt(n, &pkt)){
-                    //struct dpool_buf *dpool_buf = pkt_get_data(pkt);
-                    buf_out = pkt_get_data(pkt);
-                    printf("!!!! writing: %s\n", buf_out);
-                    write(fd, buf_out, strlen(buf_out));
-                    /* when done call pkt_free */
-                    //dpool_ret_buf(dpool, dpool_buf);
-                    pkt_free(pkt);
-                }
-
-                sched_yield();
-            }
-
-            close(fd);
-            fd = 0;
+            usleep(100000);
         }
+
+        node_set_rx_cnt(n, GRP_MAIN_CHANNEL, -2); /* allow unlimited */
+
+        dpool_buf = pkt_get_data(pkt);
+        buf_req = dpool_buf->data;
+        fd = buf_req->i;
+
+        L(LINFO, "Starting fd=%d", fd);
+        /* don't need the packet anymore */
+        pkt_free(pkt);
+        //grp_quit(n, g[0]);
+
+        int flags;
+        int r;
+        if (-1 == (flags = fcntl(fd, F_GETFL, 0))){
+            flags = 0;
+        }
+        ICHK(LWARN, r, fcntl(fd, F_SETFL, flags | O_NONBLOCK));
+
+        for(;;){
+
+            state = node_do_state(n);
+            if(state == NN_STATE_SHUTDOWN){
+                // cleanup if need to
+                close(fd);
+                if(buf_in) free(buf_in);
+                return NULL;
+            }
+
+            if(!buf_in){
+                buf_in = malloc(1024);
+            }
+
+            if((c=read(fd, buf_in, 1024)) && c != -1){
+                /* */
+                //buf_len = dpool_buf->data_len;
+                buf_len = c;
+                buf_in[c] = '\0';
+
+                printf("!!!!! tx %s(%d)\n", buf_in, c);
+                if(!strncmp(buf_in, "quit", 4)){
+                    break;
+                }
+
+                PCHK(LWARN, pkt, pkt_init(n, GRP_MAIN_CHANNEL, 0, buf_in, buf_len,
+                            NULL, free_cb));
+                assert(pkt);
+
+                while(node_tx(n, pkt)){
+                    usleep(10000);
+                }
+                buf_in = NULL;
+            }
+
+            /* receive packets and write to client */
+            while(!node_get_rx_pkt(n, &pkt)){
+                //struct dpool_buf *dpool_buf = pkt_get_data(pkt);
+                buf_out = pkt_get_data(pkt);
+                printf("!!!! writing: %s\n", buf_out);
+                write(fd, buf_out, strlen(buf_out));
+                /* when done call pkt_free */
+                //dpool_ret_buf(dpool, dpool_buf);
+                pkt_free(pkt);
+            }
+
+            sched_yield();
+        }
+
+        close(fd);
+        fd = 0;
     }
 
     return NULL;
 }
-#endif
 
-void *connection(struct nn_node *n, void *pdata)
-{
-    return 0;
-}
 
 int main(int argc, char **argv)
 {
@@ -389,11 +396,31 @@ int main(int argc, char **argv)
             router_add_grp(rt[0], i);
         }
 
-        n[0] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
-        conn_conn(n[0], rt[0], 1);
+        n[0] = node_init(NN_NODE_TYPE_THREAD, 0, server, dpool);
+        conn_conn(n[0], rt[0], GRP_SERVER);
 
+#define NODE_NO 3
+
+        for(i=1; i < NODE_NO; i++){
+            n[i] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
+            conn_conn(n[i], rt[0], GRP_CONN_HANDLERS);
+            conn_conn(n[i], rt[0], GRP_MAIN_CHANNEL); /* valgrind */
+        }
+
+        for(i=0; i < NODE_NO; i++){
+            node_set_state(n[i], NN_STATE_RUNNING);
+        }
+
+        router_set_state(rt[0], NN_STATE_RUNNING);
+
+        while(1){
+            sleep(5);
+        }
         //conn_unconn(n[0], rt[0], 1);
-        node_set_state(n[0], NN_STATE_SHUTDOWN);
+
+        for(i=0; i < NODE_NO; i++){
+            node_set_state(n[i], NN_STATE_SHUTDOWN);
+        }
 
        // for(i=0; i < GRPS_NO; i++){
        //     router_rem_grp(rt[0], i);
@@ -401,11 +428,16 @@ int main(int argc, char **argv)
 
         router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
-        node_clean(n[0]);
+        for(i=0; i < NODE_NO; i++){
+            node_clean(n[i]);
+        }
+
         router_clean(rt[0]);
 
         dpool_free(dpool);
 
+
+        sched_yield();
 #if 0
         /* create input nodes */
 /*
@@ -505,139 +537,8 @@ int main(int argc, char **argv)
 
         printf("loop done\n");
 #endif
-        usleep(2000);
+        //usleep(2000);
     }
     return 0;
 }
 
-#if 0
-void *worker_thread(struct nn_node *n, void *arg)
-{
-    struct dpool *dpool = pdata;
-    struct dpool_buf *dpool_buf;
-    struct buf *buf;
-    struct nn_pkt *pkt;
-
-    while(!nn_node_get_rx_pkt(n, &pkt)){
-        struct dpool_buf *dpool_buf = pkt_get_data(pkt);
-        buf = dpool_buf->data;
-        L(LINFO, "Got buf->fd=%d", buf->fd);
-        /* when done call pkt_free */
-        close(buf->fd);
-        dpool_ret_buf(dpool, dpool_buf);
-        pkt_free(pkt);
-    }
-    usleep(10000);
-}
-
-void *server_thread(struct nn_node *n, void *arg)
-{
-	struct server_handle *sh;
-	struct   sockaddr_in sin;
-	int tr = 1;
-
-	NULL_TEST(sh = malloc(sizeof *sh));
-	sh->port = port;
-	sh->max = max;
-	sh->tpoolh = thread_pool_init(max, _server_worker);
-	sh->ph = ph;
-
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = INADDR_ANY;
-	sin.sin_port = htons(port);
-
-	SOCK_TEST(sh->fd = socket(AF_INET, SOCK_STREAM, 0));
-	SOCK_TEST(bind(sh->fd, (struct sockaddr *) &sin, sizeof(sin)));
-	SOCK_TEST(setsockopt(sh->fd, SOL_SOCKET,SO_REUSEADDR, &tr, sizeof(int)));
-	SOCK_TEST(listen(sh->fd, max) == -1);
-
-	//PTHREAD_TEST(pthread_create(&tid, NULL, _server_thread, sh));
-    
-	struct   sockaddr_in pin;
-	int 	 cfd;
-	socklen_t addrlen;
-
-	sh = sh_arg;
-
-
-    addrlen = sizeof(pin); 
-
-	for(;;){
-		SOCK_TEST(cfd = accept(sh->fd, 
-			(struct sockaddr *)  &pin, &addrlen)); 
-
-		DLOG2(LOG_INFO, "Login from: %s:%d", 
-			inet_ntoa(pin.sin_addr),ntohs(pin.sin_port));
-
-
-        for(;;){
-            if((dpool_buf=dpool_get_buf(dpool))){
-                /* */
-                //buf = dpool_buf_get_datap(dpool_buf);
-                buf = dpool_buf->data;
-                /* set buf */
-                buf->fd = cfd;
-
-                /* build internal packet */
-                pkt = pkt_init(n, dpool_buf, sizeof(dpool_buf), dpool, 1,
-                        NN_SENDTO_ALL, 0);
-
-                /* add to outgoing tx buffers */
-                while(nn_node_add_tx_pkt(n, pkt)){
-                    usleep(10000);
-                }
-            }
-            if(thread_pool_add_work(sh->tpoolh, workp, _server_conn_res)){	
-                close(workp->fd); 
-                free(workp);
-                workp = NULL;
-            }
-	}
-	return NULL;
-
-	return sh;	
-}
-
-
-void *server(struct nn_node *n, void *pdata)
-{
-    int i = 0;
-    struct dpool *dpool = pdata;
-    struct dpool_buf *dpool_buf;
-    struct buf *buf;
-    struct nn_pkt *pkt;
-
-    for(;;){
-        if((dpool_buf=dpool_get_buf(dpool))){
-            /* */
-            //buf = dpool_buf_get_datap(dpool_buf);
-            buf = dpool_buf->data;
-            /* set buf */
-            buf->i = i++;
-
-            /* build internal packet */
-            pkt = pkt_init(n, dpool_buf, sizeof(dpool_buf), dpool, 1,
-                    NN_SENDTO_ALL, 0);
-
-            /* add to outgoing tx buffers */
-            while(nn_node_add_tx_pkt(n, pkt)){
-                usleep(10000);
-            }
-        }
-        sleep(1);
-
-        while(!nn_node_get_rx_pkt(n, &pkt)){
-            struct dpool_buf *dpool_buf = pkt_get_data(pkt);
-            buf = dpool_buf->data;
-            L(LINFO, "Got buf->i=%d", buf->i);
-            /* when done call pkt_free */
-            dpool_ret_buf(dpool, dpool_buf);
-            pkt_free(pkt);
-        }
-        usleep(10000);
-    }
-
-    return NULL;
-}
-#endif

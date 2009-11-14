@@ -15,6 +15,7 @@
 #include "_grp_rel.h"
 #include "grp.h"
 
+#if 0
 int grp_join(struct nn_node *n, struct nn_grp *grp)
 {
     struct nn_grp_rel *grp_rel;
@@ -63,3 +64,4 @@ err:
 
     return r;
 }
+#endif
