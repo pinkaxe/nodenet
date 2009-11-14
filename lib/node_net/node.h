@@ -23,7 +23,7 @@ int node_get_attr(struct nn_node *n);
 void *node_get_pdatap(struct nn_node *n);
 void *node_get_codep(struct nn_node *n);
 enum nn_state node_get_state(struct nn_node *n);
-struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_router *rt);
+struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_grp *g);
 
 /* setters */
 int node_set_state(struct nn_node *n, enum nn_state state);

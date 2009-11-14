@@ -17,7 +17,7 @@
 	if((ret=(call)) != 0){ \
 		log4(LERR, "%s:%d:%s Error: %s\n", __FILE__, __LINE__, \
 			#call, strerror(ret)); \
-        exit(0); \
+        abort(); \
 	} \
 }
 

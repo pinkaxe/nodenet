@@ -155,6 +155,7 @@ int _conn_free_node(struct nn_conn *cn)
 {
     int r;
 
+    printf("!!! n\n");
     r = link_free_node(cn->link);
     if(r == 1){ 
         cn->link = NULL;
@@ -167,6 +168,8 @@ int _conn_free_node(struct nn_conn *cn)
 int _conn_free_router(struct nn_conn *cn)
 {
     int r;
+
+    printf("!!! r\n");
 
     r = link_free_router(cn->link);
     if(r == 1){
@@ -183,9 +186,9 @@ int _conn_set_node(struct nn_conn *cn, struct nn_node *n)
     return link_set_from(cn->link, n);
 }
 
-int _conn_set_router(struct nn_conn *cn, struct nn_router *rt)
+int _conn_set_router(struct nn_conn *cn, struct nn_grp *g)
 {
-    return link_set_router(cn->link, rt);
+    return link_set_router(cn->link, g);
 }
 
 int _conn_set_state(struct nn_conn *cn, int state)

@@ -16,7 +16,7 @@
 #include "_conn.h"
 #include "conn.h"
 
-int conn_conn(struct nn_node *n, struct nn_router *rt)
+int conn_conn(struct nn_node *n, struct nn_router *rt, int grp_id)
 {
     struct nn_conn *cn;
     int r = 1;
@@ -24,7 +24,7 @@ int conn_conn(struct nn_node *n, struct nn_router *rt)
     PCHK(LCRIT, cn, _conn_init());
     if(!cn) goto err;
 
-    ICHK(LCRIT, r, router_conn(rt, cn));
+    ICHK(LCRIT, r, router_conn(rt, grp_id, cn));
     if(r){
         free(cn);
         goto err;
@@ -40,15 +40,17 @@ err:
     return r;
 }
 
-int conn_unconn(struct nn_node *n, struct nn_router *rt)
+int conn_unconn(struct nn_node *n, struct nn_router *rt, int grp_id)
 {
     int r = 0;
+    struct nn_grp *g;
     struct nn_conn *cn;
 
-    PCHK(LWARN, cn, node_get_router_conn(n, rt));
+    PCHK(LWARN, g, router_get_grp(rt, grp_id));
+    PCHK(LWARN, cn, node_get_router_conn(n, g));
 
     if(cn){
-        ICHK(LWARN, r, router_unconn(rt, cn));
+        ICHK(LWARN, r, router_unconn(rt, grp_id, cn));
         if(r){
             free(cn);
             goto err;
@@ -59,10 +61,11 @@ int conn_unconn(struct nn_node *n, struct nn_router *rt)
             free(cn);
             goto err;
         }
+
+        _conn_free(cn);
     }
 
 err:
-    _conn_free(cn);
 
     return r;
 }

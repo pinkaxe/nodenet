@@ -454,12 +454,12 @@ int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt)
     return r;
 }
 
-struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_router *rt)
+struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_grp *g)
 {
     struct nn_conn *_cn = NULL;
 
     NODE_CONN_ITER_PRE
-    if(_conn_get_router(cn) == rt){
+    if(_conn_get_router(cn) == g){
         done = 1;
         _cn = cn;
     }

@@ -32,6 +32,7 @@ struct buf {
 #define GRPS_NO 3
 struct nn_grp *g[GRPS_NO];
 
+#if 0
 
 static int dpool_free_cb(void *dpool, void *dpool_buf)
 {
@@ -281,7 +282,7 @@ void *connection(struct nn_node *n, void *pdata)
 
     for(;;){
 
-        /* only allow one from group */
+        /* set how many to allow from which group */
         node_allow_grp(n, g[0], 1);
         node_allow_grp(n, g[1], 0);
 
@@ -329,7 +330,8 @@ void *connection(struct nn_node *n, void *pdata)
                         break;
                     }
 
-                    PCHK(LWARN, pkt, pkt_init(n, g[1], 0, buf_in, buf_len, NULL, free_cb));
+                    PCHK(LWARN, pkt, pkt_init(n, g[1], 0, buf_in, buf_len,
+                                NULL, free_cb));
                     assert(pkt);
 
                     while(node_tx(n, pkt)){
@@ -343,7 +345,6 @@ void *connection(struct nn_node *n, void *pdata)
                     //struct dpool_buf *dpool_buf = pkt_get_data(pkt);
                     buf_out = pkt_get_data(pkt);
                     printf("!!!! writing: %s\n", buf_out);
-                    //sleep(5);
                     write(fd, buf_out, strlen(buf_out));
                     /* when done call pkt_free */
                     //dpool_ret_buf(dpool, dpool_buf);
@@ -360,7 +361,12 @@ void *connection(struct nn_node *n, void *pdata)
 
     return NULL;
 }
+#endif
 
+void *connection(struct nn_node *n, void *pdata)
+{
+    return 0;
+}
 
 int main(int argc, char **argv)
 {
@@ -380,12 +386,27 @@ int main(int argc, char **argv)
         ok(rt[0]);
 
         for(i=0; i < GRPS_NO; i++){
-            g[i] = grp_init(i);
-            ok(g[i]);
+            router_add_grp(rt[0], i);
         }
 
-        grp_set_attr(g[0], 1);
+        n[0] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
+        conn_conn(n[0], rt[0], 1);
 
+        //conn_unconn(n[0], rt[0], 1);
+        node_set_state(n[0], NN_STATE_SHUTDOWN);
+
+       // for(i=0; i < GRPS_NO; i++){
+       //     router_rem_grp(rt[0], i);
+       // }
+
+        router_set_state(rt[0], NN_STATE_SHUTDOWN);
+
+        node_clean(n[0]);
+        router_clean(rt[0]);
+
+        dpool_free(dpool);
+
+#if 0
         /* create input nodes */
 /*
         n[0] = node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
@@ -483,6 +504,7 @@ int main(int argc, char **argv)
         dpool_free(dpool);
 
         printf("loop done\n");
+#endif
         usleep(2000);
     }
     return 0;

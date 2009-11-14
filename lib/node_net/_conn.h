@@ -13,7 +13,7 @@ int _conn_free_node(struct nn_conn *cn);
 int _conn_free_router(struct nn_conn *cn);
 
 int _conn_set_node(struct nn_conn *cn, struct nn_node *n);
-int _conn_set_router(struct nn_conn *cn, struct nn_router *rt);
+int _conn_set_router(struct nn_conn *cn, struct nn_grp *g);
 //int conn_set_state(struct nn_conn *cn, enum nn_conn_state state);
 
 struct nn_node *_conn_get_node(struct nn_conn *cn);
