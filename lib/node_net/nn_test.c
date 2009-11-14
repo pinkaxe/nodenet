@@ -18,8 +18,6 @@
 #include "node_net/router.h"
 #include "node_net/node.h"
 #include "node_net/conn.h"
-#include "node_net/grp.h"
-#include "node_net/grp_rel.h"
 
 #define ok(x){ \
     assert(x); \
@@ -280,8 +278,8 @@ void *connection(struct nn_node *n, void *pdata)
     int buf_len;
     struct buf *buf_req;
     int fd = 0;
-    unsigned char *buf_in = NULL;
-    unsigned char *buf_out = NULL;
+    char *buf_in = NULL;
+    char *buf_out = NULL;
 
 
     for(;;){
@@ -338,7 +336,7 @@ void *connection(struct nn_node *n, void *pdata)
                 buf_len = c;
                 buf_in[c] = '\0';
 
-                printf("!!!!! tx %s(%d)\n", buf_in, c);
+                printf("!!!!! tx %s(%d)\n", buf_in, (int) c);
                 if(!strncmp(buf_in, "quit", 4)){
                     break;
                 }

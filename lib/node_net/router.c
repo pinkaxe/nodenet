@@ -95,9 +95,7 @@ static int router_cond_broadcast(struct nn_router *rt);
 static int router_rx_pkts(struct nn_router *rt);
 static int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt);
 
-static int router_add_tx_pkt(struct nn_router *rt, struct nn_pkt *pkt);
 static int router_tx_pkts(struct nn_router *rt);
-static int router_get_tx_pkt(struct nn_router *rt, struct nn_pkt **pkt);
 
 static struct router_grp_iter *router_grp_iter_init(struct nn_router *rt);
 static int router_grp_iter_free(struct router_grp_iter *iter);
@@ -108,11 +106,6 @@ static struct grp_conn_iter *grp_conn_iter_init(struct nn_grp *g);
 static int grp_conn_iter_free(struct grp_conn_iter *iter);
 static int grp_conn_iter_next(struct grp_conn_iter *iter, struct nn_conn **cn);
 
-#if 0
-static int router_conn_each(struct nn_router *rt,
-        int (*cb)(struct nn_conn *cn, void *a0), 
-        struct nn_pkt *pkt);
-#endif
 
 int router_isvalid(struct nn_router *rt)
 {
@@ -603,18 +596,10 @@ static int router_rx_pkts(struct nn_router *rt)
     ROUTER_GRP_ITER_PRE(rt);
     GRP_CONN_ITER_PRE(g);
 
-    /* pick pkt's up from router and move to conn */
+    /* pick pkt's up from conn and move to rt */
     if(!_conn_router_rx_pkt(cn, &pkt)){
         assert(pkt);
-
-
-        //router_unlock(rt);
-        // FIXME: sending to all routers
-        //router_grp_iter_PRE
         router_add_rx_pkt(rt, pkt);
-
-        //router_lock(rt);
-        //router_grp_iter_POST
     }
 
     GRP_CONN_ITER_POST(g);
