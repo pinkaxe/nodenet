@@ -7,6 +7,7 @@
 #include "sys/thread.h"
 #include "util/log.h"
 #include "util/que.h"
+#include "util/ll.h"
 #include "util/link.h"
 
 #include "types.h"
@@ -23,10 +24,27 @@
 #define link_set_node link_set_from
 #define link_set_router link_set_to
 
+#define CONN_GRP_PRE(cn) \
+    { \
+    assert(cn); \
+    int done = 0; \
+    struct conn_grp_iter *iter = NULL; \
+    struct grps *grp; \
+    iter = conn_grp_iter_init(cn); \
+    while(!done && !conn_grp_iter_next(iter, &grp)){ \
+
+#define CONN_GRP_POST(cn) \
+    } \
+    conn_grp_iter_free(iter); \
+    }
+
+/* one per connected router and node */
 struct nn_conn {
     struct link *link; /* keep link info, rt, n, state */
     mutex_t mutex;
     cond_t cond; /* if anything changes */
+
+    struct ll *grps;          /* members of these grp's */
 
     /* router(output) -> node(input) */
     struct que *rt_n_pkts;   /* router write node pkt */
@@ -36,16 +54,26 @@ struct nn_conn {
     struct que *n_rt_notify; /* always used, from node_driver */
     //struct que *n_rt_pkts;    /* only master node */
 
+};
+
+
+struct grps {
     int grp_id;
+    //struct nn_grp *g; /* router grp it belongs to */
     int rx_cnt; /* counter to only allow a certain amount of rx
                    buffers -2=unlimited(default) */
-
+    enum nn_state state;
 };
+
 
 static int _conn_lock(struct nn_conn *cn);
 static int _conn_unlock(struct nn_conn *cn);
-static int _conn_dec_rx_cnt(struct nn_conn *cn, int dec);
+static int _conn_dec_rx_cnt(struct nn_conn *cn, struct grps *grp, int dec);
 
+static struct conn_grp_iter *conn_grp_iter_init(struct nn_conn *cn);
+static int conn_grp_iter_free(struct conn_grp_iter *iter);
+static int conn_grp_iter_next(struct conn_grp_iter *iter, struct
+        grps **b);
 
 struct ques_router_init {
     struct que **q;
@@ -103,12 +131,17 @@ struct nn_conn *_conn_init()
     PCHK(LWARN, l, link_init());
     if(!l){
         PCHK(LWARN, r, _conn_free(cn));
+        cn = NULL;
         goto err;
     }
     cn->link = l;
-    printf("xx %p\n", cn->link);
 
-    cn->rx_cnt = -2;
+    PCHK(LWARN, cn->grps, ll_init());
+    if(!cn->grps){
+        PCHK(LWARN, r, _conn_free(cn));
+        cn = NULL;
+        goto err;
+    }
 
     mutex_init(&cn->mutex, NULL);
 
@@ -126,6 +159,11 @@ int _conn_free(struct nn_conn *cn)
 
     /* IMPROVE: can save conn state here */
     _conn_lock(cn);
+
+    if(cn->grps){
+        /* FIXME: free grp members */
+        ICHK(LWARN, r, ll_free(cn->grps));
+    }
 
     /* empty and free the io que's */
     if(cn->rt_n_pkts){
@@ -162,6 +200,53 @@ int _conn_free(struct nn_conn *cn)
     free(cn);
 
     return fail;
+}
+
+int _conn_join_grp(struct nn_conn *cn, int grp_id)
+{
+    int r = 1;
+    struct grps *grp;
+
+    PCHK(LWARN, grp, calloc(1, sizeof(*grp)));
+    if(!grp){
+        goto err;
+    }
+    grp->grp_id = grp_id;
+    grp->rx_cnt = -2;
+
+    ICHK(LWARN, r, ll_add_front(cn->grps, (void **)&grp));
+    if(r){
+        PCHK(LWARN, r, _conn_quit_grp(cn, grp_id));
+        goto err;
+    }
+
+    r = 0;
+err:
+    return r;
+}
+
+int _conn_quit_grp(struct nn_conn *cn, int grp_id)
+{
+    int r = 0;
+    //struct timespec ts = {0, 0};
+    //struct nn_pkt *pkt;
+
+    _conn_lock(cn);
+    CONN_GRP_PRE(cn);
+
+    if(grp->grp_id == grp_id){
+
+        ICHK(LWARN, r, ll_rem(cn->grps, grp));
+        free(grp);
+
+        done = 1;
+    }
+
+    CONN_GRP_POST(cn);
+    _conn_unlock(cn);
+
+
+    return r;
 }
 
 /* returns 1 if cn was free'd */
@@ -213,13 +298,12 @@ int _conn_set_node(struct nn_conn *cn, struct nn_node *n)
     return r;
 }
 
-int _conn_set_router(struct nn_conn *cn, struct nn_grp *g, int grp_id)
+int _conn_set_router(struct nn_conn *cn, struct nn_router *rt)
 {
     int r;
 
     _conn_lock(cn);
-    r = link_set_router(cn->link, g);
-    cn->grp_id = grp_id;
+    r = link_set_router(cn->link, rt);
     _conn_unlock(cn);
 
     return r;
@@ -247,17 +331,18 @@ struct nn_node *_conn_get_node(struct nn_conn *cn)
     return n;
 }
 
-struct nn_grp *_conn_get_router(struct nn_conn *cn)
+struct nn_router *_conn_get_router(struct nn_conn *cn)
 {
-    struct nn_grp *g = NULL;
+    struct nn_router *rt;
 
     _conn_lock(cn);
-    g = link_get_router(cn->link);
+    rt = link_get_router(cn->link);
     _conn_unlock(cn);
 
-    return g;
+    return rt;
 }
 
+/*
 int _conn_get_grp_id(struct nn_conn *cn)
 {
     int r;
@@ -268,6 +353,7 @@ int _conn_get_grp_id(struct nn_conn *cn)
 
     return r;
 }
+*/
 
 int _conn_get_state(struct nn_conn *cn)
 {
@@ -317,6 +403,7 @@ int _conn_router_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
 
     _conn_lock(cn);
 
+    //printf("!!! x\n");
     if(link_get_state(cn->link) == LINK_STATE_ALIVE){
 
         *pkt = que_get(cn->n_rt_pkts, &ts);
@@ -336,15 +423,25 @@ int _conn_router_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
 {
     int r = 1;
 
+    assert(pkt);
+
     _conn_lock(cn);
+    CONN_GRP_PRE(cn);
 
-    if(link_get_state(cn->link) == LINK_STATE_ALIVE &&
-            _conn_dec_rx_cnt(cn, 1) != -1){
+    //printf("!!! a\n");;
+    if(pkt_get_dest_grp_id(pkt) == grp->grp_id){
+    //printf("!!! b\n");;
+        if(link_get_state(cn->link) == LINK_STATE_ALIVE &&
+                _conn_dec_rx_cnt(cn, grp, 1) != -1){
 
-        ICHK(LINFO, r, que_add(cn->rt_n_pkts, pkt));
+            ICHK(LINFO, r, que_add(cn->rt_n_pkts, pkt));
+            done = 1;
+        }
     }
 
+    CONN_GRP_POST(cn);
     _conn_unlock(cn);
+
 
     L(LDEBUG, "+ _conn_router_tx_pkt %p(%d)\n", pkt, r);
 
@@ -359,41 +456,82 @@ int _conn_node_rx_pkt(struct nn_conn *cn, struct nn_pkt **pkt)
 
     *pkt = NULL;
 
+    _conn_lock(cn);
 
     if(link_get_state(cn->link) == LINK_STATE_ALIVE){
 
-        _conn_lock(cn);
+        CONN_GRP_PRE(cn);
+
         *pkt = que_get(cn->rt_n_pkts, &ts);
-        _conn_unlock(cn);
 
         if(*pkt){
             r = 0;
+            done = 1;
+            // last read packet...
         }
+
+        CONN_GRP_POST(cn);
     }
 
-    return r;
-}
-
-
-int _conn_set_rx_cnt(struct nn_conn *cn, int cnt)
-{
-    int r = 0;
-
-    _conn_lock(cn);
-    cn->rx_cnt = cnt;
     _conn_unlock(cn);
 
     return r;
 }
 
-static int _conn_dec_rx_cnt(struct nn_conn *cn, int dec)
+
+int _conn_set_rx_cnt(struct nn_conn *cn, int grp_id, int cnt)
 {
-    if(cn->rx_cnt != -2){
-        cn->rx_cnt -= dec;
-        if(cn->rx_cnt < -1){
-            cn->rx_cnt = -1;
+    int r = 0;
+
+    _conn_lock(cn);
+    CONN_GRP_PRE(cn);
+
+    if(grp->grp_id == grp_id){
+        grp->rx_cnt = cnt;
+        done = 1;
+    }
+
+    CONN_GRP_POST(cn);
+    _conn_unlock(cn);
+
+    return r;
+}
+
+static int _conn_dec_rx_cnt(struct nn_conn *cn, struct grps *grp, int dec)
+{
+    int r = -1;
+
+    printf("!!! found\n");
+    if(grp->rx_cnt != -2){
+        grp->rx_cnt -= dec;
+        if(grp->rx_cnt < -1){
+            grp->rx_cnt = -1;
         }
     }
-    printf("RRRR return %d\n", cn->rx_cnt);
-    return cn->rx_cnt;
+    r = grp->rx_cnt;
+
+    printf("RRRR return %d\n", grp->rx_cnt);
+
+    //CONN_GRP_POST(cn);
+    //_conn_unlock(cn);
+
+    return r;
 }
+
+static struct conn_grp_iter *conn_grp_iter_init(struct nn_conn *cn)
+{
+    return (struct conn_grp_iter *)ll_iter_init(cn->grps);
+}
+
+static int conn_grp_iter_free(struct conn_grp_iter *iter)
+{
+    return ll_iter_free((struct ll_iter *)iter);
+}
+
+static int conn_grp_iter_next(struct conn_grp_iter *iter, struct
+        grps **grp)
+{
+    return ll_iter_next((struct ll_iter *)iter, (void **)grp);
+}
+
+//    cn->rx_cnt = -2;

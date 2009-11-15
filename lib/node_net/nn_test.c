@@ -57,29 +57,6 @@ void *thread1(struct nn_node *n, void *pdata)
     struct nn_pkt *pkt;
     enum nn_state state;
 
-
-#if 0
-        /* build internal packet */
-    for(;;){
-        pkt = pkt_init(n, 1, NN_SENDTO_ALL, 0);
-        if(pkt){
-           // buf = pkt->data
-            b = pkt_get_data(pkt);
-            b->i = i++;
-
-            /* add to outgoing tx buffers */
-            while(nn_node_add_tx_pkt(n, pkt)){
-                usleep(10000);
-            }
-        }
-    }
-
-    // send data
-    send_data(n, buf, 1, NN_SENDTO_ALL, 0);
-#endif
-    //node_set_refcnt_cb(struct nn_node *n, void (*cb)(struct nn_node *n, int));
-
-
     for(;;){
 
         /* do state */
@@ -107,17 +84,6 @@ void *thread1(struct nn_node *n, void *pdata)
             }
         }
         usleep(100000);
-
-        /*
-        while(1){
-            node_rx(n, &dpool_buf, &len, &pdata);
-
-            buf = dpool_buf->data;
-            L(LINFO, "Got buf->i=%d", buf->i);
-
-            dpool_ret_buf(dpool, dpool_buf);
-        }
-        */
 
         /* receive packets */
         while(!node_get_rx_pkt(n, &pkt)){
@@ -356,9 +322,9 @@ void *connection(struct nn_node *n, void *pdata)
                 //struct dpool_buf *dpool_buf = pkt_get_data(pkt);
                 buf_out = pkt_get_data(pkt);
                 printf("!!!! writing: %s\n", buf_out);
+                write(fd, "resp: ", strlen("resp: "));
                 write(fd, buf_out, strlen(buf_out));
                 /* when done call pkt_free */
-                //dpool_ret_buf(dpool, dpool_buf);
                 pkt_free(pkt);
             }
 
@@ -377,7 +343,10 @@ int main(int argc, char **argv)
 {
     int i;
     struct nn_router *rt[1];
+
     struct nn_node *n[1024];
+    struct nn_conn *cn[1024];
+
     //struct nn_pkt *pkt;
     struct dpool *dpool;
     struct buf *buf;
@@ -395,14 +364,38 @@ int main(int argc, char **argv)
         }
 
         n[0] = node_init(NN_NODE_TYPE_THREAD, 0, server, dpool);
-        conn_conn(n[0], rt[0], GRP_SERVER);
+        cn[0] = conn_conn(n[0], rt[0]);
+        conn_join_grp(cn[0], GRP_SERVER);
 
-#define NODE_NO 3
+#define NODE_NO 4
+        for(i=1; i < NODE_NO; i++){
+
+            n[i] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
+            cn[i] = conn_conn(n[i], rt[0]);
+
+            conn_join_grp(cn[i], GRP_CONN_HANDLERS);
+            conn_join_grp(cn[i], GRP_MAIN_CHANNEL);
+
+            //conn_conn(n[i], rt[0], GRP_MAIN_CHANNEL); /* valgrind */
+        }
+
+        for(i=NODE_NO-1; i >= 0; i--){
+            node_set_state(n[i], NN_STATE_RUNNING);
+        }
+
+        router_set_state(rt[0], NN_STATE_RUNNING);
+
+        sleep(11000);
+
+#if 0
 
         for(i=1; i < NODE_NO; i++){
             n[i] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
-            conn_conn(n[i], rt[0], GRP_CONN_HANDLERS);
-            conn_conn(n[i], rt[0], GRP_MAIN_CHANNEL); /* valgrind */
+            cn[i] = conn_conn(n[i], rt[0]);
+            conn_join_grp(cn[i], GRP_CONN_HANDLERS);
+            conn_join_grp(cn[i], GRP_MAIN_CHANNEL);
+
+            //conn_conn(n[i], rt[0], GRP_MAIN_CHANNEL); /* valgrind */
         }
 
         for(i=0; i < NODE_NO; i++){
@@ -534,6 +527,7 @@ int main(int argc, char **argv)
         dpool_free(dpool);
 
         printf("loop done\n");
+#endif
 #endif
         //usleep(2000);
     }

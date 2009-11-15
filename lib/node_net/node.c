@@ -265,8 +265,8 @@ int node_set_rx_cnt(struct nn_node *n, int grp_id, int cnt)
 {
     NODE_CONN_ITER_PRE
 
-    if(_conn_get_grp_id(cn) == grp_id){
-        _conn_set_rx_cnt(cn, cnt);
+    if(_conn_get_node(cn) == n){
+        _conn_set_rx_cnt(cn, grp_id, cnt);
         done = 1;
     }
 
@@ -320,9 +320,10 @@ int node_tx_pkts(struct nn_node *n)
         NODE_CONN_ITER_PRE
 
         /* just send to first one */
-        while(_conn_node_tx_pkt(cn, pkt)){
-            usleep(10000);
-        }
+        _conn_node_tx_pkt(cn, pkt);
+        //while(_conn_node_tx_pkt(cn, pkt)){
+        //    usleep(10000);
+        //}
         done = 1;
         NODE_CONN_ITER_POST
     }
@@ -371,12 +372,12 @@ int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt)
     return r;
 }
 
-struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_grp *g)
+struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_router *rt)
 {
     struct nn_conn *_cn = NULL;
 
     NODE_CONN_ITER_PRE
-    if(_conn_get_router(cn) == g){
+    if(_conn_get_router(cn) == rt){
         done = 1;
         _cn = cn;
     }
