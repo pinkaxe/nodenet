@@ -387,6 +387,34 @@ int router_conn(struct nn_router *rt, struct nn_conn *cn)
     return r;
 }
 
+int router_unconn(struct nn_router *rt, struct nn_conn *cn)
+{
+    int r;
+    int fail = -1;
+
+    router_isvalid(rt);
+
+    router_lock(rt);
+
+    /* free all the grp conn */
+    ROUTER_GRP_ITER_PRE(rt);
+
+    fail = 0;
+    ICHK(LWARN, r, ll_rem(g->conn, cn));
+    if(r) fail++;
+
+    ROUTER_GRP_ITER_POST(rt);
+
+    ICHK(LWARN, r, ll_rem(rt->conn, cn));
+    if(r) fail++;
+
+    r = _conn_free_router(cn);
+
+    router_unlock(rt);
+
+    return r;
+}
+
 /*
 int conn_join_grp(struct nn_conn *cn, int grp_id)
 {
@@ -427,34 +455,6 @@ int router_conn_add_rx_buf(struct nn_router *rt, struct nn_conn *cn)
 }
 */
 
-int router_unconn(struct nn_router *rt, int grp_id, struct nn_conn *cn)
-{
-    int r;
-    int fail = -1;
-
-    router_isvalid(rt);
-
-    router_lock(rt);
-    ROUTER_GRP_ITER_PRE(rt);
-
-    if(g->id == grp_id){
-        fail = 0;
-
-
-        ICHK(LWARN, r, ll_rem(g->conn, cn));
-        if(r) fail++;
-
-        r = _conn_free_router(cn);
-
-        done = 1;
-    }
-
-
-    ROUTER_GRP_ITER_POST(rt);
-    router_unlock(rt);
-
-    return r;
-}
 
 #if 0
 
@@ -622,25 +622,24 @@ static int router_tx_pkts(struct nn_router *rt)
 
         /* ROUTING: IMPROVE:!! */
 
-        printf("!!! 1\n");
         router_lock(rt);
         ROUTER_GRP_ITER_PRE(rt);
-        printf("!!! 2\n");
 
         if(g->id == dest_grp_id){
-        printf("!!! 3\n");
 
             GRP_CONN_ITER_PRE(g);
-        printf("!!! 4\n");
 
-            pkt_inc_refcnt(pkt, 1);
-            if(!_conn_router_tx_pkt(cn, pkt)){
-                send_to++;
-                if(dest_no && ++c >= dest_no){
-                    done = 1;
+            /* don't send to sender */
+            if(_conn_get_node(cn) != pkt_get_src(pkt)){
+                pkt_inc_refcnt(pkt, 1);
+                if(!_conn_router_tx_pkt(cn, pkt)){
+                    send_to++;
+                    if(dest_no && ++c >= dest_no){
+                        done = 1;
+                    }
+                }else{
+                    pkt_inc_refcnt(pkt, -1);
                 }
-            }else{
-                pkt_inc_refcnt(pkt, -1);
             }
 
 

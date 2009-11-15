@@ -44,6 +44,7 @@ static int dpool_free_cb(void *dpool, void *dpool_buf)
 
 static int free_cb(void *none, void *buf)
 {
+    printf("!!!!!!!!!!free_cb\n");
     free(buf);
     return 0;
 }
@@ -75,14 +76,15 @@ void *thread1(struct nn_node *n, void *pdata)
             buf->i = i++;
 
             /* build packet */
-            PCHK(LWARN, pkt, pkt_init(n, GRP_MAIN_CHANNEL, 1, dpool_buf, sizeof(*dpool_buf),
-                        dpool, dpool_free_cb));
+            PCHK(LWARN, pkt, pkt_init(n, GRP_MAIN_CHANNEL, 0, dpool_buf,
+                        sizeof(*dpool_buf), dpool, dpool_free_cb));
             assert(pkt);
 
             while(node_tx(n, pkt)){
                 usleep(10000);
             }
         }
+
         usleep(100000);
 
         /* receive packets */
@@ -94,8 +96,8 @@ void *thread1(struct nn_node *n, void *pdata)
             //dpool_ret_buf(dpool, dpool_buf);
             pkt_free(pkt);
         }
-        //usleep(10000);
-        sched_yield();
+        usleep(100000);
+        //sched_yield();
     }
 
     return NULL;
@@ -107,7 +109,6 @@ void *thread0(struct nn_node *n, void *pdata)
     struct nn_pkt *pkt;
     struct buf *buf;
     enum nn_state state;
-return NULL;
 
     for(;;){
         /* check state */
@@ -127,7 +128,8 @@ return NULL;
             pkt_free(pkt);
         }
 
-        sched_yield();
+        //sched_yield();
+        usleep(100000);
     }
 
     return NULL;
@@ -363,14 +365,14 @@ int main(int argc, char **argv)
             router_add_grp(rt[0], i);
         }
 
-        n[0] = node_init(NN_NODE_TYPE_THREAD, 0, server, dpool);
+        n[0] = node_init(NN_NODE_TYPE_THREAD, 0, thread1, dpool);
         cn[0] = conn_conn(n[0], rt[0]);
         conn_join_grp(cn[0], GRP_SERVER);
 
 #define NODE_NO 4
         for(i=1; i < NODE_NO; i++){
 
-            n[i] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
+            n[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
             cn[i] = conn_conn(n[i], rt[0]);
 
             conn_join_grp(cn[i], GRP_CONN_HANDLERS);
@@ -385,7 +387,31 @@ int main(int argc, char **argv)
 
         router_set_state(rt[0], NN_STATE_RUNNING);
 
-        sleep(11000);
+        sleep(3);
+
+        conn_quit_grp(cn[0], GRP_SERVER);
+        node_set_state(n[0], NN_STATE_SHUTDOWN);
+
+        for(i=1; i < NODE_NO; i++){
+            conn_quit_grp(cn[i], GRP_CONN_HANDLERS);
+            conn_quit_grp(cn[i], GRP_MAIN_CHANNEL);
+            cn[i] = conn_unconn(n[i], rt[0]);
+            node_set_state(n[i], NN_STATE_SHUTDOWN);
+        }
+
+       // for(i=0; i < GRPS_NO; i++){
+       //     router_rem_grp(rt[0], i);
+       // }
+
+        router_set_state(rt[0], NN_STATE_SHUTDOWN);
+
+        for(i=0; i < NODE_NO; i++){
+            node_clean(n[i]);
+        }
+
+        router_clean(rt[0]);
+
+        dpool_free(dpool);
 
 #if 0
 

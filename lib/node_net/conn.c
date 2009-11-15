@@ -42,6 +42,35 @@ err:
     return cn;
 }
 
+int conn_unconn(struct nn_node *n, struct nn_router *rt)
+{
+    int r = 1;
+    struct nn_conn *cn;
+
+    //PCHK(LWARN, g, router_get_grp(rt, grp_id));
+    PCHK(LWARN, cn, node_get_router_conn(n, rt));
+
+    if(cn){
+        ICHK(LWARN, r, router_unconn(rt, cn));
+        if(r){
+            free(cn);
+            goto err;
+        }
+
+        ICHK(LWARN, r, node_unconn(n, cn));
+        if(r){
+            free(cn);
+            goto err;
+        }
+
+        _conn_free(cn);
+    }
+
+err:
+
+    return r;
+}
+
 int conn_join_grp(struct nn_conn *cn, int grp_id)
 {
     int r;
@@ -83,7 +112,7 @@ err:
     return r;
 }
 
-int conn_unconn(struct nn_node *n, struct nn_router *rt)
+int xconn_unconn(struct nn_node *n, struct nn_router *rt)
 {
     int r = 1;
     struct nn_grp *g;

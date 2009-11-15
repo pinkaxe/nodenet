@@ -12,7 +12,7 @@ int router_rem_grp(struct nn_router *rt, int id);
 struct nn_grp *router_get_grp(struct nn_router *rt, int id);
 
 int router_conn(struct nn_router *rt, struct nn_conn *cn);
-int router_unconn(struct nn_router *rt, int grp_id, struct nn_conn *n);
+int router_unconn(struct nn_router *rt, struct nn_conn *n);
 int router_isconn(struct nn_router *rt, struct nn_node *n);
 
 enum nn_state router_get_state(struct nn_router *rt);
