@@ -29,16 +29,16 @@ struct nn_conn *node_get_router_conn(struct nn_node *n, struct nn_router *rt);
 int node_set_state(struct nn_node *n, enum nn_state state);
 
 /* node api */
-int node_do_state(struct nn_node *n);
 //int node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt);
 int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt);
 
 int node_set_rx_cnt(struct nn_node *n, int grp_id, int cnt);
 
+int node_do_state(struct nn_node *n);
+
 int node_tx(struct nn_node *n, struct nn_pkt *pkt);
 
 int node_rx(struct nn_node *n, void **data, int *data_len, void **pdata);
 
-int node_print(struct nn_node *n);
 
 #endif

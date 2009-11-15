@@ -58,12 +58,7 @@ int conn_unconn(struct nn_node *n, struct nn_router *rt)
         }
 
         ICHK(LWARN, r, node_unconn(n, cn));
-        if(r){
-            free(cn);
-            goto err;
-        }
-
-        _conn_free(cn);
+        if(r == 1) r = 0; /* successfully freed */
     }
 
 err:

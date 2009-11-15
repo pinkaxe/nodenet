@@ -19,10 +19,28 @@
 #include "router.h"
 
 
-/* easy iterator pre/post
- * rt != NULL when this is called, afterwards cn for the
- matching each matching node is set and can be used */
+/*  */
+struct nn_grp {
+    int id;
+    struct ll *memb; /* all memb in this grp, for router output */
+};
 
+/* each router has one tx and one rx buffer. and a ll
+of gpr's with there memb(memb) */
+struct nn_router{
+    struct ll *grp;
+    struct ll *memb; /* all memb's connected to the router, router input */
+    enum nn_state state;
+
+    struct que *rx_pkts;   /* pkt's coming in */
+    struct que *tx_pkts;   /* pkt's going out, not used */
+
+    mutex_t mutex;
+    cond_t cond;
+};
+
+/* each router have a ll of grp's that it routes to,
+ * loop through them with g in turn set */
 #define ROUTER_GRP_ITER_PRE(rt) \
     { \
     assert(rt); \
@@ -32,11 +50,13 @@
     iter = router_grp_iter_init(rt); \
     while(!done && !router_grp_iter_next(iter, &g)){ \
 
+
 #define ROUTER_GRP_ITER_POST(rt) \
     } \
     router_grp_iter_free(iter); \
     }
 
+/* each grp have a ll of memb's it is connected to */
 #define GRP_CONN_ITER_PRE(g) \
     { \
     assert(g); \
@@ -52,29 +72,10 @@
     }
 
 
-struct nn_grp {
-    int id;
-    struct ll *conn; /* all this grp's conn's */
-};
-
-
-struct nn_router{
-    struct ll *grp;
-    struct ll *conn; /* all conn's */
-    enum nn_state state;
-
-    struct que *rx_pkts;   /* pkt's coming in */
-    struct que *tx_pkts;   /* pkt's going out */
-
-    mutex_t mutex;
-    cond_t cond;
-};
-
-
 /* this type don't exist, just for type checking */
 struct router_grp_iter;
 
-void *router_thread(void *arg);
+static void *router_thread(void *arg);
 static int router_conn_free_all(struct nn_router *rt);
 
 static int router_lock(struct nn_router *rt);
@@ -96,416 +97,10 @@ static struct grp_conn_iter *grp_conn_iter_init(struct nn_grp *g);
 static int grp_conn_iter_free(struct grp_conn_iter *iter);
 static int grp_conn_iter_next(struct grp_conn_iter *iter, struct nn_conn **cn);
 
+static int router_isvalid(struct nn_router *rt);
 
-int router_isvalid(struct nn_router *rt)
-{
-    assert(rt->grp);
-    return 0;
-}
-
-
-struct nn_router *router_init()
-{
-    int r;
-    struct nn_router *rt;
-    thread_t tid;
-
-    PCHK(LWARN, rt, calloc(1, sizeof(*rt)));
-    if(!rt){
-        goto err;
-    }
-
-    PCHK(LWARN, rt->grp, ll_init());
-    if(!rt->grp){
-        router_free(rt);
-        rt = NULL;
-        goto err;
-    }
-
-    PCHK(LWARN, rt->conn, ll_init());
-    if(!rt->conn){
-        PCHK(LWARN, r, router_free(rt));
-        rt = NULL;
-        goto err;
-    }
-
-
-    PCHK(LWARN, rt->rx_pkts, que_init(100));
-    if(!(rt->rx_pkts)){
-        PCHK(LWARN, r, router_free(rt));
-        rt = NULL;
-        goto err;
-    }
-
-    PCHK(LWARN, rt->tx_pkts, que_init(100));
-    if(!(rt->tx_pkts)){
-        PCHK(LWARN, r, router_free(rt));
-        rt = NULL;
-        goto err;
-    }
-
-
-    // FIXME: err checking
-    mutex_init(&rt->mutex, NULL);
-    cond_init(&rt->cond, NULL);
-
-    rt->state = NN_STATE_PAUSED;
-
-    router_isvalid(rt);
-
-    /* start router_thread */
-    thread_create(&tid, NULL, router_thread, rt);
-
-err:
-    return rt;
-}
-
-
-int router_free(struct nn_router *rt)
-{
-    int r = 0;
-    struct nn_pkt *pkt;
-    struct timespec ts = {0, 0};
-    int fail;
-
-    router_isvalid(rt);
-
-    mutex_lock(&rt->mutex);
-
-    if(rt->grp){
-
-        if(rt->rx_pkts){
-            while((pkt=que_get(rt->rx_pkts, &ts))){
-                pkt_free(pkt);
-            }
-            ICHK(LWARN, r, que_free(rt->rx_pkts));
-            if(r) fail++;
-        }
-
-        if(rt->tx_pkts){
-            while((pkt=que_get(rt->tx_pkts, &ts))){
-                pkt_free(pkt);
-            }
-            ICHK(LWARN, r, que_free(rt->tx_pkts));
-            if(r) fail++;
-        }
-
-
-        ICHK(LWARN, r, ll_free(rt->conn));
-        ICHK(LWARN, r, ll_free(rt->grp));
-    }
-
-
-    mutex_unlock(&rt->mutex);
-
-    cond_destroy(&rt->cond);
-    mutex_destroy(&rt->mutex);
-
-    free(rt);
-
-    return r;
-}
-
-int router_add_grp(struct nn_router *rt, int id)
-{
-    int r = 1;
-    struct nn_grp *g;
-
-    mutex_lock(&rt->mutex);
-
-    PCHK(LWARN, g, calloc(1, sizeof(*g)));
-    if(!g){
-        goto err;
-    }
-    g->id = id;
-
-    PCHK(LWARN, g->conn, ll_init());
-    if(!g->conn){
-        router_rem_grp(rt, id);
-        g = NULL;
-        goto err;
-    }
-
-    /* add newly created grp */
-    ICHK(LWARN, r, ll_add_front(rt->grp, (void **)&g));
-    if(r){
-        PCHK(LWARN, r, router_rem_grp(rt, id));
-        goto err;
-    }
-
-    r = 0;
-
-err:
-    mutex_unlock(&rt->mutex);
-
-    return r;
-}
-
-
-int router_add_to_grp(struct nn_router *rt, int grp_id, struct nn_conn *cn)
-{
-    int r = 1;
-
-    router_lock(rt);
-    ROUTER_GRP_ITER_PRE(rt);
-
-    if(g->id == grp_id){
-        ICHK(LWARN, r, ll_add_front(g->conn, (void **)&cn));
-        done = 1;
-    }
-
-    ROUTER_GRP_ITER_POST(rt);
-    router_unlock(rt);
-
-    return r;
-}
-
-int router_rem_from_grp(struct nn_router *rt, int grp_id, struct nn_conn *cn)
-{
-    int r = 1;
-
-    router_lock(rt);
-    ROUTER_GRP_ITER_PRE(rt);
-
-    if(g->id == grp_id){
-        ICHK(LWARN, r, ll_rem(g->conn, cn));
-        done = 1;
-    }
-
-    ROUTER_GRP_ITER_POST(rt);
-    router_unlock(rt);
-
-    return r;
-}
-
-
-/* return -1 no such group */
-int router_rem_grp(struct nn_router *rt, int id)
-{
-    int r;
-    int fail = -1;
-
-    router_lock(rt);
-    ROUTER_GRP_ITER_PRE(rt);
-
-    if(g->id == id){
-
-        done = 1;
-        fail = 0;
-
-        if(g->conn){
-            ICHK(LWARN, r, ll_free(g->conn));
-        }
-
-        if(!fail){
-            ICHK(LWARN, r, ll_rem(rt->grp, g));
-            if(r) fail++;
-        }
-
-        free(g);
-    }
-
-    ROUTER_GRP_ITER_POST(rt);
-    router_unlock(rt);
-
-    return fail;
-}
-
-struct nn_grp *router_get_grp(struct nn_router *rt, int id)
-{
-    struct nn_grp *_g = NULL;
-
-    router_lock(rt); \
-    ROUTER_GRP_ITER_PRE(rt);
-
-    if(g->id == id){
-        _g = g;
-        done = 1;
-    }
-
-    ROUTER_GRP_ITER_POST(rt);
-    router_unlock(rt);
-
-    return _g;
-}
-
-
-int router_clean(struct nn_router *rt)
-{
-    router_lock(rt);
-
-    while(router_get_state(rt) != NN_STATE_FINISHED){
-        router_cond_wait(rt);
-    }
-
-    router_unlock(rt);
-    router_free(rt);
-
-    return 0;
-}
-
-
-int router_set_state(struct nn_router *rt, enum nn_state state)
-{
-    router_lock(rt);
-
-    rt->state = state;
-
-    router_cond_broadcast(rt);
-    router_unlock(rt);
-
-    return 0;
-}
-
-enum nn_state router_get_state(struct nn_router *rt)
-{
-    enum nn_state state;
-    router_isvalid(rt);
-
-    state = rt->state;
-
-    return state;
-}
-
-int router_conn(struct nn_router *rt, struct nn_conn *cn)
-{
-    int r;
-    int fail = -1;
-
-    router_isvalid(rt);
-    router_lock(rt);
-
-    fail = 0;
-
-    ICHK(LWARN, r, ll_add_front(rt->conn, (void **)&cn));
-    if(r) fail++;
-
-    router_unlock(rt);
-
-    ICHK(LWARN, r, _conn_set_router(cn, rt));
-
-    return r;
-}
-
-int router_unconn(struct nn_router *rt, struct nn_conn *cn)
-{
-    int r;
-    int fail = -1;
-
-    router_isvalid(rt);
-
-    router_lock(rt);
-
-    /* free all the grp conn */
-    ROUTER_GRP_ITER_PRE(rt);
-
-    fail = 0;
-    ICHK(LWARN, r, ll_rem(g->conn, cn));
-    if(r) fail++;
-
-    ROUTER_GRP_ITER_POST(rt);
-
-    ICHK(LWARN, r, ll_rem(rt->conn, cn));
-    if(r) fail++;
-
-    r = _conn_free_router(cn);
-
-    router_unlock(rt);
-
-    return r;
-}
-
-/*
-int conn_join_grp(struct nn_conn *cn, int grp_id)
-{
-    _conn_rt_n_buf_init(cn, grp_id);
-    rt_n_buf = malloc(sizeof(*rt_n_buf);
-    rt_n_buf->grp_id = grp_id;
-    que_init..
-}
-
-int router_conn_add_rx_buf(struct nn_router *rt, struct nn_conn *cn)
-{
-    int r;
-    int fail = -1;
-
-    router_isvalid(rt);
-    router_lock(rt);
-    ROUTER_GRP_ITER_PRE(rt);
-
-    if(g->id == grp_id){
-
-        fail = 0;
-
-
-        ICHK(LWARN, r, ll_add_front(g->conn, (void **)&cn));
-        if(r) fail++;
-
-        //ICHK(LWARN, r, _conn_set_router(cn, g));
-        //if(r) fail++;
-
-        done = 1;
-    }
-
-    ROUTER_GRP_ITER_POST(rt);
-    router_unlock(rt);
-
-
-    return r;
-}
-*/
-
-
-#if 0
-
-
-int router_print(struct nn_router *rt)
-{
-
-    router_grp_iter_PRE
-
-    printf("router->conn\t");
-    printf("rt=%p, cn:%p, n=%p\n", rt, cn, _conn_get_node(cn));
-
-    router_grp_iter_POST
-
-    return 0;
-}
-
-
-int router_set_pkt_cb(struct nn_router *rt, io_pkt_req_cb_t cb)
-{
-    router_isvalid(rt);
-    rt->io_in_pkt_cb = cb;
-    return 0;
-}
-
-int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
-{
-    router_isvalid(rt);
-    //rt->io_in_data_cb = cb;
-    return 0;
-}
-
-#endif
-
-int router_add_rx_pkt(struct nn_router *rt, struct nn_pkt *pkt)
-{
-    int r;
-
-    assert(pkt);
-
-    ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
-
-    L(LDEBUG, "+ router_add_rx_pkt %p(%d)", pkt, r);
-
-    return r;
-}
-
-
-
-/* pick up pkts coming to router, and router to other node's, main loop */
-void *router_thread(void *arg)
+/* main loop, check status rx packets and route */
+static void *router_thread(void *arg)
 {
     //struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
@@ -548,10 +143,10 @@ again:
 
         router_unlock(rt);
 
-        /* rx packets from conn */
+        /* rx packets from memb */
         router_rx_pkts(rt);
 
-        /* tx packet to conn */
+        /* tx packet to memb */
         router_tx_pkts(rt);
 
         sched_yield();
@@ -561,7 +156,315 @@ again:
 }
 
 
-/* free router side of conn */
+struct nn_router *router_init()
+{
+    int r;
+    struct nn_router *rt;
+    thread_t tid;
+
+    PCHK(LWARN, rt, calloc(1, sizeof(*rt)));
+    if(!rt){
+        goto err;
+    }
+
+    PCHK(LWARN, rt->grp, ll_init());
+    if(!rt->grp){
+        PCHK(LWARN, r, router_free(rt));
+        rt = NULL;
+        goto err;
+    }
+
+    PCHK(LWARN, rt->memb, ll_init());
+    if(!rt->memb){
+        PCHK(LWARN, r, router_free(rt));
+        rt = NULL;
+        goto err;
+    }
+
+
+    PCHK(LWARN, rt->rx_pkts, que_init(100));
+    if(!(rt->rx_pkts)){
+        PCHK(LWARN, r, router_free(rt));
+        rt = NULL;
+        goto err;
+    }
+
+    PCHK(LWARN, rt->tx_pkts, que_init(100));
+    if(!(rt->tx_pkts)){
+        PCHK(LWARN, r, router_free(rt));
+        rt = NULL;
+        goto err;
+    }
+
+    // FIXME: err checking
+    mutex_init(&rt->mutex, NULL);
+    cond_init(&rt->cond, NULL);
+
+    router_isvalid(rt);
+
+    rt->state = NN_STATE_PAUSED;
+
+    /* start router_thread that will do the routing */
+    thread_create(&tid, NULL, router_thread, rt);
+
+err:
+    return rt;
+}
+
+int router_free(struct nn_router *rt)
+{
+    int r = 0;
+    struct nn_pkt *pkt;
+    struct timespec ts = {0, 0};
+    int fail;
+
+    router_isvalid(rt);
+
+    mutex_lock(&rt->mutex);
+
+    if(rt->grp){
+
+        if(rt->rx_pkts){
+            while((pkt=que_get(rt->rx_pkts, &ts))){
+                pkt_free(pkt);
+            }
+            ICHK(LWARN, r, que_free(rt->rx_pkts));
+            if(r) fail++;
+        }
+
+        if(rt->tx_pkts){
+            while((pkt=que_get(rt->tx_pkts, &ts))){
+                pkt_free(pkt);
+            }
+            ICHK(LWARN, r, que_free(rt->tx_pkts));
+            if(r) fail++;
+        }
+
+        ICHK(LWARN, r, ll_free(rt->memb));
+        ICHK(LWARN, r, ll_free(rt->grp));
+    }
+
+
+    mutex_unlock(&rt->mutex);
+
+    cond_destroy(&rt->cond);
+    mutex_destroy(&rt->mutex);
+
+    free(rt);
+
+    return r;
+}
+
+int router_clean(struct nn_router *rt)
+{
+    router_lock(rt);
+
+    while(router_get_state(rt) != NN_STATE_FINISHED){
+        router_cond_wait(rt);
+    }
+
+    router_unlock(rt);
+    router_free(rt);
+
+    return 0;
+}
+
+int router_conn(struct nn_router *rt, struct nn_conn *cn)
+{
+    int r;
+    int fail = -1;
+
+    router_isvalid(rt);
+    router_lock(rt);
+
+    fail = 0;
+
+    ICHK(LWARN, r, ll_add_front(rt->memb, (void **)&cn));
+    if(r) fail++;
+
+    router_unlock(rt);
+
+    ICHK(LWARN, r, _conn_set_router(cn, rt));
+
+    return r;
+}
+
+int router_unconn(struct nn_router *rt, struct nn_conn *cn)
+{
+    int r;
+    int fail = -1;
+
+    router_isvalid(rt);
+
+    router_lock(rt);
+
+    /* free all the grp memb */
+    ROUTER_GRP_ITER_PRE(rt);
+
+    fail = 0;
+    ICHK(LWARN, r, ll_rem(g->memb, cn));
+    if(r) fail++;
+
+    ROUTER_GRP_ITER_POST(rt);
+
+    ICHK(LWARN, r, ll_rem(rt->memb, cn));
+    if(r) fail++;
+
+    r = _conn_free_router(cn);
+
+    router_unlock(rt);
+
+    return r;
+}
+
+int router_add_grp(struct nn_router *rt, int id)
+{
+    int r = 1;
+    struct nn_grp *g;
+
+    mutex_lock(&rt->mutex);
+
+    PCHK(LWARN, g, calloc(1, sizeof(*g)));
+    if(!g){
+        goto err;
+    }
+    g->id = id;
+
+    PCHK(LWARN, g->memb, ll_init());
+    if(!g->memb){
+        router_rem_grp(rt, id);
+        g = NULL;
+        goto err;
+    }
+
+    /* add newly created grp */
+    ICHK(LWARN, r, ll_add_front(rt->grp, (void **)&g));
+    if(r){
+        PCHK(LWARN, r, router_rem_grp(rt, id));
+        goto err;
+    }
+
+    r = 0;
+
+err:
+    mutex_unlock(&rt->mutex);
+
+    return r;
+}
+
+/* return -1 no such group */
+int router_rem_grp(struct nn_router *rt, int id)
+{
+    int r;
+    int fail = -1;
+
+    router_lock(rt);
+    ROUTER_GRP_ITER_PRE(rt);
+
+    if(g->id == id){
+
+        done = 1;
+        fail = 0;
+
+        if(g->memb){
+            ICHK(LWARN, r, ll_free(g->memb));
+        }
+
+        if(!fail){
+            ICHK(LWARN, r, ll_rem(rt->grp, g));
+            if(r) fail++;
+        }
+
+        free(g);
+    }
+
+    ROUTER_GRP_ITER_POST(rt);
+    router_unlock(rt);
+
+    return fail;
+}
+
+struct nn_grp *router_get_grp(struct nn_router *rt, int id)
+{
+    struct nn_grp *_g = NULL;
+
+    router_lock(rt); \
+    ROUTER_GRP_ITER_PRE(rt);
+
+    if(g->id == id){
+        _g = g;
+        done = 1;
+    }
+
+    ROUTER_GRP_ITER_POST(rt);
+    router_unlock(rt);
+
+    return _g;
+}
+
+int router_add_to_grp(struct nn_router *rt, int grp_id, struct nn_conn *cn)
+{
+    int r = 1;
+
+    router_lock(rt);
+    ROUTER_GRP_ITER_PRE(rt);
+
+    if(g->id == grp_id){
+        ICHK(LWARN, r, ll_add_front(g->memb, (void **)&cn));
+        done = 1;
+    }
+
+    ROUTER_GRP_ITER_POST(rt);
+    router_unlock(rt);
+
+    return r;
+}
+
+int router_rem_from_grp(struct nn_router *rt, int grp_id, struct nn_conn *cn)
+{
+    int r = 1;
+
+    router_lock(rt);
+    ROUTER_GRP_ITER_PRE(rt);
+
+    if(g->id == grp_id){
+        ICHK(LWARN, r, ll_rem(g->memb, cn));
+        done = 1;
+    }
+
+    ROUTER_GRP_ITER_POST(rt);
+    router_unlock(rt);
+
+    return r;
+}
+
+int router_set_state(struct nn_router *rt, enum nn_state state)
+{
+    router_lock(rt);
+
+    rt->state = state;
+
+    router_cond_broadcast(rt);
+    router_unlock(rt);
+
+    return 0;
+}
+
+enum nn_state router_get_state(struct nn_router *rt)
+{
+    enum nn_state state;
+    router_isvalid(rt);
+
+    state = rt->state;
+
+    return state;
+}
+
+
+
+/* helper functions */
+
+/* free router side of memb */
 static int router_conn_free_all(struct nn_router *rt)
 {
     int fail = 0;
@@ -576,7 +479,7 @@ static int router_conn_free_all(struct nn_router *rt)
 
     //r = router_unconn(rt, g->id, cn);
 
-    ICHK(LWARN, r, ll_rem(g->conn, cn));
+    ICHK(LWARN, r, ll_rem(g->memb, cn));
     if(r) fail++;
 
     r = _conn_free_router(cn);
@@ -601,9 +504,9 @@ static int router_conn_free_all(struct nn_router *rt)
     return fail;
 }
 
-
 static int router_tx_pkts(struct nn_router *rt)
 {
+    int r;
     struct nn_pkt *pkt;
     int dest_grp_id;
     int dest_no;
@@ -611,7 +514,7 @@ static int router_tx_pkts(struct nn_router *rt)
     int send_to;
 
 
-    /* pick pkt's up from router and move to conn */
+    /* pick pkt's up from router and move to memb */
     while(!router_get_rx_pkt(rt, &pkt)){
         assert(pkt);
 
@@ -620,11 +523,10 @@ static int router_tx_pkts(struct nn_router *rt)
         c = 0;
         send_to = 0;
 
-        /* ROUTING: IMPROVE:!! */
-
         router_lock(rt);
         ROUTER_GRP_ITER_PRE(rt);
 
+        /* route to the dest group */
         if(g->id == dest_grp_id){
 
             GRP_CONN_ITER_PRE(g);
@@ -642,20 +544,21 @@ static int router_tx_pkts(struct nn_router *rt)
                 }
             }
 
-
             GRP_CONN_ITER_POST(g);
 
+            /* found and routed to dest group so done */
             done = 1;
         }
 
         ROUTER_GRP_ITER_POST(rt);
         router_unlock(rt);
 
-        //ROUTER_GRP_ITER_POST
-
         if(!send_to){
-            /* not send, add back */
-            //router_add_rx_pkt(rt, pkt);
+            /* not send, add back, IMPROVE: */
+            router_lock(rt);
+            ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
+            router_cond_broadcast(rt);
+            router_unlock(rt);
         }else{
             /* free for the orignal packet */
             pkt_free(pkt);
@@ -669,18 +572,18 @@ static int router_tx_pkts(struct nn_router *rt)
 
 static int router_rx_pkts(struct nn_router *rt)
 {
+    int r;
     struct nn_pkt *pkt;
-
 
     router_lock(rt);
     ROUTER_GRP_ITER_PRE(rt);
     GRP_CONN_ITER_PRE(g);
-    //printf("!!! yyy\n");
 
-    /* pick pkt's up from conn and move to rt */
+    /* pick pkt's up from memb and move to rt */
     if(!_conn_router_rx_pkt(cn, &pkt)){
         assert(pkt);
-        router_add_rx_pkt(rt, pkt);
+        ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
+        router_cond_broadcast(rt);
     }
 
     GRP_CONN_ITER_POST(g);
@@ -690,55 +593,16 @@ static int router_rx_pkts(struct nn_router *rt)
     return 0;
 }
 
-#if 0
-static int router_add_tx_pkt(struct nn_router *rt, struct nn_pkt *pkt)
-{
-    int r;
-
-    assert(pkt);
-
-    router_lock(rt);
-
-    ICHK(LWARN, r, que_add(rt->tx_pkts, pkt));
-
-    router_unlock(rt);
-
-    L(LDEBUG, "+ router_add_tx_pkt %p(%d)", pkt, r);
-
-    return r;
-}
-
-static int router_get_tx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
-{
-    int r = 1;
-    struct timespec ts = {0, 0};
-
-    router_lock(rt);
-
-    *pkt = que_get(rt->tx_pkts, &ts);
-
-    router_unlock(rt);
-
-    if(*pkt){
-        L(LDEBUG, "+ router_get_tx_pkt %p", *pkt);
-        r = 0;
-    }
-
-
-    return r;
-}
-#endif
-
 static int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
 {
     int r = 1;
     struct timespec ts = {0, 0};
 
-    //router_lock(rt);
+    router_lock(rt);
 
     *pkt = que_get(rt->rx_pkts, &ts);
 
-    //router_unlock(rt);
+    router_unlock(rt);
 
     if(*pkt){
         L(LDEBUG, "+ router_get_rx_pkt %p", *pkt);
@@ -765,7 +629,7 @@ static int router_grp_iter_next(struct router_grp_iter *iter, struct nn_grp **g)
 
 static struct grp_conn_iter *grp_conn_iter_init(struct nn_grp *g)
 {
-    return (struct grp_conn_iter *)ll_iter_init(g->conn);
+    return (struct grp_conn_iter *)ll_iter_init(g->memb);
 }
 
 static int grp_conn_iter_free(struct grp_conn_iter *iter)
@@ -777,34 +641,6 @@ static int grp_conn_iter_next(struct grp_conn_iter *iter, struct nn_conn **cn)
 {
     return ll_iter_next((struct ll_iter *)iter, (void **)cn);
 }
-
-#if 0
-static int router_conn_each(struct nn_router *rt,
-        int (*cb)(struct nn_conn *cn, void *a0),
-        struct nn_pkt *pkt)
-{
-    int r;
-    assert(rt);
-    struct router_grp_iter *iter;
-    struct nn_conn *cn;
-
-    router_lock(rt);
-
-    iter = router_grp_iter_init(rt);
-    while(!router_grp_iter_next(iter, &cn)){
-        r = cb(cn, pkt);
-        if(r){
-            break;
-        }
-    }
-    router_grp_iter_free(iter);
-
-    router_unlock(rt);
-
-    return r;
-
-}
-#endif
 
 static int router_lock(struct nn_router *rt)
 {
@@ -829,3 +665,42 @@ static int router_cond_broadcast(struct nn_router *rt)
     cond_broadcast(&rt->cond);
     return 0;
 }
+
+static int router_isvalid(struct nn_router *rt)
+{
+    return 0;
+}
+
+#if 0
+
+
+int router_print(struct nn_router *rt)
+{
+
+    router_grp_iter_PRE
+
+    printf("router->memb\t");
+    printf("rt=%p, cn:%p, n=%p\n", rt, cn, _conn_get_node(cn));
+
+    router_grp_iter_POST
+
+    return 0;
+}
+
+
+int router_set_pkt_cb(struct nn_router *rt, io_pkt_req_cb_t cb)
+{
+    router_isvalid(rt);
+    rt->io_in_pkt_cb = cb;
+    return 0;
+}
+
+int router_set_data_cb(struct nn_router *rt, io_data_req_cb_t cb)
+{
+    router_isvalid(rt);
+    //rt->io_in_data_cb = cb;
+    return 0;
+}
+
+#endif
+

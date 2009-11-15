@@ -369,7 +369,7 @@ int main(int argc, char **argv)
         cn[0] = conn_conn(n[0], rt[0]);
         conn_join_grp(cn[0], GRP_SERVER);
 
-#define NODE_NO 4
+#define NODE_NO 100
         for(i=1; i < NODE_NO; i++){
 
             n[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
