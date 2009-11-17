@@ -20,7 +20,7 @@
 
 
 /*  */
-struct nn_grp {
+struct nn_chan {
     int id;
     struct ll *memb; /* all memb in this grp, for router output */
 };
@@ -45,15 +45,15 @@ struct nn_router{
     { \
     assert(rt); \
     int done = 0; \
-    struct router_grp_iter *iter = NULL; \
-    struct nn_grp *g; \
-    iter = router_grp_iter_init(rt); \
-    while(!done && !router_grp_iter_next(iter, &g)){ \
+    struct router_chan_iter *iter = NULL; \
+    struct nn_chan *g; \
+    iter = router_chan_iter_init(rt); \
+    while(!done && !router_chan_iter_next(iter, &g)){ \
 
 
 #define ROUTER_GRP_ITER_POST(rt) \
     } \
-    router_grp_iter_free(iter); \
+    router_chan_iter_free(iter); \
     }
 
 /* each grp have a ll of memb's it is connected to */
@@ -73,7 +73,7 @@ struct nn_router{
 
 
 /* this type don't exist, just for type checking */
-struct router_grp_iter;
+struct router_chan_iter;
 
 static void *router_thread(void *arg);
 static int router_conn_free_all(struct nn_router *rt);
@@ -88,12 +88,12 @@ static int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt);
 
 static int router_tx_pkts(struct nn_router *rt);
 
-static struct router_grp_iter *router_grp_iter_init(struct nn_router *rt);
-static int router_grp_iter_free(struct router_grp_iter *iter);
-static int router_grp_iter_next(struct router_grp_iter *iter, struct nn_grp
+static struct router_chan_iter *router_chan_iter_init(struct nn_router *rt);
+static int router_chan_iter_free(struct router_chan_iter *iter);
+static int router_chan_iter_next(struct router_chan_iter *iter, struct nn_chan
         **g);
 
-static struct grp_conn_iter *grp_conn_iter_init(struct nn_grp *g);
+static struct grp_conn_iter *grp_conn_iter_init(struct nn_chan *g);
 static int grp_conn_iter_free(struct grp_conn_iter *iter);
 static int grp_conn_iter_next(struct grp_conn_iter *iter, struct nn_conn **cn);
 
@@ -317,10 +317,10 @@ int router_unconn(struct nn_router *rt, struct nn_conn *cn)
     return r;
 }
 
-int router_add_grp(struct nn_router *rt, int id)
+int router_add_chan(struct nn_router *rt, int id)
 {
     int r = 1;
-    struct nn_grp *g;
+    struct nn_chan *g;
 
     mutex_lock(&rt->mutex);
 
@@ -332,7 +332,7 @@ int router_add_grp(struct nn_router *rt, int id)
 
     PCHK(LWARN, g->memb, ll_init());
     if(!g->memb){
-        router_rem_grp(rt, id);
+        router_rem_chan(rt, id);
         g = NULL;
         goto err;
     }
@@ -340,7 +340,7 @@ int router_add_grp(struct nn_router *rt, int id)
     /* add newly created grp */
     ICHK(LWARN, r, ll_add_front(rt->grp, (void **)&g));
     if(r){
-        PCHK(LWARN, r, router_rem_grp(rt, id));
+        PCHK(LWARN, r, router_rem_chan(rt, id));
         goto err;
     }
 
@@ -353,7 +353,7 @@ err:
 }
 
 /* return -1 no such group */
-int router_rem_grp(struct nn_router *rt, int id)
+int router_rem_chan(struct nn_router *rt, int id)
 {
     int r;
     int fail = -1;
@@ -384,9 +384,9 @@ int router_rem_grp(struct nn_router *rt, int id)
     return fail;
 }
 
-struct nn_grp *router_get_grp(struct nn_router *rt, int id)
+struct nn_chan *router_get_chan(struct nn_router *rt, int id)
 {
-    struct nn_grp *_g = NULL;
+    struct nn_chan *_g = NULL;
 
     router_lock(rt); \
     ROUTER_GRP_ITER_PRE(rt);
@@ -402,7 +402,7 @@ struct nn_grp *router_get_grp(struct nn_router *rt, int id)
     return _g;
 }
 
-int router_add_to_grp(struct nn_router *rt, int grp_id, struct nn_conn *cn)
+int router_add_to_chan(struct nn_router *rt, int grp_id, struct nn_conn *cn)
 {
     int r = 1;
 
@@ -420,7 +420,7 @@ int router_add_to_grp(struct nn_router *rt, int grp_id, struct nn_conn *cn)
     return r;
 }
 
-int router_rem_from_grp(struct nn_router *rt, int grp_id, struct nn_conn *cn)
+int router_rem_from_chan(struct nn_router *rt, int grp_id, struct nn_conn *cn)
 {
     int r = 1;
 
@@ -469,7 +469,7 @@ static int router_conn_free_all(struct nn_router *rt)
 {
     int fail = 0;
     int r;
-    //struct router_grp_iter *iter;
+    //struct router_chan_iter *iter;
     //struct nn_conn *cn;
 
     router_lock(rt);
@@ -487,7 +487,7 @@ static int router_conn_free_all(struct nn_router *rt)
     GRP_CONN_ITER_POST(g);
 
     router_unlock(rt);
-    router_rem_grp(rt, g->id);
+    router_rem_chan(rt, g->id);
     router_lock(rt);
 
     ROUTER_GRP_ITER_POST(rt);
@@ -495,11 +495,11 @@ static int router_conn_free_all(struct nn_router *rt)
 
 
 /*
-    iter = router_grp_iter_init(rt);
-    while(!router_grp_iter_next(iter, &cn)){
+    iter = router_chan_iter_init(rt);
+    while(!router_chan_iter_next(iter, &cn)){
         r = router_unconn(rt, cn);
     }
-    router_grp_iter_free(iter);
+    router_chan_iter_free(iter);
 */
     return fail;
 }
@@ -508,7 +508,7 @@ static int router_tx_pkts(struct nn_router *rt)
 {
     int r;
     struct nn_pkt *pkt;
-    int dest_grp_id;
+    int dest_chan_id;
     int dest_no;
     int c;
     int send_to;
@@ -518,7 +518,7 @@ static int router_tx_pkts(struct nn_router *rt)
     while(!router_get_rx_pkt(rt, &pkt)){
         assert(pkt);
 
-        dest_grp_id = pkt_get_dest_grp_id(pkt);
+        dest_chan_id = pkt_get_dest_chan_id(pkt);
         dest_no = pkt_get_dest_no(pkt);
         c = 0;
         send_to = 0;
@@ -527,7 +527,7 @@ static int router_tx_pkts(struct nn_router *rt)
         ROUTER_GRP_ITER_PRE(rt);
 
         /* route to the dest group */
-        if(g->id == dest_grp_id){
+        if(g->id == dest_chan_id){
 
             GRP_CONN_ITER_PRE(g);
 
@@ -612,22 +612,22 @@ static int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
     return r;
 }
 
-static struct router_grp_iter *router_grp_iter_init(struct nn_router *rt)
+static struct router_chan_iter *router_chan_iter_init(struct nn_router *rt)
 {
-    return (struct router_grp_iter *)ll_iter_init(rt->grp);
+    return (struct router_chan_iter *)ll_iter_init(rt->grp);
 }
 
-static int router_grp_iter_free(struct router_grp_iter *iter)
+static int router_chan_iter_free(struct router_chan_iter *iter)
 {
     return ll_iter_free((struct ll_iter *)iter);
 }
 
-static int router_grp_iter_next(struct router_grp_iter *iter, struct nn_grp **g)
+static int router_chan_iter_next(struct router_chan_iter *iter, struct nn_chan **g)
 {
     return ll_iter_next((struct ll_iter *)iter, (void **)g);
 }
 
-static struct grp_conn_iter *grp_conn_iter_init(struct nn_grp *g)
+static struct grp_conn_iter *grp_conn_iter_init(struct nn_chan *g)
 {
     return (struct grp_conn_iter *)ll_iter_init(g->memb);
 }
@@ -677,12 +677,12 @@ static int router_isvalid(struct nn_router *rt)
 int router_print(struct nn_router *rt)
 {
 
-    router_grp_iter_PRE
+    router_chan_iter_PRE
 
     printf("router->memb\t");
     printf("rt=%p, cn:%p, n=%p\n", rt, cn, _conn_get_node(cn));
 
-    router_grp_iter_POST
+    router_chan_iter_POST
 
     return 0;
 }

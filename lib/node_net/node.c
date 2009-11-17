@@ -574,7 +574,7 @@ static int node_isok(struct nn_node *n)
     assert(n->code);
 
     //node_router_isok(n);
-    //node_grp_isok(n);
+    //node_chan_isok(n);
     //node_print(n);
 
     return 0;
@@ -699,7 +699,7 @@ static int node_router_isok(struct nn_node *n)
 }
 
 /* check that the grp's it points to points back */
-static int node_grp_isok(struct nn_node *n)
+static int node_chan_isok(struct nn_node *n)
 {
     int r = 0;
     void *iter;

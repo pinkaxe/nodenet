@@ -16,13 +16,13 @@ int _conn_set_node(struct nn_conn *cn, struct nn_node *n);
 int _conn_set_router(struct nn_conn *cn, struct nn_router *r);
 //int conn_set_state(struct nn_conn *cn, enum nn_conn_state state);
 
-int _conn_join_grp(struct nn_conn *cn, int grp_id);
-int _conn_quit_grp(struct nn_conn *cn, int grp_id);
+int _conn_join_chan(struct nn_conn *cn, int grp_id);
+int _conn_quit_chan(struct nn_conn *cn, int grp_id);
 
 struct nn_node *_conn_get_node(struct nn_conn *cn);
 struct nn_router *_conn_get_router(struct nn_conn *cn);
 int _conn_get_state(struct nn_conn *cn);
-int _conn_get_grp_id(struct nn_conn *cn);
+int _conn_get_chan_id(struct nn_conn *cn);
 
 /* connections between routers and nodes */
 int _conn_conn(struct nn_node *n, struct nn_router *rt);

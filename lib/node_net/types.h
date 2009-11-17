@@ -3,8 +3,8 @@
 
 struct nn_router;
 struct nn_node;
-struct nn_grp;
-struct nn_grp_rel;
+struct nn_chan;
+struct nn_chan_rel;
 
 struct nn_pkt;
 struct nn_io_data;

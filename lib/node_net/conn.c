@@ -47,7 +47,7 @@ int conn_unconn(struct nn_node *n, struct nn_router *rt)
     int r = 1;
     struct nn_conn *cn;
 
-    //PCHK(LWARN, g, router_get_grp(rt, grp_id));
+    //PCHK(LWARN, g, router_get_chan(rt, grp_id));
     PCHK(LWARN, cn, node_get_router_conn(n, rt));
 
     if(cn){
@@ -66,21 +66,21 @@ err:
     return r;
 }
 
-int conn_join_grp(struct nn_conn *cn, int grp_id)
+int conn_join_chan(struct nn_conn *cn, int grp_id)
 {
     int r;
 
-    ICHK(LCRIT, r, _conn_join_grp(cn, grp_id));
+    ICHK(LCRIT, r, _conn_join_chan(cn, grp_id));
     if(r){
     }
 
-    router_add_to_grp(_conn_get_router(cn), grp_id, cn);
-    //router_add_grp_memb(_conn_get_router(cn), grp_id, b);
+    router_add_to_chan(_conn_get_router(cn), grp_id, cn);
+    //router_add_chan_memb(_conn_get_router(cn), grp_id, b);
 }
 
-int conn_quit_grp(struct nn_conn *cn, int grp_id)
+int conn_quit_chan(struct nn_conn *cn, int grp_id)
 {
-    return _conn_quit_grp(cn, grp_id);
+    return _conn_quit_chan(cn, grp_id);
 }
 
 int xconn_conn(struct nn_node *n, struct nn_router *rt)
@@ -110,11 +110,11 @@ err:
 int xconn_unconn(struct nn_node *n, struct nn_router *rt)
 {
     int r = 1;
-    struct nn_grp *g;
+    struct nn_chan *g;
     struct nn_conn *cn;
 
 #if 0
-    //PCHK(LWARN, g, router_get_grp(rt, grp_id));
+    //PCHK(LWARN, g, router_get_chan(rt, grp_id));
     PCHK(LWARN, cn, node_get_router_conn(n, g));
 
     if(cn){

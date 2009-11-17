@@ -11,11 +11,11 @@ int node_conn(struct nn_node *n, struct nn_conn *cn);
 int node_unconn(struct nn_node *n, struct nn_conn *cn);
 
 /* grp memb. */
-int node_join_grp(struct nn_node *n, struct nn_grp_rel *grp_rel);
-int node_quit_grp(struct nn_node *n, struct nn_grp_rel *grp_rel);
-struct nn_grp_rel *node_get_grp_rel(struct nn_node *n, struct nn_grp *g);
+int node_join_chan(struct nn_node *n, struct nn_chan_rel *grp_rel);
+int node_quit_chan(struct nn_node *n, struct nn_chan_rel *grp_rel);
+struct nn_chan_rel *node_get_chan_rel(struct nn_node *n, struct nn_chan *g);
 
-int node_allow_grp(struct nn_node *n, struct nn_grp *g, int times);
+int node_allow_chan(struct nn_node *n, struct nn_chan *g, int times);
 
 /* getters */
 int node_get_type(struct nn_node *n);

@@ -4,7 +4,7 @@
 struct nn_conn *conn_conn(struct nn_node *n, struct nn_router *rt);
 int conn_unconn(struct nn_node *n, struct nn_router *rt);
 
-int conn_join_grp(struct nn_conn *cn, int grp_id);
-int conn_quit_grp(struct nn_conn *cn, int grp_id);
+int conn_join_chan(struct nn_conn *cn, int grp_id);
+int conn_quit_chan(struct nn_conn *cn, int grp_id);
 
 #endif

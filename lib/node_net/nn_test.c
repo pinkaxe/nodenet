@@ -29,11 +29,11 @@ struct buf {
 
 #define GRPS_NO 3
 
-#define GRP_SERVER 0
-#define GRP_CONN_HANDLERS 1
-#define GRP_MAIN_CHANNEL 2
+#define CHAN_SERVER 0
+#define CHAN_CONN_HANDLERS 1
+#define CHAN_MAIN_CHANNEL 2
 
-struct nn_grp *g[GRPS_NO];
+struct nn_chan *g[GRPS_NO];
 
 
 static int dpool_free_cb(void *dpool, void *dpool_buf)
@@ -76,7 +76,7 @@ void *thread1(struct nn_node *n, void *pdata)
             buf->i = i++;
 
             /* build packet */
-            PCHK(LWARN, pkt, pkt_init(n, GRP_MAIN_CHANNEL, 0, dpool_buf,
+            PCHK(LWARN, pkt, pkt_init(n, CHAN_MAIN_CHANNEL, 0, dpool_buf,
                         sizeof(*dpool_buf), dpool, dpool_free_cb));
             assert(pkt);
 
@@ -216,7 +216,7 @@ void *server(struct nn_node *n, void *pdata)
                 buf->i = cfd;
 
                 /* build packet */
-                PCHK(LWARN, pkt, pkt_init(n, GRP_CONN_HANDLERS, 1, dpool_buf,
+                PCHK(LWARN, pkt, pkt_init(n, CHAN_CONN_HANDLERS, 1, dpool_buf,
                             sizeof(*dpool_buf), dpool, dpool_free_cb));
                 assert(pkt);
 
@@ -253,9 +253,9 @@ void *connection(struct nn_node *n, void *pdata)
     for(;;){
 
         /* set how many to allow from which group */
-        node_set_rx_cnt(n, GRP_CONN_HANDLERS, 1); /* get one conn first, get
+        node_set_rx_cnt(n, CHAN_CONN_HANDLERS, 1); /* get one conn first, get
                                                      dec each time a buffer is rx */
-        node_set_rx_cnt(n, GRP_MAIN_CHANNEL, 0);
+        node_set_rx_cnt(n, CHAN_MAIN_CHANNEL, 0);
 
         while(node_get_rx_pkt(n, &pkt)){
             state = node_do_state(n);
@@ -266,7 +266,7 @@ void *connection(struct nn_node *n, void *pdata)
             usleep(100000);
         }
 
-        node_set_rx_cnt(n, GRP_MAIN_CHANNEL, -2); /* allow unlimited */
+        node_set_rx_cnt(n, CHAN_MAIN_CHANNEL, -2); /* allow unlimited */
 
         dpool_buf = pkt_get_data(pkt);
         buf_req = dpool_buf->data;
@@ -309,7 +309,7 @@ void *connection(struct nn_node *n, void *pdata)
                     break;
                 }
 
-                PCHK(LWARN, pkt, pkt_init(n, GRP_MAIN_CHANNEL, 0, buf_in, buf_len,
+                PCHK(LWARN, pkt, pkt_init(n, CHAN_MAIN_CHANNEL, 0, buf_in, buf_len,
                             NULL, free_cb));
                 assert(pkt);
 
@@ -362,12 +362,12 @@ int main(int argc, char **argv)
         ok(rt[0]);
 
         for(i=0; i < GRPS_NO; i++){
-            router_add_grp(rt[0], i);
+            router_add_chan(rt[0], i);
         }
 
         n[0] = node_init(NN_NODE_TYPE_THREAD, 0, thread1, dpool);
         cn[0] = conn_conn(n[0], rt[0]);
-        conn_join_grp(cn[0], GRP_SERVER);
+        conn_join_chan(cn[0], CHAN_SERVER);
 
 #define NODE_NO 100
         for(i=1; i < NODE_NO; i++){
@@ -375,10 +375,10 @@ int main(int argc, char **argv)
             n[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
             cn[i] = conn_conn(n[i], rt[0]);
 
-            conn_join_grp(cn[i], GRP_CONN_HANDLERS);
-            conn_join_grp(cn[i], GRP_MAIN_CHANNEL);
+            conn_join_chan(cn[i], CHAN_CONN_HANDLERS);
+            conn_join_chan(cn[i], CHAN_MAIN_CHANNEL);
 
-            //conn_conn(n[i], rt[0], GRP_MAIN_CHANNEL); /* valgrind */
+            //conn_conn(n[i], rt[0], CHAN_MAIN_CHANNEL); /* valgrind */
         }
 
         for(i=NODE_NO-1; i >= 0; i--){
@@ -389,18 +389,18 @@ int main(int argc, char **argv)
 
         sleep(3);
 
-        conn_quit_grp(cn[0], GRP_SERVER);
+        conn_quit_chan(cn[0], CHAN_SERVER);
         node_set_state(n[0], NN_STATE_SHUTDOWN);
 
         for(i=1; i < NODE_NO; i++){
-            conn_quit_grp(cn[i], GRP_CONN_HANDLERS);
-            conn_quit_grp(cn[i], GRP_MAIN_CHANNEL);
+            conn_quit_chan(cn[i], CHAN_CONN_HANDLERS);
+            conn_quit_chan(cn[i], CHAN_MAIN_CHANNEL);
             cn[i] = conn_unconn(n[i], rt[0]);
             node_set_state(n[i], NN_STATE_SHUTDOWN);
         }
 
        // for(i=0; i < GRPS_NO; i++){
-       //     router_rem_grp(rt[0], i);
+       //     router_rem_chan(rt[0], i);
        // }
 
         router_set_state(rt[0], NN_STATE_SHUTDOWN);
@@ -418,10 +418,10 @@ int main(int argc, char **argv)
         for(i=1; i < NODE_NO; i++){
             n[i] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
             cn[i] = conn_conn(n[i], rt[0]);
-            conn_join_grp(cn[i], GRP_CONN_HANDLERS);
-            conn_join_grp(cn[i], GRP_MAIN_CHANNEL);
+            conn_join_chan(cn[i], CHAN_CONN_HANDLERS);
+            conn_join_chan(cn[i], CHAN_MAIN_CHANNEL);
 
-            //conn_conn(n[i], rt[0], GRP_MAIN_CHANNEL); /* valgrind */
+            //conn_conn(n[i], rt[0], CHAN_MAIN_CHANNEL); /* valgrind */
         }
 
         for(i=0; i < NODE_NO; i++){
@@ -440,7 +440,7 @@ int main(int argc, char **argv)
         }
 
        // for(i=0; i < GRPS_NO; i++){
-       //     router_rem_grp(rt[0], i);
+       //     router_rem_chan(rt[0], i);
        // }
 
         router_set_state(rt[0], NN_STATE_SHUTDOWN);
@@ -491,7 +491,7 @@ int main(int argc, char **argv)
        //             thread0, dpool);
        //     /* connect to router */
        //     conn_conn(n[i], rt[0]);
-       //     //nn_join_grp(n[i], g[1]);
+       //     //nn_join_chan(n[i], g[1]);
        //     ok(n[i]);
        // }
 
