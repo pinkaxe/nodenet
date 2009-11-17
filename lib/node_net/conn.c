@@ -31,7 +31,21 @@ struct nn_conn *conn_conn(struct nn_node *n, struct nn_router *rt)
         goto err;
     }
 
+    r = _conn_set_router(cn, rt);
+    if(r){
+        free(cn);
+        cn = NULL;
+        goto err;
+    }
+
     ICHK(LCRIT, r, node_conn(n, cn));
+    if(r){
+        free(cn);
+        cn = NULL;
+        goto err;
+    }
+
+    r = _conn_set_node(cn, n);
     if(r){
         free(cn);
         cn = NULL;
@@ -47,7 +61,7 @@ int conn_unconn(struct nn_node *n, struct nn_router *rt)
     int r = 1;
     struct nn_conn *cn;
 
-    //PCHK(LWARN, g, router_get_chan(rt, grp_id));
+    //PCHK(LWARN, g, router_get_chan(rt, chan_id));
     PCHK(LWARN, cn, node_get_router_conn(n, rt));
 
     if(cn){
@@ -56,9 +70,12 @@ int conn_unconn(struct nn_node *n, struct nn_router *rt)
             free(cn);
             goto err;
         }
+        ICHK(LWARN, r, _conn_free_router(cn));
 
         ICHK(LWARN, r, node_unconn(n, cn));
-        if(r == 1) r = 0; /* successfully freed */
+
+        ICHK(LWARN, r, _conn_free_node(cn));
+
     }
 
 err:
@@ -66,75 +83,35 @@ err:
     return r;
 }
 
-int conn_join_chan(struct nn_conn *cn, int grp_id)
+
+/* joining a channel add a cn->conn and link with routers chan */
+#if 0
+int node_join_chan(struct nn_node *n, struct nn_conn *cn, int chan_id)
 {
     int r;
 
-    ICHK(LCRIT, r, _conn_join_chan(cn, grp_id));
+    ICHK(LCRIT, r, _conn_join_chan(cn, chan_id));
     if(r){
     }
 
-    router_add_to_chan(_conn_get_router(cn), grp_id, cn);
-    //router_add_chan_memb(_conn_get_router(cn), grp_id, b);
+    router_add_to_chan(_conn_get_router(cn), chan_id, cn);
+
 }
-
-int conn_quit_chan(struct nn_conn *cn, int grp_id)
-{
-    return _conn_quit_chan(cn, grp_id);
-}
-
-int xconn_conn(struct nn_node *n, struct nn_router *rt)
-{
-    struct nn_conn *cn;
-    int r = 1;
-
-    PCHK(LCRIT, cn, _conn_init());
-    if(!cn) goto err;
-
-    ICHK(LCRIT, r, router_conn(rt, cn));
-    if(r){
-        free(cn);
-        goto err;
-    }
-
-    ICHK(LCRIT, r, node_conn(n, cn));
-    if(r){
-        free(cn);
-        goto err;
-    }
-
-err:
-    return r;
-}
-
-int xconn_unconn(struct nn_node *n, struct nn_router *rt)
-{
-    int r = 1;
-    struct nn_chan *g;
-    struct nn_conn *cn;
-
-#if 0
-    //PCHK(LWARN, g, router_get_chan(rt, grp_id));
-    PCHK(LWARN, cn, node_get_router_conn(n, g));
-
-    if(cn){
-        ICHK(LWARN, r, router_unconn(rt, cn));
-        if(r){
-            free(cn);
-            goto err;
-        }
-
-        ICHK(LWARN, r, node_unconn(n, cn));
-        if(r){
-            free(cn);
-            goto err;
-        }
-
-        _conn_free(cn);
-    }
 #endif
 
-err:
+int conn_join_chan(struct nn_conn *cn, int chan_id)
+{
+    int r;
 
-    return r;
+    ICHK(LCRIT, r, _conn_join_chan(cn, chan_id));
+    if(r){
+    }
+
+    router_add_to_chan(_conn_get_router(cn), chan_id, cn);
+    //router_add_chan_memb(_conn_get_router(cn), chan_id, b);
+}
+
+int conn_quit_chan(struct nn_conn *cn, int chan_id)
+{
+    return _conn_quit_chan(cn, chan_id);
 }

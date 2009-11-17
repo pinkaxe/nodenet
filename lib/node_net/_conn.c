@@ -86,7 +86,7 @@ int ques_init(struct ques_router_init *qs)
     struct ques_router_init *_qs = qs;
 
     while((_qs->size > 0)){
-        PCHK(LWARN, *(_qs->q), que_init(100));
+        PCHK(LWARN, *(_qs->q), que_init(101));
         if(!*(_qs->q)){
             //PCHK(LWARN, r, _conn_free(cn));
             //goto err;
@@ -112,9 +112,9 @@ struct nn_conn *_conn_init()
     }
 
     struct ques_router_init qs[] = {
-        {&cn->rt_n_pkts, 100},
-        {&cn->n_rt_pkts, 100},
-        {&cn->n_rt_notify, 100},
+        {&cn->rt_n_pkts, 101},
+        {&cn->n_rt_pkts, 101},
+        {&cn->n_rt_notify, 101},
         {NULL, 0},
     };
 
@@ -428,9 +428,7 @@ int _conn_router_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
     _conn_lock(cn);
     CONN_CHAN_PRE(cn);
 
-    //printf("!!! a\n");;
     if(pkt_get_dest_chan_id(pkt) == chan->chan_id){
-    //printf("!!! b\n");;
         if(link_get_state(cn->link) == LINK_STATE_ALIVE &&
                 _conn_dec_rx_cnt(cn, chan, 1) != -1){
 
@@ -501,7 +499,6 @@ static int _conn_dec_rx_cnt(struct nn_conn *cn, struct chan *chan, int dec)
 {
     int r = -1;
 
-    printf("!!! found\n");
     if(chan->rx_cnt != -2){
         chan->rx_cnt -= dec;
         if(chan->rx_cnt < -1){
@@ -509,11 +506,6 @@ static int _conn_dec_rx_cnt(struct nn_conn *cn, struct chan *chan, int dec)
         }
     }
     r = chan->rx_cnt;
-
-    printf("RRRR return %d\n", chan->rx_cnt);
-
-    //CONN_CHAN_POST(cn);
-    //_conn_unlock(cn);
 
     return r;
 }

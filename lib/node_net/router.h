@@ -23,4 +23,18 @@ int router_print(struct nn_router *rt);
 int router_add_to_chan(struct nn_router *rt, int grp_id, struct nn_conn *cn);
 int router_rem_from_chan(struct nn_router *rt, int grp_id, struct nn_conn *cn);
 
+
+/* debug/status */
+
+struct router_status {
+    //int chan_no;
+    //int conn_no;
+    int rx_pkts_no; /* how many in que */
+    int tx_pkts_no;
+    int rx_pkts_total; /* all rx */
+    int tx_pkts_total;
+};
+
+/* status must be allocated */
+int router_get_status(struct nn_router *rt, struct router_status *status);
 #endif

@@ -1,6 +1,6 @@
 
 /* a simple test program for node_net, for now 
- * create nodes/routers/grps, change their states, send pkt's to them, 
+ * create nodes/routers/conn's, change their states, send pkt's to them, 
  * and cleanup in loop. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,24 +27,27 @@ struct buf {
     int i;
 };
 
-#define GRPS_NO 3
+#define CHAN_NO 3
 
 #define CHAN_SERVER 0
 #define CHAN_CONN_HANDLERS 1
 #define CHAN_MAIN_CHANNEL 2
 
-struct nn_chan *g[GRPS_NO];
+struct nn_chan *g[CHAN_NO];
 
+static int recv_global = 0;
+static int send_global = 0;
+static int try_send_global = 0;
 
 static int dpool_free_cb(void *dpool, void *dpool_buf)
 {
-    printf("!!!!!!!!!!dpool_free_cb\n");
+    L(LDEBUG, "dpool_free_cb called");
     return dpool_ret_buf(dpool, dpool_buf);
 }
 
 static int free_cb(void *none, void *buf)
 {
-    printf("!!!!!!!!!!free_cb\n");
+    L(LDEBUG, "free_cb called");
     free(buf);
     return 0;
 }
@@ -60,6 +63,7 @@ void *thread1(struct nn_node *n, void *pdata)
 
     for(;;){
 
+        i++;
         /* do state */
         state = node_do_state(n);
         if(state == NN_STATE_SHUTDOWN){
@@ -80,14 +84,20 @@ void *thread1(struct nn_node *n, void *pdata)
                         sizeof(*dpool_buf), dpool, dpool_free_cb));
             assert(pkt);
 
-            while(node_tx(n, pkt)){
-                usleep(10000);
+            try_send_global++;
+            if(!node_tx(n, pkt)){
+                send_global++;
+                //usleep(10000);
             }
         }
-
-        usleep(100000);
+        sched_yield();
+       // if(i == 16){
+       //     usleep(1000);
+       //     i = 0;
+       // }
 
         /* receive packets */
+#if 0
         while(!node_get_rx_pkt(n, &pkt)){
             struct dpool_buf *dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
@@ -96,8 +106,9 @@ void *thread1(struct nn_node *n, void *pdata)
             //dpool_ret_buf(dpool, dpool_buf);
             pkt_free(pkt);
         }
-        usleep(100000);
+        //usleep(100000);
         //sched_yield();
+#endif
     }
 
     return NULL;
@@ -111,6 +122,9 @@ void *thread0(struct nn_node *n, void *pdata)
     enum nn_state state;
 
     for(;;){
+
+        node_wait(n);
+
         /* check state */
         state = node_do_state(n);
         if(state == NN_STATE_SHUTDOWN){
@@ -123,13 +137,11 @@ void *thread0(struct nn_node *n, void *pdata)
             struct dpool_buf *dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
             L(LINFO, "Got buf->i=%d", buf->i);
+            recv_global++;
             /* when done call pkt_free */
             //dpool_ret_buf(dpool, dpool_buf);
             pkt_free(pkt);
         }
-
-        //sched_yield();
-        usleep(100000);
     }
 
     return NULL;
@@ -275,7 +287,6 @@ void *connection(struct nn_node *n, void *pdata)
         L(LINFO, "Starting fd=%d", fd);
         /* don't need the packet anymore */
         pkt_free(pkt);
-        //grp_quit(n, g[0]);
 
         int flags;
         int r;
@@ -353,15 +364,17 @@ int main(int argc, char **argv)
     struct dpool *dpool;
     struct buf *buf;
     //struct dpool_buf *dpool_buf;
+    struct  router_status rt_status;
+    struct  node_status n_status[1024];
 
     while(1){
 
-        dpool = dpool_create(sizeof(*buf), 100, 0);
+        dpool = dpool_create(sizeof(*buf), 10000, 0);
 
         rt[0] = router_init();
         ok(rt[0]);
 
-        for(i=0; i < GRPS_NO; i++){
+        for(i=0; i < CHAN_NO; i++){
             router_add_chan(rt[0], i);
         }
 
@@ -369,7 +382,7 @@ int main(int argc, char **argv)
         cn[0] = conn_conn(n[0], rt[0]);
         conn_join_chan(cn[0], CHAN_SERVER);
 
-#define NODE_NO 100
+#define NODE_NO 2
         for(i=1; i < NODE_NO; i++){
 
             n[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
@@ -381,13 +394,21 @@ int main(int argc, char **argv)
             //conn_conn(n[i], rt[0], CHAN_MAIN_CHANNEL); /* valgrind */
         }
 
+        router_set_state(rt[0], NN_STATE_RUNNING);
+
         for(i=NODE_NO-1; i >= 0; i--){
             node_set_state(n[i], NN_STATE_RUNNING);
         }
 
-        router_set_state(rt[0], NN_STATE_RUNNING);
-
         sleep(3);
+
+        //router_set_state(rt[0], NN_STATE_PAUSED);
+
+        //for(i=NODE_NO-1; i >= 0; i--){
+        //    node_set_state(n[i], NN_STATE_PAUSED);
+        //}
+
+        //sleep(1);
 
         conn_quit_chan(cn[0], CHAN_SERVER);
         node_set_state(n[0], NN_STATE_SHUTDOWN);
@@ -399,107 +420,42 @@ int main(int argc, char **argv)
             node_set_state(n[i], NN_STATE_SHUTDOWN);
         }
 
-       // for(i=0; i < GRPS_NO; i++){
+        router_set_state(rt[0], NN_STATE_SHUTDOWN);
+
+       // for(i=0; i < CHAN_NO; i++){
        //     router_rem_chan(rt[0], i);
        // }
 
-        router_set_state(rt[0], NN_STATE_SHUTDOWN);
-
         for(i=0; i < NODE_NO; i++){
+            node_get_status(n[i], &n_status[i]);
             node_clean(n[i]);
         }
+
+        router_get_status(rt[0], &rt_status);
 
         router_clean(rt[0]);
 
         dpool_free(dpool);
 
+        printf("Router rx_pkts_total: %d\n", rt_status.rx_pkts_total);
+        printf("Router tx_pkts_total: %d\n", rt_status.tx_pkts_total);
+
+        for(i=0; i < NODE_NO; i++){
+            printf("Node %d rx_pkts_total: %d\n", i, n_status[i].rx_pkts_total);
+            printf("Node %d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
+        }
+
+        //printf("Router rx_pkts_no: %d\n", status.rx_pkts_no);
+        //printf("Router tx_pkts_no: %d\n", status.tx_pkts_no);
+
+        printf("!!! try sent: %d\n", try_send_global);
+        printf("!!! sent: %d\n", send_global);
+        printf("!!! receive: %d\n", recv_global);
+
+
+        exit(0);
+
 #if 0
-
-        for(i=1; i < NODE_NO; i++){
-            n[i] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
-            cn[i] = conn_conn(n[i], rt[0]);
-            conn_join_chan(cn[i], CHAN_CONN_HANDLERS);
-            conn_join_chan(cn[i], CHAN_MAIN_CHANNEL);
-
-            //conn_conn(n[i], rt[0], CHAN_MAIN_CHANNEL); /* valgrind */
-        }
-
-        for(i=0; i < NODE_NO; i++){
-            node_set_state(n[i], NN_STATE_RUNNING);
-        }
-
-        router_set_state(rt[0], NN_STATE_RUNNING);
-
-        while(1){
-            sleep(5);
-        }
-        //conn_unconn(n[0], rt[0], 1);
-
-        for(i=0; i < NODE_NO; i++){
-            node_set_state(n[i], NN_STATE_SHUTDOWN);
-        }
-
-       // for(i=0; i < GRPS_NO; i++){
-       //     router_rem_chan(rt[0], i);
-       // }
-
-        router_set_state(rt[0], NN_STATE_SHUTDOWN);
-
-        for(i=0; i < NODE_NO; i++){
-            node_clean(n[i]);
-        }
-
-        router_clean(rt[0]);
-
-        dpool_free(dpool);
-
-
-        sched_yield();
-#if 0
-        /* create input nodes */
-/*
-        n[0] = node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
-                thread1, dpool);
-        conn_conn(n[0], rt[0]);
-        grp_join(n[0], g[0]);
-
-        n[1] = node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
-                thread0, dpool);
-        conn_conn(n[1], rt[0]);
-        grp_join(n[1], g[0]);
-*/
-
-        n[0] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
-        conn_conn(n[0], rt[0]);
-        grp_join(n[0], g[0]);
-        grp_join(n[0], g[1]);
-
-        n[1] = node_init(NN_NODE_TYPE_THREAD, 0, connection, dpool);
-        conn_conn(n[1], rt[0]);
-        grp_join(n[1], g[0]);
-        grp_join(n[1], g[1]);
-
-        n[2] = node_init(NN_NODE_TYPE_THREAD, 0, server, dpool);
-        conn_conn(n[2], rt[0]);
-        grp_join(n[2], g[2]);
-
-        //conn_conn(n[1], rt[0]);
-        //grp_join(n[1], g[0]);
-
-       // for(i=1; i < 1; i++){
-       //     n[i] = nn_node_init(NN_NODE_TYPE_THREAD, NN_NODE_ATTR_NO_INPUT,
-       //             thread0, dpool);
-       //     /* connect to router */
-       //     conn_conn(n[i], rt[0]);
-       //     //nn_join_chan(n[i], g[1]);
-       //     ok(n[i]);
-       // }
-
-        /* set everthing state to running */
-        for(i=0; i < 3; i++){
-            node_set_state(n[i], NN_STATE_RUNNING);
-        }
-        router_set_state(rt[0], NN_STATE_RUNNING);
 
         /* send a pkt from the router */
         /*
@@ -538,24 +494,8 @@ int main(int argc, char **argv)
             node_set_state(n[i], NN_STATE_SHUTDOWN);
         }
 
-        for(i=0; i < GRPS_NO; i++){
-            grp_free(g[i]);
-        }
-
-        router_set_state(rt[0], NN_STATE_SHUTDOWN);
-
-        for(i=0; i < 3; i++){
-            node_clean(n[i]);
-        }
-
-        router_clean(rt[0]);
-
-        dpool_free(dpool);
-
-        printf("loop done\n");
 #endif
-#endif
-        //usleep(2000);
+
     }
     return 0;
 }

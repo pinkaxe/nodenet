@@ -32,7 +32,12 @@ struct nn_node {
     enum nn_state state;
 
     struct que *rx_pkts;   /* pkt's coming in */
+    int rx_pkts_no;
     struct que *tx_pkts;   /* pkt's going out */
+    int tx_pkts_no;
+
+    int rx_pkts_total;
+    int tx_pkts_total;
 
     /* rel */
     struct ll *conn;      /* all conn connected to via conn's */
@@ -66,6 +71,7 @@ static void *node_thread(void *arg);
 static int node_conn_free_all(struct nn_node *n);
 static void *start_user_thread(void *arg);
 int node_print(struct nn_node *n);;
+
 
 static int node_lock(struct nn_node *n);
 static int node_unlock(struct nn_node *n);
@@ -140,7 +146,7 @@ static void *node_thread(void *arg)
         if(state == NN_STATE_SHUTDOWN){
             thread_join(tid, NULL);
             node_conn_free_all(n);
-            node_set_state(n, NN_STATE_FINISHED);
+            node_set_state(n, NN_STATE_DONE);
             return NULL;
         }
 
@@ -148,8 +154,8 @@ static void *node_thread(void *arg)
 
         ICHK(LDEBUG, r, node_rx_pkts(n));
 
-        //sched_yield();
-        usleep(100000);
+        sched_yield();
+        //usleep(100000);
     }
 
 err:
@@ -186,17 +192,21 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     //    goto err;
     //}
 
-    PCHK(LWARN, n->rx_pkts, que_init(100));
+    PCHK(LWARN, n->rx_pkts, que_init(102));
     if(!(n->rx_pkts)){
         PCHK(LWARN, r, node_free(n));
         goto err;
     }
+    n->rx_pkts_no = 0;
+    n->rx_pkts_total = 0;
 
-    PCHK(LWARN, n->tx_pkts, que_init(100));
+    PCHK(LWARN, n->tx_pkts, que_init(102));
     if(!(n->tx_pkts)){
         PCHK(LWARN, r, node_free(n));
         goto err;
     }
+    n->tx_pkts_no = 0;
+    n->tx_pkts_total = 0;
 
     n->type = type;
     n->attr = attr;
@@ -271,7 +281,7 @@ int node_clean(struct nn_node *n)
 {
     node_lock(n);
 
-    while(node_get_state(n) != NN_STATE_FINISHED){
+    while(node_get_state(n) != NN_STATE_DONE){
         node_cond_wait(n);
     }
 
@@ -292,9 +302,6 @@ int node_conn(struct nn_node *n, struct nn_conn *cn)
     ICHK(LWARN, r, ll_add_front(n->conn, (void **)&cn));
     if(r) goto err;
 
-    ICHK(LWARN, r, _conn_set_node(cn, n));
-    if(r) goto err;
-
 err:
     node_unlock(n);
     return r;
@@ -309,9 +316,6 @@ int node_unconn(struct nn_node *n, struct nn_conn *cn)
     node_lock(n);
 
     ICHK(LWARN, r, ll_rem(n->conn, cn));
-    if(r) goto err;
-
-    ICHK(LWARN, r, _conn_free_node(cn));
     if(r) goto err;
 
 err:
@@ -394,6 +398,7 @@ int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt)
     node_lock(n);
 
     *pkt = que_get(n->rx_pkts, &ts);
+    n->rx_pkts_no--;
 
     node_unlock(n);
 
@@ -412,6 +417,9 @@ int node_tx(struct nn_node *n, struct nn_pkt *pkt)
     node_lock(n);
 
     ICHK(LWARN, r, que_add(n->tx_pkts, pkt));
+    n->tx_pkts_no++;
+    n->tx_pkts_total++;
+    node_cond_broadcast(n);
 
     node_unlock(n);
 
@@ -441,11 +449,27 @@ int node_add_tx_pkt(struct nn_node *n, struct nn_pkt *pkt)
 
 /* helper functions */
 
+
+int node_wait(struct nn_node *n)
+{
+    node_lock(n);
+
+    while(node_get_state(n) == NN_STATE_RUNNING && n->rx_pkts_no <= 0){
+        node_cond_wait(n);
+    }
+
+    node_unlock(n);
+
+    return 0;
+}
+
+
 int node_do_state(struct nn_node *n)
 {
     enum nn_state state;
 
     node_lock(n);
+
 
     switch((state=node_get_state(n))){
         case NN_STATE_RUNNING:
@@ -453,10 +477,10 @@ int node_do_state(struct nn_node *n)
         case NN_STATE_PAUSED:
             L(LNOTICE, "Node paused: %p", n);
             while(node_get_state(n) == NN_STATE_PAUSED){
-                node_unlock(n);
-                sleep(1);
-                node_lock(n);
-                //node_cond_wait(n);
+                //node_unlock(n);
+                //sleep(1);
+                //node_lock(n);
+                node_cond_wait(n);
             }
             L(LNOTICE, "Node paused state exit: %p", n);
             break;
@@ -465,7 +489,7 @@ int node_do_state(struct nn_node *n)
             node_unlock(n);
             L(LNOTICE, "Node thread shutdown completed");
             break;
-        case NN_STATE_FINISHED:
+        case NN_STATE_DONE:
             L(LCRIT, "Node thread illegally in finished state");
             break;
     }
@@ -485,6 +509,7 @@ static int node_tx_pkts(struct nn_node *n)
 
         node_lock(n);
         pkt = que_get(n->tx_pkts, &ts);
+        n->tx_pkts_no--;
         node_unlock(n);
 
         if(pkt){
@@ -523,10 +548,23 @@ static int node_rx_pkts(struct nn_node *n)
         assert(pkt);
 
         ICHK(LWARN, r, que_add(n->rx_pkts, pkt));
+        n->rx_pkts_no++;
+        n->rx_pkts_total++;
+        node_cond_broadcast(n);
         L(LDEBUG, "+ node_rx_pkts %p(%d)", pkt, r);
     }
 
     NODE_CONN_ITER_POST
+
+    return r;
+}
+
+
+int node_get_rx_pkts_no(struct nn_node *n)
+{
+    int r;
+
+
 
     return r;
 }
@@ -635,6 +673,20 @@ static int node_cond_wait(struct nn_node *n)
 static int node_cond_broadcast(struct nn_node *n)
 {
     cond_broadcast(&n->cond);
+    return 0;
+}
+
+int node_get_status(struct nn_node *n, struct node_status *status)
+{
+    node_lock(n);
+
+    status->rx_pkts_no = n->rx_pkts_no;
+    status->tx_pkts_no = n->tx_pkts_no;
+    status->rx_pkts_total = n->rx_pkts_total;
+    status->tx_pkts_total = n->tx_pkts_total;
+
+    node_unlock(n);
+
     return 0;
 }
 

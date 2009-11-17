@@ -34,11 +34,27 @@ int node_get_rx_pkt(struct nn_node *n, struct nn_pkt **pkt);
 
 int node_set_rx_cnt(struct nn_node *n, int grp_id, int cnt);
 
-int node_do_state(struct nn_node *n);
-
 int node_tx(struct nn_node *n, struct nn_pkt *pkt);
+
+int node_wait(struct nn_node *n);
+int node_do_state(struct nn_node *n);
 
 int node_rx(struct nn_node *n, void **data, int *data_len, void **pdata);
 
+/* number of packets ready for rx */
+int node_get_rx_pkts_no(struct nn_node *n);
+
+/* debug/status */
+
+struct node_status {
+    //int chan_no;
+    //int conn_no;
+    int rx_pkts_no; /* how many in que */
+    int tx_pkts_no;
+    int rx_pkts_total; /* all rx */
+    int tx_pkts_total;
+};
+
+int node_get_status(struct nn_node *n, struct node_status *status);
 
 #endif

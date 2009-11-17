@@ -30,9 +30,10 @@ void dlog(int level, const char *filename, int line,
 #define log4(level, mesg, arg1, arg2, arg3, arg4) \
 	dlog(level, __FILE__, __LINE__, __FUNCTION__, mesg, arg1, arg2, arg3, arg4) 
 
-#define L(level, ...) \
-	dlog(level, __FILE__, __LINE__, __FUNCTION__,  __VA_ARGS__)
+//#define L(level, ...) \
+//	dlog(level, __FILE__, __LINE__, __FUNCTION__,  __VA_ARGS__)
 
+#define L(level, ...)
 
 #define ICHK(level, lexp, rexp) \
     if((lexp = (rexp))){ \
