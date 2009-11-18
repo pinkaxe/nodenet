@@ -23,6 +23,8 @@ int router_print(struct nn_router *rt);
 int router_add_to_chan(struct nn_router *rt, int grp_id, struct nn_conn *cn);
 int router_rem_from_chan(struct nn_router *rt, int grp_id, struct nn_conn *cn);
 
+/* notify router that conn buf avail */
+int router_conn_buf_avail(struct nn_router *rt, int cnt);
 
 /* debug/status */
 

@@ -119,6 +119,8 @@ static void *node_thread(void *arg)
     thread_t tid;
     int r;
     enum nn_state state;
+    int tx_pkts_no;
+    int rx_pkts_no;
 
     user_func = node_get_codep(n);
     pdata = node_get_pdatap(n);
@@ -154,8 +156,27 @@ static void *node_thread(void *arg)
 
         ICHK(LDEBUG, r, node_rx_pkts(n));
 
+        node_lock(n);
+
+        tx_pkts_no = n->tx_pkts_no;
+        //rx_pkts_no = n->rx_pkts_no;
+
+        node_unlock(n);
+
         sched_yield();
-        //usleep(100000);
+        //usleep(1000);
+
+//        usleep(10000);
+/*
+        if(tx_pkts_no){
+            // only yield if there is more packets to rx/tx
+            sched_yield();
+            usleep(1000);
+        }else{
+            usleep(1000);
+        }
+*/
+
     }
 
 err:
@@ -192,7 +213,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     //    goto err;
     //}
 
-    PCHK(LWARN, n->rx_pkts, que_init(102));
+    PCHK(LWARN, n->rx_pkts, que_init(9999));
     if(!(n->rx_pkts)){
         PCHK(LWARN, r, node_free(n));
         goto err;
@@ -200,7 +221,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     n->rx_pkts_no = 0;
     n->rx_pkts_total = 0;
 
-    PCHK(LWARN, n->tx_pkts, que_init(102));
+    PCHK(LWARN, n->tx_pkts, que_init(9999));
     if(!(n->tx_pkts)){
         PCHK(LWARN, r, node_free(n));
         goto err;
@@ -417,6 +438,7 @@ int node_tx(struct nn_node *n, struct nn_pkt *pkt)
     node_lock(n);
 
     ICHK(LWARN, r, que_add(n->tx_pkts, pkt));
+
     n->tx_pkts_no++;
     n->tx_pkts_total++;
     node_cond_broadcast(n);
@@ -486,8 +508,6 @@ int node_do_state(struct nn_node *n)
             break;
         case NN_STATE_SHUTDOWN:
             L(LNOTICE, "Node thread shutdown start: %p", n);
-            node_unlock(n);
-            L(LNOTICE, "Node thread shutdown completed");
             break;
         case NN_STATE_DONE:
             L(LCRIT, "Node thread illegally in finished state");
@@ -503,9 +523,11 @@ static int node_tx_pkts(struct nn_node *n)
 {
     struct nn_pkt *pkt;
     struct timespec ts = {0, 0};
+    int max;
+    int i;
 
     /* pick pkt's up from node and move to conn */
-    for(;;){
+    for(max=0; max < 128; max++){
 
         node_lock(n);
         pkt = que_get(n->tx_pkts, &ts);
@@ -540,19 +562,26 @@ static int node_rx_pkts(struct nn_node *n)
 {
     int r = 0;
     struct nn_pkt *pkt;
+    int max = 0;
 
     NODE_CONN_ITER_PRE
 
-    /* pick pkt's up from conn and move to node */
-    if(!_conn_node_rx_pkt(cn, &pkt)){
-        assert(pkt);
+    for(max=0; max < 128; max++){
+        /* pick pkt's up from conn and move to node */
+        if(!_conn_node_rx_pkt(cn, &pkt)){
+            assert(pkt);
 
-        ICHK(LWARN, r, que_add(n->rx_pkts, pkt));
-        n->rx_pkts_no++;
-        n->rx_pkts_total++;
-        node_cond_broadcast(n);
-        L(LDEBUG, "+ node_rx_pkts %p(%d)", pkt, r);
+            ICHK(LWARN, r, que_add(n->rx_pkts, pkt));
+            n->rx_pkts_no++;
+            n->rx_pkts_total++;
+            node_cond_broadcast(n);
+            L(LDEBUG, "+ node_rx_pkts %p(%d)", pkt, r);
+        }else{
+            break;
+        }
     }
+
+//    if(max == 128)
 
     NODE_CONN_ITER_POST
 

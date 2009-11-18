@@ -43,6 +43,8 @@ struct nn_router{
     int rx_pkts_total;
     int tx_pkts_total;
 
+    //int conn_pkts_no; /* number of conn bufs ready to be picked up */
+
     mutex_t mutex;
     cond_t cond;
 };
@@ -115,6 +117,7 @@ static void *router_thread(void *arg)
 {
     //struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
+    int rx_pkts_no;
 
     L(LNOTICE, "Router thread starting");
 
@@ -123,14 +126,6 @@ static void *router_thread(void *arg)
     for(;;){
 
         router_lock(rt);
-
-        //while(router_get_state(rt) == NN_STATE_RUNNING && !rt->rx_pkts_no){
-        //    /* rx packets from conn's */
-        //    router_rx_pkts(rt);
-        //    //usleep(100000);
-
-        //    //router_cond_wait(rt);
-        //}
 
 again:
         /* state changed ? */
@@ -165,11 +160,16 @@ again:
             router_route_pkts(rt);
         }
 
+        rx_pkts_no = rt->rx_pkts_no;
+
         router_unlock(rt);
 
-        usleep(1000);
-        //sched_yield();
-
+        if(rx_pkts_no){
+            // yield if there is more rx packets to process
+            sched_yield();
+        }else{
+            usleep(1000);
+        }
     }
     return NULL;
 }
@@ -200,7 +200,7 @@ struct nn_router *router_init()
         goto err;
     }
 
-    PCHK(LWARN, rt->rx_pkts, que_init(100));
+    PCHK(LWARN, rt->rx_pkts, que_init(9999));
     if(!(rt->rx_pkts)){
         PCHK(LWARN, r, router_free(rt));
         rt = NULL;
@@ -208,7 +208,7 @@ struct nn_router *router_init()
     }
     rt->rx_pkts_no = 0;
 
-    PCHK(LWARN, rt->tx_pkts, que_init(100));
+    PCHK(LWARN, rt->tx_pkts, que_init(9999));
     if(!(rt->tx_pkts)){
         PCHK(LWARN, r, router_free(rt));
         rt = NULL;
@@ -218,6 +218,7 @@ struct nn_router *router_init()
 
     rt->rx_pkts_total = 0;
     rt->tx_pkts_total = 0;
+    //rt->conn_pkts_no = 0;
 
     // FIXME: err checking
     mutex_init(&rt->mutex, NULL);
@@ -373,6 +374,21 @@ err:
 
     return r;
 }
+
+#if 0
+int router_conn_buf_avail(struct nn_router *rt, int no)
+{
+    router_lock(rt);
+
+    rt->conn_pkts_no += no;
+
+    router_cond_broadcast(rt);
+
+    router_unlock(rt);
+
+    return rt->conn_pkts_no;
+}
+#endif
 
 /* return -1 no such group */
 int router_rem_chan(struct nn_router *rt, int id)
@@ -538,7 +554,7 @@ static int router_route_pkts(struct nn_router *rt)
     int pick_up = 10;
 
     /* pick pkt's up from router and move to conn */
-    while(pick_up-- && !router_get_rx_pkt(rt, &pkt)){
+    while(--pick_up && !router_get_rx_pkt(rt, &pkt)){
         assert(pkt);
 
         dest_chan_id = pkt_get_dest_chan_id(pkt);
@@ -602,10 +618,14 @@ static int router_rx_pkts(struct nn_router *rt)
     /* loop through conn's and move pkt's to rt */
     while(!_conn_router_rx_pkt(cn, &pkt)){
         assert(pkt);
+
+        //rt->conn_pkts_no--;
+
         ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
         rt->rx_pkts_no++;
         rt->rx_pkts_total++;
         router_cond_broadcast(rt);
+
     }
 
     CHAN_CONN_ITER_POST(g);

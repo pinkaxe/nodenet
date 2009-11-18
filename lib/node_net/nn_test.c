@@ -25,6 +25,7 @@
 
 struct buf {
     int i;
+    //char var[1024 * 16];
 };
 
 #define CHAN_NO 3
@@ -35,9 +36,9 @@ struct buf {
 
 struct nn_chan *g[CHAN_NO];
 
-static int recv_global = 0;
-static int send_global = 0;
-static int try_send_global = 0;
+//static int recv_global = 0;
+//static int send_global = 0;
+//static int try_send_global = 0;
 
 static int dpool_free_cb(void *dpool, void *dpool_buf)
 {
@@ -84,12 +85,18 @@ void *thread1(struct nn_node *n, void *pdata)
                         sizeof(*dpool_buf), dpool, dpool_free_cb));
             assert(pkt);
 
-            try_send_global++;
+            //try_send_global++;
             if(!node_tx(n, pkt)){
-                send_global++;
+                //send_global++;
                 //usleep(10000);
             }
+            //sleep(2);
         }
+
+        //usleep(1000);
+        //sleep(1);
+
+        //sleep(1);
         sched_yield();
        // if(i == 16){
        //     usleep(1000);
@@ -120,6 +127,7 @@ void *thread0(struct nn_node *n, void *pdata)
     struct nn_pkt *pkt;
     struct buf *buf;
     enum nn_state state;
+    struct dpool_buf *dpool_buf;
 
     for(;;){
 
@@ -134,14 +142,17 @@ void *thread0(struct nn_node *n, void *pdata)
 
         while(!node_get_rx_pkt(n, &pkt)){
             /* incoming packet */
-            struct dpool_buf *dpool_buf = pkt_get_data(pkt);
+            dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
             L(LINFO, "Got buf->i=%d", buf->i);
-            recv_global++;
+            //recv_global++;
             /* when done call pkt_free */
             //dpool_ret_buf(dpool, dpool_buf);
             pkt_free(pkt);
         }
+        sched_yield();
+        //sleep(1);
+        //usleep(1000);
     }
 
     return NULL;
@@ -382,8 +393,12 @@ int main(int argc, char **argv)
         cn[0] = conn_conn(n[0], rt[0]);
         conn_join_chan(cn[0], CHAN_SERVER);
 
-#define NODE_NO 2
-        for(i=1; i < NODE_NO; i++){
+        n[1] = node_init(NN_NODE_TYPE_THREAD, 0, thread1, dpool);
+        cn[1] = conn_conn(n[1], rt[0]);
+        conn_join_chan(cn[1], CHAN_SERVER);
+
+#define NODE_NO 4
+        for(i=2; i < NODE_NO; i++){
 
             n[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
             cn[i] = conn_conn(n[i], rt[0]);
@@ -410,15 +425,21 @@ int main(int argc, char **argv)
 
         //sleep(1);
 
-        conn_quit_chan(cn[0], CHAN_SERVER);
-        node_set_state(n[0], NN_STATE_SHUTDOWN);
-
-        for(i=1; i < NODE_NO; i++){
+        for(i=2; i < NODE_NO; i++){
             conn_quit_chan(cn[i], CHAN_CONN_HANDLERS);
             conn_quit_chan(cn[i], CHAN_MAIN_CHANNEL);
             cn[i] = conn_unconn(n[i], rt[0]);
             node_set_state(n[i], NN_STATE_SHUTDOWN);
         }
+
+        sleep(1);
+
+        conn_quit_chan(cn[0], CHAN_SERVER);
+        node_set_state(n[0], NN_STATE_SHUTDOWN);
+
+        conn_quit_chan(cn[1], CHAN_SERVER);
+        node_set_state(n[1], NN_STATE_SHUTDOWN);
+
 
         router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
@@ -448,9 +469,9 @@ int main(int argc, char **argv)
         //printf("Router rx_pkts_no: %d\n", status.rx_pkts_no);
         //printf("Router tx_pkts_no: %d\n", status.tx_pkts_no);
 
-        printf("!!! try sent: %d\n", try_send_global);
-        printf("!!! sent: %d\n", send_global);
-        printf("!!! receive: %d\n", recv_global);
+        //printf("!!! try sent: %d\n", try_send_global);
+        //printf("!!! sent: %d\n", send_global);
+        //printf("!!! receive: %d\n", recv_global);
 
 
         exit(0);

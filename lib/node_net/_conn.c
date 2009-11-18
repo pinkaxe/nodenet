@@ -41,9 +41,6 @@
 /* one per connected router and node */
 struct nn_conn {
     struct link *link; /* keep link info, rt, n, state */
-    mutex_t mutex;
-    cond_t cond; /* if anything changes */
-
     struct ll *chan;          /* members of these chan's */
 
     /* router(output) -> node(input) */
@@ -53,6 +50,9 @@ struct nn_conn {
     struct que *n_rt_pkts;   /* n write data */
     struct que *n_rt_notify; /* always used, from node_driver */
     //struct que *n_rt_pkts;    /* only master node */
+
+    mutex_t mutex;
+    cond_t cond; /* if anything changes */
 
 };
 
@@ -86,7 +86,7 @@ int ques_init(struct ques_router_init *qs)
     struct ques_router_init *_qs = qs;
 
     while((_qs->size > 0)){
-        PCHK(LWARN, *(_qs->q), que_init(101));
+        PCHK(LWARN, *(_qs->q), que_init(100));
         if(!*(_qs->q)){
             //PCHK(LWARN, r, _conn_free(cn));
             //goto err;
@@ -112,9 +112,9 @@ struct nn_conn *_conn_init()
     }
 
     struct ques_router_init qs[] = {
-        {&cn->rt_n_pkts, 101},
-        {&cn->n_rt_pkts, 101},
-        {&cn->n_rt_notify, 101},
+        {&cn->rt_n_pkts, 9999},
+        {&cn->n_rt_pkts, 9999},
+        {&cn->n_rt_notify, 9999},
         {NULL, 0},
     };
 
@@ -388,7 +388,10 @@ int _conn_node_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
     int r;
 
     _conn_lock(cn);
-    ICHK(LINFO, r, que_add(cn->n_rt_pkts, pkt));
+
+    if(link_get_state(cn->link) == LINK_STATE_ALIVE){
+        ICHK(LINFO, r, que_add(cn->n_rt_pkts, pkt));
+    }
     _conn_unlock(cn);
 
     L(LDEBUG, "+ _conn_node_tx_pkt %p(%d)\n", pkt, r);
@@ -428,8 +431,8 @@ int _conn_router_tx_pkt(struct nn_conn *cn, struct nn_pkt *pkt)
     _conn_lock(cn);
     CONN_CHAN_PRE(cn);
 
-    if(pkt_get_dest_chan_id(pkt) == chan->chan_id){
-        if(link_get_state(cn->link) == LINK_STATE_ALIVE &&
+    if(link_get_state(cn->link) == LINK_STATE_ALIVE){
+        if(pkt_get_dest_chan_id(pkt) == chan->chan_id &&
                 _conn_dec_rx_cnt(cn, chan, 1) != -1){
 
             ICHK(LINFO, r, que_add(cn->rt_n_pkts, pkt));
