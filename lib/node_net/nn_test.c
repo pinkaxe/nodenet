@@ -87,16 +87,12 @@ void *thread1(struct nn_node *n, void *pdata)
 
             //try_send_global++;
             if(!node_tx(n, pkt)){
-                //send_global++;
                 //usleep(10000);
+            }else{
+                assert(0); // slam
             }
-            //sleep(2);
         }
 
-        //usleep(1000);
-        //sleep(1);
-
-        //sleep(1);
         sched_yield();
        // if(i == 16){
        //     usleep(1000);
@@ -105,7 +101,7 @@ void *thread1(struct nn_node *n, void *pdata)
 
         /* receive packets */
 #if 0
-        while(!node_get_rx_pkt(n, &pkt)){
+        while(!node_rx(n, &pkt)){
             struct dpool_buf *dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
             L(LINFO, "Got buf->i=%d", buf->i);
@@ -140,14 +136,13 @@ void *thread0(struct nn_node *n, void *pdata)
             return NULL;
         }
 
-        while(!node_get_rx_pkt(n, &pkt)){
+        while(!node_rx(n, &pkt)){
+
             /* incoming packet */
             dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
+
             L(LINFO, "Got buf->i=%d", buf->i);
-            //recv_global++;
-            /* when done call pkt_free */
-            //dpool_ret_buf(dpool, dpool_buf);
             pkt_free(pkt);
         }
         sched_yield();
@@ -280,7 +275,7 @@ void *connection(struct nn_node *n, void *pdata)
                                                      dec each time a buffer is rx */
         node_set_rx_cnt(n, CHAN_MAIN_CHANNEL, 0);
 
-        while(node_get_rx_pkt(n, &pkt)){
+        while(node_rx(n, &pkt)){
             state = node_do_state(n);
             if(state == NN_STATE_SHUTDOWN){
                 // cleanup if need to
@@ -342,7 +337,7 @@ void *connection(struct nn_node *n, void *pdata)
             }
 
             /* receive packets and write to client */
-            while(!node_get_rx_pkt(n, &pkt)){
+            while(!node_rx(n, &pkt)){
                 //struct dpool_buf *dpool_buf = pkt_get_data(pkt);
                 buf_out = pkt_get_data(pkt);
                 printf("!!!! writing: %s\n", buf_out);

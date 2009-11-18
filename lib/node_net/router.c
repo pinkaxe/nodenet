@@ -155,7 +155,7 @@ again:
 
         router_rx_pkts(rt);
 
-        /* route packets to chan->conn's */
+       // /* route packets to chan->conn's */
         if(rt->rx_pkts_no){
             router_route_pkts(rt);
         }
