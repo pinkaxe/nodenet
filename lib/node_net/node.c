@@ -42,9 +42,6 @@ struct nn_node {
     /* rel */
     struct ll *conn;      /* all conn connected to via conn's */
 
-    /* funcp's to communicate with this node type driver */
-    struct node_driver_ops *ops;
-
     void *code;  /* pointer to object depending on type */
 
     void *pdata; /* private passthru data */
@@ -54,7 +51,6 @@ struct nn_node {
 
     mutex_t mutex;
     cond_t cond;
-
 
     DBG_STRUCT_END
 };
@@ -167,16 +163,6 @@ static void *node_thread(void *arg)
 
         sched_yield();
         //usleep(1000);
-
-/*
-        if(tx_pkts_no){
-            // only yield if there is more packets to rx/tx
-            sched_yield();
-            usleep(1000);
-        }else{
-            usleep(1000);
-        }
-*/
 
     }
 
@@ -650,7 +636,6 @@ static void *start_user_thread(void *arg)
 
 /** debug functions **/
 
-/*
 static int node_isok(struct nn_node *n)
 {
 
@@ -660,13 +645,27 @@ static int node_isok(struct nn_node *n)
     assert(n->attr >= 0 && n->attr < 128);
     assert(n->code);
 
-    //node_router_isok(n);
-    //node_chan_isok(n);
-    //node_print(n);
+#if 0
+    struct nn_node *n1; /* the pointer from the conn */
+
+    NODE_CONN_ITER_PRE(n);
+
+    n1 = _conn_get_node(cn);
+
+    if(n1 != n){
+        printf("fuck %p, %p\n", n, n1);
+        abort();
+    }
+
+    assert(n->type >= 0 && n->type < 128);
+    assert(n->attr >= 0 && n->attr < 128);
+    assert(n->code);
+
+    NODE_CONN_ITER_POST(n);
+#endif
 
     return 0;
 }
-*/
 
 int node_print(struct nn_node *n)
 {
@@ -727,6 +726,7 @@ static int node_cond_broadcast(struct nn_node *n)
 }
 
 
+#if 0
 static int node_isok(struct nn_node *n)
 {
     struct nn_node *n1; /* the pointer from the conn */
@@ -747,6 +747,7 @@ static int node_isok(struct nn_node *n)
     NODE_CONN_ITER_POST(n);
     return 0;
 }
+#endif
 
 #if 0
 /* check that the conn's it points to points back */

@@ -24,7 +24,7 @@ AC_ARG_ENABLE(debug, [  --enable-debug            enable debugging
 if test x"$enable_debug" = x"yes"; then
     CFLAGS="-O0 -g -pg -fno-inline -Wall "
 else
-    CFLAGS="-O3 -DNDEBUG "
+    CFLAGS="-O2 -DNDEBUG "
 fi
 CFLAGS+=-I$PWD/lib
 
