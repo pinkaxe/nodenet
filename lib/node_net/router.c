@@ -52,15 +52,15 @@ struct nn_router{
 
 
 /* each router have a ll of chan's that it routes to,
- * loop through them with g in turn set */
+ * loop through them with chan in turn set */
 #define ROUTER_CHAN_ITER_PRE(rt) \
     { \
     assert(rt); \
     int done = 0; \
     struct router_chan_iter *iter = NULL; \
-    struct nn_chan *g; \
+    struct nn_chan *chan; \
     iter = router_chan_iter_init(rt); \
-    while(!done && !router_chan_iter_next(iter, &g)){ \
+    while(!done && !router_chan_iter_next(iter, &chan)){ \
 
 
 #define ROUTER_CHAN_ITER_POST(rt) \
@@ -69,16 +69,16 @@ struct nn_router{
     }
 
 /* each chan have a ll of conn's it is connected to */
-#define CHAN_CONN_ITER_PRE(g) \
+#define CHAN_CONN_ITER_PRE(chan) \
     { \
-    assert(g); \
+    assert(chan); \
     int done = 0; \
     struct chan_conn_iter *iter = NULL; \
     struct nn_conn *cn; \
-    iter = chan_conn_iter_init(g); \
+    iter = chan_conn_iter_init(chan); \
     while(!done && !chan_conn_iter_next(iter, &cn)){ \
 
-#define CHAN_CONN_ITER_POST(g) \
+#define CHAN_CONN_ITER_POST(chan) \
     } \
     chan_conn_iter_free(iter); \
     }
@@ -103,9 +103,9 @@ static int router_route_pkts(struct nn_router *rt);
 static struct router_chan_iter *router_chan_iter_init(struct nn_router *rt);
 static int router_chan_iter_free(struct router_chan_iter *iter);
 static int router_chan_iter_next(struct router_chan_iter *iter, struct nn_chan
-        **g);
+        **chan);
 
-static struct chan_conn_iter *chan_conn_iter_init(struct nn_chan *g);
+static struct chan_conn_iter *chan_conn_iter_init(struct nn_chan *chan);
 static int chan_conn_iter_free(struct chan_conn_iter *iter);
 static int chan_conn_iter_next(struct chan_conn_iter *iter, struct nn_conn **cn);
 
@@ -147,7 +147,7 @@ again:
                 router_conn_free_all(rt);
                 router_set_state(rt, NN_STATE_DONE);
                 L(LNOTICE, "Route shutdown complete: %p", rt);
-                thread_exit(NULL);
+                return NULL;
                 break;
             case NN_STATE_DONE:
                 L(LCRIT, "Illegal state");
@@ -314,7 +314,7 @@ int router_conn(struct nn_router *rt, struct nn_conn *cn)
     return r;
 }
 
-int router_unconn(struct nn_router *rt, struct nn_conn *cn)
+int router_unconn(struct nn_router *rt, struct nn_conn *_cn)
 {
     int r;
     int fail = -1;
@@ -326,13 +326,19 @@ int router_unconn(struct nn_router *rt, struct nn_conn *cn)
     /* free all the chan conn */
     ROUTER_CHAN_ITER_PRE(rt);
 
-    fail = 0;
-    ICHK(LWARN, r, ll_rem(g->conn, cn));
-    if(r) fail++;
+    CHAN_CONN_ITER_PRE(chan);
+
+    if(cn == _cn){
+        ICHK(LWARN, r, ll_rem(chan->conn, cn));
+        if(r) fail++;
+        done = 1;
+    }
+
+    CHAN_CONN_ITER_POST(chan);
 
     ROUTER_CHAN_ITER_POST(rt);
 
-    ICHK(LWARN, r, ll_rem(rt->conn, cn));
+    ICHK(LWARN, r, ll_rem(rt->conn, _cn));
     if(r) fail++;
 
 
@@ -344,25 +350,25 @@ int router_unconn(struct nn_router *rt, struct nn_conn *cn)
 int router_add_chan(struct nn_router *rt, int id)
 {
     int r = 1;
-    struct nn_chan *g;
+    struct nn_chan *chan;
 
     mutex_lock(&rt->mutex);
 
-    PCHK(LWARN, g, calloc(1, sizeof(*g)));
-    if(!g){
+    PCHK(LWARN, chan, calloc(1, sizeof(*chan)));
+    if(!chan){
         goto err;
     }
-    g->id = id;
+    chan->id = id;
 
-    PCHK(LWARN, g->conn, ll_init());
-    if(!g->conn){
+    PCHK(LWARN, chan->conn, ll_init());
+    if(!chan->conn){
         router_rem_chan(rt, id);
-        g = NULL;
+        chan = NULL;
         goto err;
     }
 
     /* add newly created chan */
-    ICHK(LWARN, r, ll_add_front(rt->chan, (void **)&g));
+    ICHK(LWARN, r, ll_add_front(rt->chan, (void **)&chan));
     if(r){
         PCHK(LWARN, r, router_rem_chan(rt, id));
         goto err;
@@ -400,21 +406,21 @@ int router_rem_chan(struct nn_router *rt, int id)
     router_lock(rt);
     ROUTER_CHAN_ITER_PRE(rt);
 
-    if(g->id == id){
+    if(chan->id == id){
 
         done = 1;
         fail = 0;
 
-        if(g->conn){
-            ICHK(LWARN, r, ll_free(g->conn));
+        if(chan->conn){
+            ICHK(LWARN, r, ll_free(chan->conn));
         }
 
         if(!fail){
-            ICHK(LWARN, r, ll_rem(rt->chan, g));
+            ICHK(LWARN, r, ll_rem(rt->chan, chan));
             if(r) fail++;
         }
 
-        free(g);
+        free(chan);
     }
 
     ROUTER_CHAN_ITER_POST(rt);
@@ -430,8 +436,8 @@ struct nn_chan *router_get_chan(struct nn_router *rt, int id)
     router_lock(rt); \
     ROUTER_CHAN_ITER_PRE(rt);
 
-    if(g->id == id){
-        _g = g;
+    if(chan->id == id){
+        _g = chan;
         done = 1;
     }
 
@@ -448,8 +454,8 @@ int router_add_to_chan(struct nn_router *rt, int chan_id, struct nn_conn *cn)
     router_lock(rt);
     ROUTER_CHAN_ITER_PRE(rt);
 
-    if(g->id == chan_id){
-        ICHK(LWARN, r, ll_add_front(g->conn, (void **)&cn));
+    if(chan->id == chan_id){
+        ICHK(LWARN, r, ll_add_front(chan->conn, (void **)&cn));
         done = 1;
     }
 
@@ -466,8 +472,8 @@ int router_rem_from_chan(struct nn_router *rt, int chan_id, struct nn_conn *cn)
     router_lock(rt);
     ROUTER_CHAN_ITER_PRE(rt);
 
-    if(g->id == chan_id){
-        ICHK(LWARN, r, ll_rem(g->conn, cn));
+    if(chan->id == chan_id){
+        ICHK(LWARN, r, ll_rem(chan->conn, cn));
         done = 1;
     }
 
@@ -514,19 +520,19 @@ static int router_conn_free_all(struct nn_router *rt)
     router_lock(rt);
     ROUTER_CHAN_ITER_PRE(rt);
 
-    CHAN_CONN_ITER_PRE(g);
+    CHAN_CONN_ITER_PRE(chan);
 
-    //r = router_unconn(rt, g->id, cn);
+    //r = router_unconn(rt, chan->id, cn);
 
-    ICHK(LWARN, r, ll_rem(g->conn, cn));
+    ICHK(LWARN, r, ll_rem(chan->conn, cn));
     if(r) fail++;
 
     r = _conn_free_router(cn);
 
-    CHAN_CONN_ITER_POST(g);
+    CHAN_CONN_ITER_POST(chan);
 
     router_unlock(rt);
-    router_rem_chan(rt, g->id);
+    router_rem_chan(rt, chan->id);
     router_lock(rt);
 
     ROUTER_CHAN_ITER_POST(rt);
@@ -549,7 +555,7 @@ static int router_rx_pkts(struct nn_router *rt)
     struct nn_pkt *pkt;
 
     ROUTER_CHAN_ITER_PRE(rt);
-    CHAN_CONN_ITER_PRE(g);
+    CHAN_CONN_ITER_PRE(chan);
 
     /* loop through conn's and move pkt's to rt */
     while(!_conn_router_rx_pkt(cn, &pkt)){
@@ -565,7 +571,7 @@ static int router_rx_pkts(struct nn_router *rt)
         pkt_set_state(pkt, PKT_STATE_RT_RX);
     }
 
-    CHAN_CONN_ITER_POST(g);
+    CHAN_CONN_ITER_POST(chan);
     ROUTER_CHAN_ITER_POST(rt);
 
     return 0;
@@ -587,6 +593,10 @@ static int router_route_pkts(struct nn_router *rt)
     while(--pick_up && !router_get_rx_pkt(rt, &pkt)){
         assert(pkt);
 
+        //if(pkt_cancelled(pkt)){
+        //    continue;
+        //}
+
         dest_chan_id = pkt_get_dest_chan_id(pkt);
         dest_no = pkt_get_dest_no(pkt);
         c = 0;
@@ -595,17 +605,16 @@ static int router_route_pkts(struct nn_router *rt)
         ROUTER_CHAN_ITER_PRE(rt);
 
         /* route to the dest group */
-        if(g->id == dest_chan_id){
+        if(chan->id == dest_chan_id){
 
             send_to = 0;
-            CHAN_CONN_ITER_PRE(g);
+            CHAN_CONN_ITER_PRE(chan);
 
             /* don't send to sender */
             if(_conn_get_node(cn) != pkt_get_src(pkt)){
                 pkt_inc_refcnt(pkt, 1);
                 if(!_conn_router_tx_pkt(cn, pkt)){
 
-                    pkt_set_state(pkt, PKT_STATE_RT_ROUTED);
                     send_to++;
                     if(dest_no && ++c >= dest_no){
                         done = 1;
@@ -614,9 +623,12 @@ static int router_route_pkts(struct nn_router *rt)
                 }else{
                     pkt_inc_refcnt(pkt, -1);
                 }
+
             }
 
-            CHAN_CONN_ITER_POST(g);
+            CHAN_CONN_ITER_POST(chan);
+
+            rt->tx_pkts_total++;
 
             /* found and routed to dest group so done */
             done = 1;
@@ -624,17 +636,22 @@ static int router_route_pkts(struct nn_router *rt)
 
         ROUTER_CHAN_ITER_POST(rt);
 
-        if(!send_to){
-            /* not send, add back, IMPROVE: */
-           // ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
-           // rt->rx_pkts_no++;
-           // rt->rx_pkts_total++;
-           // router_cond_broadcast(rt);
-        }else{
-            /* free for the orignal packet */
-            rt->tx_pkts_total++;
-            //pkt_free(pkt);
-        }
+        pkt_set_state(pkt, PKT_STATE_RT_ROUTED);
+        pkt_free(pkt);
+
+
+
+        //if(!send_to){
+        //    /* not send, add back, IMPROVE: */
+        //   // ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
+        //   // rt->rx_pkts_no++;
+        //   // rt->rx_pkts_total++;
+        //   // router_cond_broadcast(rt);
+        //}else{
+        //    /* free for the orignal packet */
+        //    rt->tx_pkts_total++;
+        //    pkt_free(pkt);
+        //}
     }
 
     return 0;
@@ -651,7 +668,7 @@ static int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
 
     //router_unlock(rt);
 
-    if(*pkt){
+    if(*pkt){ //&& !pkt_cancelled(*pkt)){
         rt->rx_pkts_no--;
         L(LDEBUG, "+ router_get_rx_pkt %p", *pkt);
         r = 0;
@@ -670,14 +687,14 @@ static int router_chan_iter_free(struct router_chan_iter *iter)
     return ll_iter_free((struct ll_iter *)iter);
 }
 
-static int router_chan_iter_next(struct router_chan_iter *iter, struct nn_chan **g)
+static int router_chan_iter_next(struct router_chan_iter *iter, struct nn_chan **chan)
 {
-    return ll_iter_next((struct ll_iter *)iter, (void **)g);
+    return ll_iter_next((struct ll_iter *)iter, (void **)chan);
 }
 
-static struct chan_conn_iter *chan_conn_iter_init(struct nn_chan *g)
+static struct chan_conn_iter *chan_conn_iter_init(struct nn_chan *chan)
 {
-    return (struct chan_conn_iter *)ll_iter_init(g->conn);
+    return (struct chan_conn_iter *)ll_iter_init(chan->conn);
 }
 
 static int chan_conn_iter_free(struct chan_conn_iter *iter)

@@ -14,49 +14,6 @@
 
 #include "node_net/pkt.h"
 
-enum nn_pkt_ev_type {
-    NN_PKT_EV_OK,
-    NN_PKT_EV_FAILED,
-    NN_PKT_EV_RT_RECV,
-    NN_PKT_EV_RT_ROUTED,
-    NN_PKT_EV_NODE_RECV,
-};
-
-struct nn_pkt_ev {
-    enum nn_pkt_ev_type type;
-    struct nn_pkt *pkt;
-    int id;
-    void *data;
-    int refcnt;
-};
-
-struct nn_pkt_ev *pkt_ev_init(struct nn_pkt *pkt, enum nn_pkt_ev_type type,
-        int id, void *data)
-{
-    struct nn_pkt_ev *pkt_ev;
-
-    PCHK(LWARN, pkt_ev, calloc(1, sizeof(*pkt_ev)));
-    if(!pkt_ev){
-        goto err;
-    }
-
-    pkt_ev->type = type;
-    pkt_ev->pkt = pkt;
-    pkt_ev->id = id;
-    pkt_ev->data = data;
-    pkt_ev->refcnt = 0;
-
-err:
-    return pkt_ev;
-}
-
-int pkt_ev_free(struct nn_pkt_ev *pkt_ev)
-{
-
-    free(pkt_ev);
-
-    return 0;
-}
 
 #if 0
 
@@ -187,7 +144,7 @@ int pkt_free(struct nn_pkt *pkt)
 
         pkt_lock(pkt);
 
-        //printf("!!!! pkt_free: %d\n", pkt->refcnt);
+        printf("!!!! pkt_free: %d\n", pkt->refcnt);
         if(--pkt->refcnt <= 0){
             if(pkt->buf_free_cb){
                 pkt->buf_free_cb(pkt->pdata, pkt->data);
@@ -223,6 +180,24 @@ int pkt_set_state(struct nn_pkt *pkt, enum nn_pkt_state state)
     pkt->state = state;
 
     pkt_unlock(pkt);
+
+    return 0;
+}
+
+int pkt_cancelled(struct nn_pkt *pkt)
+{
+    int r = 0;
+
+    pkt_lock(pkt);
+
+    if(pkt->state == PKT_STATE_CANCELLED){
+        /* free it for this pkt user */
+        pkt_unlock(pkt);
+        pkt_free(pkt);
+        r = 1;
+    }else{
+        pkt_unlock(pkt);
+    }
 
     return 0;
 }

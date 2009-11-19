@@ -42,7 +42,7 @@ struct nn_chan *g[CHAN_NO];
 
 static int dpool_free_cb(void *dpool, void *dpool_buf)
 {
-    L(LDEBUG, "dpool_free_cb called");
+    L(LNOTICE, "dpool_free_cb called");
     return dpool_ret_buf(dpool, dpool_buf);
 }
 
@@ -88,40 +88,25 @@ void *thread1(struct nn_node *n, void *pdata)
             //try_send_global++;
             if(!node_tx(n, pkt)){
                 //usleep(10000);
+                //pkt_set_state(pkt, PKT_STATE_CANCELLED);
+                printf("!!! sent\n");
             }else{
                 assert(0); // slam
             }
 
-            while(pkt_get_state(pkt) != PKT_STATE_N_RX){
-                printf("state: %d\n", pkt_get_state(pkt));
-                usleep(1);
-            }
-                printf("state: %d\n", pkt_get_state(pkt));
-            //pkt_free(pkt);
-            exit(1);
-            sleep(1);
-
         }
+        //    while(pkt_get_state(pkt) != PKT_STATE_N_RX){
+        //        printf("state: %d\n", pkt_get_state(pkt));
+        //        usleep(1);
+        //    }
+        //    printf("state: %d\n", pkt_get_state(pkt));
+        //    //pkt_free(pkt);
+        //    exit(1);
+        //    sleep(1);
 
-        sched_yield();
-       // if(i == 16){
-       //     usleep(1000);
-       //     i = 0;
-       // }
 
-        /* receive packets */
-#if 0
-        while(!node_rx(n, &pkt)){
-            struct dpool_buf *dpool_buf = pkt_get_data(pkt);
-            buf = dpool_buf->data;
-            L(LINFO, "Got buf->i=%d", buf->i);
-            /* when done call pkt_free */
-            //dpool_ret_buf(dpool, dpool_buf);
-            pkt_free(pkt);
-        }
-        //usleep(100000);
-        //sched_yield();
-#endif
+        printf("!!! sleeping\n");
+        usleep(2000000);
     }
 
     return NULL;
@@ -137,7 +122,7 @@ void *thread0(struct nn_node *n, void *pdata)
 
     for(;;){
 
-        node_wait(n);
+        //node_wait(n);
 
         /* check state */
         state = node_do_state(n);
@@ -152,12 +137,11 @@ void *thread0(struct nn_node *n, void *pdata)
             dpool_buf = pkt_get_data(pkt);
             buf = dpool_buf->data;
 
-            L(LINFO, "Got buf->i=%d", buf->i);
+            L(LNOTICE, "Got buf->i=%d", buf->i);
             pkt_free(pkt);
         }
-        sched_yield();
-        //sleep(1);
-        //usleep(1000);
+        //sched_yield();
+        usleep(1000);
     }
 
     return NULL;
@@ -383,8 +367,9 @@ int main(int argc, char **argv)
     struct  router_status rt_status;
     struct  node_status n_status[1024];
 
-    while(1){
 
+    int times;
+    for(times=0; times < 100000; times++){
         dpool = dpool_create(sizeof(*buf), 10000, 0);
 
         rt[0] = router_init();
@@ -420,30 +405,36 @@ int main(int argc, char **argv)
             node_set_state(n[i], NN_STATE_RUNNING);
         }
 
-        sleep(3);
+       // while(1){
+       //     usleep(1000000);
+       // }
+       // assert(0);
+        usleep(1000000);
 
-        //router_set_state(rt[0], NN_STATE_PAUSED);
+      //  router_set_state(rt[0], NN_STATE_PAUSED);
 
-        //for(i=NODE_NO-1; i >= 0; i--){
-        //    node_set_state(n[i], NN_STATE_PAUSED);
-        //}
-
-        //sleep(1);
-
-        for(i=2; i < NODE_NO; i++){
-            conn_quit_chan(cn[i], CHAN_CONN_HANDLERS);
-            conn_quit_chan(cn[i], CHAN_MAIN_CHANNEL);
-            cn[i] = conn_unconn(n[i], rt[0]);
-            node_set_state(n[i], NN_STATE_SHUTDOWN);
-        }
+      //  for(i=NODE_NO-1; i >= 0; i--){
+      //      node_set_state(n[i], NN_STATE_PAUSED);
+      //  }
 
         sleep(1);
 
         conn_quit_chan(cn[0], CHAN_SERVER);
+        conn_unconn(n[0], rt[0]);
         node_set_state(n[0], NN_STATE_SHUTDOWN);
 
         conn_quit_chan(cn[1], CHAN_SERVER);
+        conn_unconn(n[1], rt[0]);
         node_set_state(n[1], NN_STATE_SHUTDOWN);
+
+
+        for(i=2; i < NODE_NO; i++){
+            conn_quit_chan(cn[i], CHAN_CONN_HANDLERS);
+            conn_quit_chan(cn[i], CHAN_MAIN_CHANNEL);
+            conn_unconn(n[i], rt[0]);
+            node_set_state(n[i], NN_STATE_SHUTDOWN);
+        }
+
 
 
         router_set_state(rt[0], NN_STATE_SHUTDOWN);
@@ -452,9 +443,13 @@ int main(int argc, char **argv)
        //     router_rem_chan(rt[0], i);
        // }
 
+
+        sleep(2);
+
         for(i=0; i < NODE_NO; i++){
             node_get_status(n[i], &n_status[i]);
             node_clean(n[i]);
+            //abort();
         }
 
         router_get_status(rt[0], &rt_status);
@@ -470,6 +465,7 @@ int main(int argc, char **argv)
             printf("Node %d rx_pkts_total: %d\n", i, n_status[i].rx_pkts_total);
             printf("Node %d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
         }
+    }
 
         //printf("Router rx_pkts_no: %d\n", status.rx_pkts_no);
         //printf("Router tx_pkts_no: %d\n", status.tx_pkts_no);
@@ -479,7 +475,7 @@ int main(int argc, char **argv)
         //printf("!!! receive: %d\n", recv_global);
 
 
-        exit(0);
+        //exit(0);
 
 #if 0
 
@@ -522,7 +518,6 @@ int main(int argc, char **argv)
 
 #endif
 
-    }
     return 0;
 }
 

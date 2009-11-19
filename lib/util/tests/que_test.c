@@ -19,7 +19,7 @@ void *adder(void *arg)
         for(i=0; i < str_no; i++){
             while((r=que_add(q, str[i]))){
                 //printf("full\n");
-                usleep(10);
+                usleep(100000);
             }
             //printf("add %p(%d)\n", str[i], r);
         }
@@ -31,14 +31,17 @@ void *remover(void *arg)
 {
     char *curr;
     int i;
+    struct timespec ts = {0, 0};
+
 
     for(;;){
         for(i=0; i < str_no; i++){
-            while(!(curr=que_get(q, NULL))){
-                usleep(10);
+            while(!(curr=que_get(q, &ts))){
+                usleep(100000);
             }
             //printf("get %p: %p\n", curr, str[i]);
             assert(curr == str[i]);
+            sleep(1);
         }
     }
     return NULL;
@@ -48,7 +51,7 @@ int main(int argc, char **argv)
 {
     pthread_t tid;
 
-    q = que_init(2);
+    q = que_init(9);
 
     pthread_create(&tid, NULL, adder, NULL);
     pthread_detach(tid);

@@ -59,4 +59,5 @@ int pkt_set_src(struct nn_pkt *pkt, struct nn_node *n);
 int pkt_inc_refcnt(struct nn_pkt *pkt, int inc);
 int pkt_dec_refcnt(struct nn_pkt *pkt, int dec);
 
+int pkt_cancelled(struct nn_pkt *pkt);
 #endif

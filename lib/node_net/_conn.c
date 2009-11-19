@@ -108,9 +108,9 @@ struct nn_conn *_conn_init()
     }
 
     struct ques_router_init qs[] = {
-        {&cn->rt_n_pkts, 9999},
-        {&cn->n_rt_pkts, 9999},
-        {&cn->n_rt_notify, 9999},
+        {&cn->rt_n_pkts, 100},
+        {&cn->n_rt_pkts, 100},
+        {&cn->n_rt_notify, 100},
         {NULL, 0},
     };
 
@@ -241,7 +241,7 @@ int _conn_quit_chan(struct nn_conn *cn, int chan_id)
 /* returns 1 if cn was free'd */
 int _conn_free_node(struct nn_conn *cn)
 {
-    int r;
+    int r = 0;
 
     _conn_lock(cn);
 
@@ -264,23 +264,23 @@ int _conn_free_node(struct nn_conn *cn)
 
 int _conn_free_router(struct nn_conn *cn)
 {
-    int r;
+    int r = 0;
 
     _conn_lock(cn);
 
     cn->router = NULL;
     cn->state = CONN_STATE_DEAD;
 
-    if(!cn->node){
-        /* we can free the conn */
-        r = 1;
-    }
+   // if(!cn->node){
+   //     /* we can free the conn */
+   //     r = 1;
+   // }
 
     _conn_unlock(cn);
 
-    if(r == 1){
-        _conn_free(cn);
-    }
+   // if(r == 1){
+   //     _conn_free(cn);
+   // }
 
     return r;
 }

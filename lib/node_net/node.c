@@ -145,7 +145,7 @@ static void *node_thread(void *arg)
         state = node_do_state(n);
         if(state == NN_STATE_SHUTDOWN){
             thread_join(tid, NULL);
-            node_conn_free_all(n);
+            //node_conn_free_all(n);
             node_set_state(n, NN_STATE_DONE);
             return NULL;
         }
@@ -161,8 +161,8 @@ static void *node_thread(void *arg)
 
         node_unlock(n);
 
-        sched_yield();
-        //usleep(1000);
+        //sched_yield();
+        usleep(1000);
 
     }
 
@@ -200,7 +200,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     //    goto err;
     //}
 
-    PCHK(LWARN, n->rx_pkts, que_init(9999));
+    PCHK(LWARN, n->rx_pkts, que_init(9));
     if(!(n->rx_pkts)){
         PCHK(LWARN, r, node_free(n));
         goto err;
@@ -208,7 +208,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     n->rx_pkts_no = 0;
     n->rx_pkts_total = 0;
 
-    PCHK(LWARN, n->tx_pkts, que_init(9999));
+    PCHK(LWARN, n->tx_pkts, que_init(9));
     if(!(n->tx_pkts)){
         PCHK(LWARN, r, node_free(n));
         goto err;
@@ -247,7 +247,7 @@ int node_free(struct nn_node *n)
 
     node_isok(n);
 
-    mutex_lock(&n->mutex);
+    node_lock(n);
 
     if(n->conn){
         ICHK(LWARN, r, ll_free(n->conn));
@@ -265,17 +265,22 @@ int node_free(struct nn_node *n)
         }
         ICHK(LWARN, r, que_free(n->rx_pkts));
         if(r) fail++;
+
+        n->rx_pkts = NULL;
     }
 
     if(n->tx_pkts){
         while((pkt=que_get(n->tx_pkts, &ts))){
+            printf("!!! packet: %p\n", pkt);
+        //    abort();
             pkt_free(pkt);
         }
         ICHK(LWARN, r, que_free(n->tx_pkts));
         if(r) fail++;
+        n->tx_pkts = NULL;
     }
 
-    mutex_unlock(&n->mutex);
+    node_unlock(n);
 
     cond_destroy(&n->cond);
     mutex_destroy(&n->mutex);
@@ -396,8 +401,7 @@ int node_rx(struct nn_node *n, struct nn_pkt **pkt)
 
     node_unlock(n);
 
-
-    if(*pkt){
+    if(*pkt){// && !pkt_cancelled(*pkt)){
         pkt_set_state(*pkt, PKT_STATE_N_RX);
         L(LDEBUG, "+ node_rx %p", *pkt);
         r = 0;
@@ -545,7 +549,7 @@ static int node_tx_pkts(struct nn_node *n)
         n->tx_pkts_no--;
         node_unlock(n);
 
-        if(pkt){
+        if(pkt){ //&& !pkt_cancelled(pkt)){
             L(LDEBUG, "+ got node tx_pkt %p", pkt);
         }else{
             goto end;
@@ -581,6 +585,10 @@ static int node_rx_pkts(struct nn_node *n)
         if(!_conn_node_rx_pkt(cn, &pkt)){
             assert(pkt);
 
+           // if(pkt_cancelled(pkt)){
+           //     continue;
+           // }
+
             ICHK(LWARN, r, que_add(n->rx_pkts, pkt));
             n->rx_pkts_no++;
             n->rx_pkts_total++;
@@ -613,7 +621,7 @@ static int node_conn_free_all(struct nn_node *n)
 {
     int r = 0;
     struct node_conn_iter *iter;
-    struct nn_conn *cn;
+    struct nn_conn *cn = NULL;
 
     iter = node_conn_iter_init(n);
     /* remove the conns to routers */

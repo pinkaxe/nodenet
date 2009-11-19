@@ -66,15 +66,17 @@ int conn_unconn(struct nn_node *n, struct nn_router *rt)
 
     if(cn){
         ICHK(LWARN, r, router_unconn(rt, cn));
-        if(r){
-            free(cn);
-            goto err;
-        }
-        ICHK(LWARN, r, _conn_free_router(cn));
-
         ICHK(LWARN, r, node_unconn(n, cn));
 
+        ICHK(LWARN, r, _conn_free_router(cn));
+        if(r){
+            goto err;
+        }
+
         ICHK(LWARN, r, _conn_free_node(cn));
+        if(r){
+            goto err;
+        }
 
     }
 
