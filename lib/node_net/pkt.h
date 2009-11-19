@@ -9,6 +9,15 @@ enum {
     NN_SENDTO_ALL
 };
 
+enum nn_pkt_state {
+    PKT_STATE_N_INIT,
+    PKT_STATE_N_TX,
+    PKT_STATE_RT_RX,
+    PKT_STATE_RT_ROUTED,
+    PKT_STATE_N_RX,
+    PKT_STATE_CANCELLED,
+};
+
 /* FIXME: move to .c and implement getters */
 struct nn_pkt_conf {
     int sendto_no;  /* send to how many */
@@ -34,6 +43,9 @@ struct nn_pkt *pkt_init(struct nn_node *src, int dest_chan_id, int dest_no,
         void *data, int data_len, void *pdata, buf_free_cb_f buf_free_cb);
 int pkt_free(struct nn_pkt *pkt);
 struct nn_pkt *pkt_clone(struct nn_pkt *pkt);
+
+int pkt_set_state(struct nn_pkt *pkt, enum nn_pkt_state state);
+enum nn_pkt_state pkt_get_state(struct nn_pkt *pkt);
 
 int pkt_get_dest_chan_id(struct nn_pkt *pkt);
 int pkt_get_dest_no(struct nn_pkt *pkt);

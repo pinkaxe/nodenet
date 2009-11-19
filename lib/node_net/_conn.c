@@ -156,6 +156,7 @@ int _conn_free(struct nn_conn *cn)
     /* empty and free the io que's */
     if(cn->rt_n_pkts){
         while((pkt=que_get(cn->rt_n_pkts, &ts))){
+            /* notify sender */
             pkt_free(pkt);
         }
         ICHK(LWARN, r, que_free(cn->rt_n_pkts));

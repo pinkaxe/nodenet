@@ -14,7 +14,75 @@
 
 #include "node_net/pkt.h"
 
+enum nn_pkt_ev_type {
+    NN_PKT_EV_OK,
+    NN_PKT_EV_FAILED,
+    NN_PKT_EV_RT_RECV,
+    NN_PKT_EV_RT_ROUTED,
+    NN_PKT_EV_NODE_RECV,
+};
+
+struct nn_pkt_ev {
+    enum nn_pkt_ev_type type;
+    struct nn_pkt *pkt;
+    int id;
+    void *data;
+    int refcnt;
+};
+
+struct nn_pkt_ev *pkt_ev_init(struct nn_pkt *pkt, enum nn_pkt_ev_type type,
+        int id, void *data)
+{
+    struct nn_pkt_ev *pkt_ev;
+
+    PCHK(LWARN, pkt_ev, calloc(1, sizeof(*pkt_ev)));
+    if(!pkt_ev){
+        goto err;
+    }
+
+    pkt_ev->type = type;
+    pkt_ev->pkt = pkt;
+    pkt_ev->id = id;
+    pkt_ev->data = data;
+    pkt_ev->refcnt = 0;
+
+err:
+    return pkt_ev;
+}
+
+int pkt_ev_free(struct nn_pkt_ev *pkt_ev)
+{
+
+    free(pkt_ev);
+
+    return 0;
+}
+
+#if 0
+
+int pkt_ev_inc_refcnt(struct nn_pkt *pkt, int inc)
+{
+    int r;
+
+    pkt_lock(pkt);
+
+    pkt->refcnt += inc;
+    r = pkt->refcnt;
+
+    pkt_unlock(pkt);
+
+    return r;
+}
+#endif
+
+
+int node_ev_tx(struct nn_node *n, struct nn_pkt_ev *ev)
+{
+}
+
+
 struct nn_pkt {
+    enum nn_pkt_state state;
     struct nn_node *src;
     int dest_chan_id;
     int dest_no;
@@ -31,6 +99,7 @@ struct nn_pkt {
 
 static int pkt_lock(struct nn_pkt *pkt);
 static int pkt_unlock(struct nn_pkt *pkt);
+
 
 struct nn_pkt *pkt_init(struct nn_node *src, int dest_chan_id, int dest_no,
         void *data, int data_len, void *pdata, buf_free_cb_f buf_free_cb)
@@ -51,6 +120,8 @@ struct nn_pkt *pkt_init(struct nn_node *src, int dest_chan_id, int dest_no,
     pkt->refcnt = 1;
     pkt->conf = NULL;
     pkt->buf_free_cb = buf_free_cb;
+
+    pkt->state = PKT_STATE_N_INIT;
 
 
     PCHK(LWARN, conf, malloc(sizeof(*conf)));
@@ -143,6 +214,31 @@ int pkt_free(struct nn_pkt *pkt)
 
     return 0;
 }
+
+int pkt_set_state(struct nn_pkt *pkt, enum nn_pkt_state state)
+{
+
+    pkt_lock(pkt);
+
+    pkt->state = state;
+
+    pkt_unlock(pkt);
+
+    return 0;
+}
+
+enum nn_pkt_state pkt_get_state(struct nn_pkt *pkt)
+{
+    enum nn_pkt_state state;
+    pkt_lock(pkt);
+
+    state = pkt->state; 
+
+    pkt_unlock(pkt);
+
+    return state;
+}
+
 
 
 struct nn_node *pkt_get_src(struct nn_pkt *pkt)

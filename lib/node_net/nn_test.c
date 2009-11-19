@@ -91,6 +91,16 @@ void *thread1(struct nn_node *n, void *pdata)
             }else{
                 assert(0); // slam
             }
+
+            while(pkt_get_state(pkt) != PKT_STATE_N_RX){
+                printf("state: %d\n", pkt_get_state(pkt));
+                usleep(1);
+            }
+                printf("state: %d\n", pkt_get_state(pkt));
+            //pkt_free(pkt);
+            exit(1);
+            sleep(1);
+
         }
 
         sched_yield();
@@ -392,7 +402,7 @@ int main(int argc, char **argv)
         cn[1] = conn_conn(n[1], rt[0]);
         conn_join_chan(cn[1], CHAN_SERVER);
 
-#define NODE_NO 4
+#define NODE_NO 3
         for(i=2; i < NODE_NO; i++){
 
             n[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);

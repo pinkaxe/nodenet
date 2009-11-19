@@ -25,6 +25,7 @@ struct nn_chan {
     struct ll *conn; /* all conn in this chan, for router output */
 };
 
+
 /* each router has one tx and one rx buffer. and a ll
 of gpr's with there conn(conn) */
 struct nn_router{
@@ -542,6 +543,35 @@ static int router_conn_free_all(struct nn_router *rt)
     return fail;
 }
 
+static int router_rx_pkts(struct nn_router *rt)
+{
+    int r;
+    struct nn_pkt *pkt;
+
+    ROUTER_CHAN_ITER_PRE(rt);
+    CHAN_CONN_ITER_PRE(g);
+
+    /* loop through conn's and move pkt's to rt */
+    while(!_conn_router_rx_pkt(cn, &pkt)){
+        assert(pkt);
+
+        //rt->conn_pkts_no--;
+
+        ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
+        rt->rx_pkts_no++;
+        rt->rx_pkts_total++;
+        router_cond_broadcast(rt);
+
+        pkt_set_state(pkt, PKT_STATE_RT_RX);
+    }
+
+    CHAN_CONN_ITER_POST(g);
+    ROUTER_CHAN_ITER_POST(rt);
+
+    return 0;
+}
+
+
 /* rt have to be locked */
 static int router_route_pkts(struct nn_router *rt)
 {
@@ -574,10 +604,13 @@ static int router_route_pkts(struct nn_router *rt)
             if(_conn_get_node(cn) != pkt_get_src(pkt)){
                 pkt_inc_refcnt(pkt, 1);
                 if(!_conn_router_tx_pkt(cn, pkt)){
+
+                    pkt_set_state(pkt, PKT_STATE_RT_ROUTED);
                     send_to++;
                     if(dest_no && ++c >= dest_no){
                         done = 1;
                     }
+
                 }else{
                     pkt_inc_refcnt(pkt, -1);
                 }
@@ -600,36 +633,9 @@ static int router_route_pkts(struct nn_router *rt)
         }else{
             /* free for the orignal packet */
             rt->tx_pkts_total++;
-            pkt_free(pkt);
+            //pkt_free(pkt);
         }
     }
-
-    return 0;
-}
-
-static int router_rx_pkts(struct nn_router *rt)
-{
-    int r;
-    struct nn_pkt *pkt;
-
-    ROUTER_CHAN_ITER_PRE(rt);
-    CHAN_CONN_ITER_PRE(g);
-
-    /* loop through conn's and move pkt's to rt */
-    while(!_conn_router_rx_pkt(cn, &pkt)){
-        assert(pkt);
-
-        //rt->conn_pkts_no--;
-
-        ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
-        rt->rx_pkts_no++;
-        rt->rx_pkts_total++;
-        router_cond_broadcast(rt);
-
-    }
-
-    CHAN_CONN_ITER_POST(g);
-    ROUTER_CHAN_ITER_POST(rt);
 
     return 0;
 }
