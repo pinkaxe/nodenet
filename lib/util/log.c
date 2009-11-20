@@ -15,7 +15,7 @@ void dlog(int level, const char *filename, int line,
     va_list args;
 
     openlog("x", LOG_PERROR | LOG_NDELAY | LOG_PID, LOG_USER);
-    setlogmask(LOG_UPTO(LOG_INFO));
+    setlogmask(LOG_UPTO(LOG_DEBUG));
 
     va_start(args, format);
     level = LOG_WARNING;

@@ -83,6 +83,21 @@ struct nn_router{
     chan_conn_iter_free(iter); \
     }
 
+#define ROUTER_CONN_ITER_PRE(rt) \
+    { \
+    assert(rt); \
+    int done = 0; \
+    struct router_conn_iter *iter = NULL; \
+    struct nn_conn *cn; \
+    iter = router_conn_iter_init(rt); \
+    while(!done && !router_conn_iter_next(iter, &cn)){ \
+
+
+#define ROUTER_CONN_ITER_POST(rt) \
+    } \
+    router_conn_iter_free(iter); \
+    }
+
 
 /* this type don't exist, just for type checking */
 struct router_chan_iter;
@@ -104,6 +119,11 @@ static struct router_chan_iter *router_chan_iter_init(struct nn_router *rt);
 static int router_chan_iter_free(struct router_chan_iter *iter);
 static int router_chan_iter_next(struct router_chan_iter *iter, struct nn_chan
         **chan);
+
+static struct router_conn_iter *router_conn_iter_init(struct nn_router *rt);
+static int router_conn_iter_free(struct router_conn_iter *iter);
+static int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn
+        **conn);
 
 static struct chan_conn_iter *chan_conn_iter_init(struct nn_chan *chan);
 static int chan_conn_iter_free(struct chan_conn_iter *iter);
@@ -341,6 +361,8 @@ int router_unconn(struct nn_router *rt, struct nn_conn *_cn)
     ICHK(LWARN, r, ll_rem(rt->conn, _cn));
     if(r) fail++;
 
+    ICHK(LWARN, r, _conn_free_router(_cn));
+    if(r) fail++;
 
     router_unlock(rt);
 
@@ -527,7 +549,6 @@ static int router_conn_free_all(struct nn_router *rt)
     ICHK(LWARN, r, ll_rem(chan->conn, cn));
     if(r) fail++;
 
-    r = _conn_free_router(cn);
 
     CHAN_CONN_ITER_POST(chan);
 
@@ -536,6 +557,19 @@ static int router_conn_free_all(struct nn_router *rt)
     router_lock(rt);
 
     ROUTER_CHAN_ITER_POST(rt);
+
+
+    ROUTER_CONN_ITER_PRE(rt);
+
+    printf("!!!!! free rt: %p\n", cn);
+    r = _conn_free_router(cn);
+    //r = router_unconn(rt, cn);
+
+    ICHK(LWARN, r, ll_rem(rt->conn, cn));
+    if(r) fail++;
+
+    ROUTER_CONN_ITER_POST(rt);
+
     router_unlock(rt);
 
 
@@ -676,6 +710,22 @@ static int router_get_rx_pkt(struct nn_router *rt, struct nn_pkt **pkt)
 
     return r;
 }
+
+static struct router_conn_iter *router_conn_iter_init(struct nn_router *rt)
+{
+    return (struct router_conn_iter *)ll_iter_init(rt->conn);
+}
+
+static int router_conn_iter_free(struct router_conn_iter *iter)
+{
+    return ll_iter_free((struct ll_iter *)iter);
+}
+
+static int router_conn_iter_next(struct router_conn_iter *iter, struct nn_conn **conn)
+{
+    return ll_iter_next((struct ll_iter *)iter, (void **)conn);
+}
+
 
 static struct router_chan_iter *router_chan_iter_init(struct nn_router *rt)
 {

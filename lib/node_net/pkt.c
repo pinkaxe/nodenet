@@ -188,6 +188,7 @@ int pkt_cancelled(struct nn_pkt *pkt)
 {
     int r = 0;
 
+#if 0
     pkt_lock(pkt);
 
     if(pkt->state == PKT_STATE_CANCELLED){
@@ -198,6 +199,7 @@ int pkt_cancelled(struct nn_pkt *pkt)
     }else{
         pkt_unlock(pkt);
     }
+#endif
 
     return 0;
 }

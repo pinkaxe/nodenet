@@ -25,7 +25,7 @@
 
 struct buf {
     int i;
-    //char var[1024 * 16];
+    char var[1024 * 128];
 };
 
 #define CHAN_NO 3
@@ -62,6 +62,7 @@ void *thread1(struct nn_node *n, void *pdata)
     struct nn_pkt *pkt;
     enum nn_state state;
 
+    sleep(1);
     for(;;){
 
         i++;
@@ -92,6 +93,7 @@ void *thread1(struct nn_node *n, void *pdata)
                 printf("!!! sent\n");
             }else{
                 assert(0); // slam
+                //pkt_free(pkt);
             }
 
         }
@@ -106,7 +108,7 @@ void *thread1(struct nn_node *n, void *pdata)
 
 
         printf("!!! sleeping\n");
-        usleep(2000000);
+        usleep(20000);
     }
 
     return NULL;
@@ -405,36 +407,39 @@ int main(int argc, char **argv)
             node_set_state(n[i], NN_STATE_RUNNING);
         }
 
-       // while(1){
-       //     usleep(1000000);
-       // }
+        while(1){
+            usleep(1000000);
+        }
        // assert(0);
-        usleep(1000000);
+        //usleep(1000000);
+       // sleep(3);
 
-      //  router_set_state(rt[0], NN_STATE_PAUSED);
+        router_set_state(rt[0], NN_STATE_PAUSED);
 
-      //  for(i=NODE_NO-1; i >= 0; i--){
-      //      node_set_state(n[i], NN_STATE_PAUSED);
-      //  }
+        for(i=NODE_NO-1; i >= 0; i--){
+            node_set_state(n[i], NN_STATE_PAUSED);
+        }
 
         sleep(1);
 
         conn_quit_chan(cn[0], CHAN_SERVER);
-        conn_unconn(n[0], rt[0]);
+        //conn_unconn(n[0], rt[0]);
+        node_unconn(n[0], cn[0]);
         node_set_state(n[0], NN_STATE_SHUTDOWN);
 
         conn_quit_chan(cn[1], CHAN_SERVER);
-        conn_unconn(n[1], rt[0]);
+        //conn_unconn(n[1], rt[0]);
+        node_unconn(n[1], cn[1]);
         node_set_state(n[1], NN_STATE_SHUTDOWN);
 
 
         for(i=2; i < NODE_NO; i++){
             conn_quit_chan(cn[i], CHAN_CONN_HANDLERS);
             conn_quit_chan(cn[i], CHAN_MAIN_CHANNEL);
-            conn_unconn(n[i], rt[0]);
+            //conn_unconn(n[i], rt[0]);
+            node_unconn(n[i], cn[i]);
             node_set_state(n[i], NN_STATE_SHUTDOWN);
         }
-
 
 
         router_set_state(rt[0], NN_STATE_SHUTDOWN);
@@ -443,8 +448,6 @@ int main(int argc, char **argv)
        //     router_rem_chan(rt[0], i);
        // }
 
-
-        sleep(2);
 
         for(i=0; i < NODE_NO; i++){
             node_get_status(n[i], &n_status[i]);

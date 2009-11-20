@@ -257,6 +257,7 @@ int _conn_free_node(struct nn_conn *cn)
 
     if(r == 1){
         _conn_free(cn);
+        printf("!!! conn got free'd \n");
     }
 
     return r;
@@ -271,16 +272,16 @@ int _conn_free_router(struct nn_conn *cn)
     cn->router = NULL;
     cn->state = CONN_STATE_DEAD;
 
-   // if(!cn->node){
-   //     /* we can free the conn */
-   //     r = 1;
-   // }
+    if(!cn->node){
+        /* we can free the conn */
+        r = 1;
+    }
 
     _conn_unlock(cn);
 
-   // if(r == 1){
-   //     _conn_free(cn);
-   // }
+    if(r == 1){
+        _conn_free(cn);
+    }
 
     return r;
 }
