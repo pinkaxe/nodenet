@@ -92,8 +92,8 @@ void *thread1(struct nn_node *n, void *pdata)
                 //pkt_set_state(pkt, PKT_STATE_CANCELLED);
                 printf("!!! sent\n");
             }else{
-                assert(0); // slam
-                //pkt_free(pkt);
+                //assert(0); // slam
+                pkt_free(pkt);
             }
 
         }
@@ -108,7 +108,7 @@ void *thread1(struct nn_node *n, void *pdata)
 
 
         printf("!!! sleeping\n");
-        usleep(20000);
+        usleep(200000);
     }
 
     return NULL;
@@ -377,9 +377,16 @@ int main(int argc, char **argv)
         rt[0] = router_init();
         ok(rt[0]);
 
+       // printf("!!!???? r\n");
+       // sleep(3);
+       // printf("!!!???? r d\n");
+
         for(i=0; i < CHAN_NO; i++){
             router_add_chan(rt[0], i);
         }
+       // printf("!!!???? c\n");
+       // sleep(3);
+       // printf("!!!???? c d\n");
 
         n[0] = node_init(NN_NODE_TYPE_THREAD, 0, thread1, dpool);
         cn[0] = conn_conn(n[0], rt[0]);
@@ -388,6 +395,10 @@ int main(int argc, char **argv)
         n[1] = node_init(NN_NODE_TYPE_THREAD, 0, thread1, dpool);
         cn[1] = conn_conn(n[1], rt[0]);
         conn_join_chan(cn[1], CHAN_SERVER);
+
+     //   printf("!!!???? n\n");
+     //   sleep(3);
+     //   printf("!!!???? n d\n");
 
 #define NODE_NO 3
         for(i=2; i < NODE_NO; i++){
@@ -401,18 +412,33 @@ int main(int argc, char **argv)
             //conn_conn(n[i], rt[0], CHAN_MAIN_CHANNEL); /* valgrind */
         }
 
+      //  printf("!!!???? n2\n");
+      //  sleep(3);
+      //  printf("!!!???? n2 d\n");
+
         router_set_state(rt[0], NN_STATE_RUNNING);
 
-        for(i=NODE_NO-1; i >= 0; i--){
+      //  printf("!!!???? rr\n");
+      //  sleep(3);
+      //  printf("!!!???? rr d\n");
+
+        for(i=0; i < NODE_NO; i++){
             node_set_state(n[i], NN_STATE_RUNNING);
         }
+      //  printf("!!!???? nr\n");
+      //  sleep(3);
+      //  printf("!!!???? nr d\n");
 
-        while(1){
-            usleep(1000000);
-        }
+//        while(1){
+//            usleep(1000000);
+//        }
        // assert(0);
-        //usleep(1000000);
-       // sleep(3);
+        printf("!!!???? s\n");
+        int x = 3;
+        //while((x=sleep(x))){
+        //}
+        sleep(3);
+        printf("!!!???? e\n");
 
         router_set_state(rt[0], NN_STATE_PAUSED);
 
@@ -442,7 +468,6 @@ int main(int argc, char **argv)
         }
 
 
-        router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
        // for(i=0; i < CHAN_NO; i++){
        //     router_rem_chan(rt[0], i);
@@ -454,6 +479,8 @@ int main(int argc, char **argv)
             node_clean(n[i]);
             //abort();
         }
+
+        router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
         router_get_status(rt[0], &rt_status);
 

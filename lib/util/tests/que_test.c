@@ -49,9 +49,15 @@ void *remover(void *arg)
 
 int main(int argc, char **argv)
 {
+    struct timespec ts = {0, 0};
+    char *curr;
     pthread_t tid;
 
     q = que_init(9);
+
+    while(!(curr=que_get(q, &ts))){
+        usleep(100000);
+    }
 
     pthread_create(&tid, NULL, adder, NULL);
     pthread_detach(tid);

@@ -145,6 +145,7 @@ static void *node_thread(void *arg)
             thread_join(tid, NULL);
             node_conn_free_all(n);
             node_set_state(n, NN_STATE_DONE);
+            printf("!!!! %p done\n", n);
             return NULL;
         }
 
@@ -259,6 +260,7 @@ int node_free(struct nn_node *n)
     //}
 
     if(n->rx_pkts){
+        printf("!!! n->rx_pkts: %p\n", n->rx_pkts);
         while((pkt=que_get(n->rx_pkts, &ts))){
             pkt_free(pkt);
         }
@@ -399,9 +401,9 @@ int node_rx(struct nn_node *n, struct nn_pkt **pkt)
 
     node_lock(n);
 
+    printf("!! node_rx got from %p\n", n->rx_pkts);
     *pkt = que_get(n->rx_pkts, &ts);
     n->rx_pkts_no--;
-
 
     node_unlock(n);
 

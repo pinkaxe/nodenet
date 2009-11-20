@@ -126,7 +126,7 @@ void *que_get(struct que *h, struct timespec *ts)
 timeout:
     mutex_unlock(&h->mutex);
 
-    if(n) errno = n;
+    //if(n) errno = n;
     return r;
 }
 
