@@ -173,7 +173,6 @@ int main(int argc, char **argv)
     struct nn_node *n[1024];
     struct nn_conn *cn[1024];
 
-    struct buf *buf;
     struct  router_status rt_status;
     struct  node_status n_status[1024];
 
@@ -187,7 +186,7 @@ int main(int argc, char **argv)
 
         n[0] = node_init(NN_NODE_TYPE_THREAD, 0, reader_writer, NULL);
         cn[0] = conn_conn(n[0], rt[0]);
-        //conn_join_chan(cn[0], CHAN_RW);
+        conn_join_chan(cn[0], CHAN_RW);
 
         n[1] = node_init(NN_NODE_TYPE_THREAD, 0, writer, NULL);
         cn[1] = conn_conn(n[1], rt[0]);
@@ -213,7 +212,8 @@ int main(int argc, char **argv)
 
         router_set_state(rt[0], NN_STATE_RUNNING);
 
-        for(i=NODE_NO-1; i >= 0; i--){
+        //for(i=NODE_NO-1; i >= 0; i--){
+        for(i=0; i < NODE_NO; i++){
             node_set_state(n[i], NN_STATE_RUNNING);
         }
 

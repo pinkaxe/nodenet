@@ -370,9 +370,10 @@ int main(int argc, char **argv)
     struct  node_status n_status[1024];
 
 
+    dpool = dpool_create(sizeof(*buf), 1000, 0);
+
     int times;
     for(times=0; times < 100000; times++){
-        dpool = dpool_create(sizeof(*buf), 10000, 0);
 
         rt[0] = router_init();
         ok(rt[0]);
@@ -392,15 +393,17 @@ int main(int argc, char **argv)
         cn[0] = conn_conn(n[0], rt[0]);
         conn_join_chan(cn[0], CHAN_SERVER);
 
-        n[1] = node_init(NN_NODE_TYPE_THREAD, 0, thread1, dpool);
+        n[1] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
         cn[1] = conn_conn(n[1], rt[0]);
-        conn_join_chan(cn[1], CHAN_SERVER);
+        //conn_join_chan(cn[1], CHAN_SERVER);
+        conn_join_chan(cn[1], CHAN_CONN_HANDLERS);
+        conn_join_chan(cn[1], CHAN_MAIN_CHANNEL);
 
      //   printf("!!!???? n\n");
      //   sleep(3);
      //   printf("!!!???? n d\n");
 
-#define NODE_NO 3
+#define NODE_NO 2
         for(i=2; i < NODE_NO; i++){
 
             n[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
@@ -429,31 +432,35 @@ int main(int argc, char **argv)
       //  sleep(3);
       //  printf("!!!???? nr d\n");
 
-//        while(1){
-//            usleep(1000000);
-//        }
+        while(1){
+            usleep(1000000);
+        }
        // assert(0);
         printf("!!!???? s\n");
         int x = 3;
-        //while((x=sleep(x))){
-        //}
-        sleep(3);
+        while((x=sleep(x))){
+        }
+        //sleep(3);
         printf("!!!???? e\n");
 
         router_set_state(rt[0], NN_STATE_PAUSED);
 
-        for(i=NODE_NO-1; i >= 0; i--){
+        for(i=0; i < NODE_NO; i++){
             node_set_state(n[i], NN_STATE_PAUSED);
         }
 
-        sleep(1);
+        x = 1;
+        while((x=sleep(x))){
+        }
 
         conn_quit_chan(cn[0], CHAN_SERVER);
         //conn_unconn(n[0], rt[0]);
         node_unconn(n[0], cn[0]);
         node_set_state(n[0], NN_STATE_SHUTDOWN);
 
-        conn_quit_chan(cn[1], CHAN_SERVER);
+        //conn_quit_chan(cn[1], CHAN_SERVER);
+        conn_quit_chan(cn[1], CHAN_CONN_HANDLERS);
+        conn_quit_chan(cn[1], CHAN_MAIN_CHANNEL);
         //conn_unconn(n[1], rt[0]);
         node_unconn(n[1], cn[1]);
         node_set_state(n[1], NN_STATE_SHUTDOWN);
@@ -486,7 +493,6 @@ int main(int argc, char **argv)
 
         router_clean(rt[0]);
 
-        dpool_free(dpool);
 
         printf("Router rx_pkts_total: %d\n", rt_status.rx_pkts_total);
         printf("Router tx_pkts_total: %d\n", rt_status.tx_pkts_total);
@@ -496,6 +502,7 @@ int main(int argc, char **argv)
             printf("Node %d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
         }
     }
+    dpool_free(dpool);
 
         //printf("Router rx_pkts_no: %d\n", status.rx_pkts_no);
         //printf("Router tx_pkts_no: %d\n", status.tx_pkts_no);

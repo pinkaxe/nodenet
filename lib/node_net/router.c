@@ -615,7 +615,6 @@ static int router_rx_pkts(struct nn_router *rt)
 /* rt have to be locked */
 static int router_route_pkts(struct nn_router *rt)
 {
-    int r;
     struct nn_pkt *pkt;
     int dest_chan_id;
     int dest_no;

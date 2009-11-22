@@ -111,6 +111,7 @@ int conn_join_chan(struct nn_conn *cn, int chan_id)
 
     router_add_to_chan(_conn_get_router(cn), chan_id, cn);
     //router_add_chan_memb(_conn_get_router(cn), chan_id, b);
+    return r;
 }
 
 int conn_quit_chan(struct nn_conn *cn, int chan_id)

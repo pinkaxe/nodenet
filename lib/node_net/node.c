@@ -68,7 +68,7 @@ static int node_conn_free_all(struct nn_node *n);
 static void *start_user_thread(void *arg);
 int node_print(struct nn_node *n);;
 
-static int node_get_type(struct nn_node *n);
+//static int node_get_type(struct nn_node *n);
 static int node_get_attr(struct nn_node *n);
 static void *node_get_codep(struct nn_node *n);
 
@@ -401,7 +401,6 @@ int node_rx(struct nn_node *n, struct nn_pkt **pkt)
 
     node_lock(n);
 
-    printf("!! node_rx got from %p\n", n->rx_pkts);
     *pkt = que_get(n->rx_pkts, &ts);
     n->rx_pkts_no--;
 
@@ -486,10 +485,12 @@ int node_get_status(struct nn_node *n, struct node_status *status)
 }
 
 
+/*
 static int node_get_type(struct nn_node *n)
 {
     return n->type;
 }
+*/
 
 static int node_get_attr(struct nn_node *n)
 {

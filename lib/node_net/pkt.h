@@ -49,6 +49,7 @@ enum nn_pkt_state pkt_get_state(struct nn_pkt *pkt);
 
 int pkt_get_dest_chan_id(struct nn_pkt *pkt);
 int pkt_get_dest_no(struct nn_pkt *pkt);
+struct nn_node *pkt_get_src(struct nn_pkt *pkt);
 
 enum nn_pkt_pkt pkt_get_id(struct nn_pkt *pkt);
 void *pkt_get_data(struct nn_pkt *pkt);

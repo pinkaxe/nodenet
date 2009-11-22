@@ -33,9 +33,6 @@ int pkt_ev_inc_refcnt(struct nn_pkt *pkt, int inc)
 #endif
 
 
-int node_ev_tx(struct nn_node *n, struct nn_pkt_ev *ev)
-{
-}
 
 
 struct nn_pkt {
@@ -186,9 +183,9 @@ int pkt_set_state(struct nn_pkt *pkt, enum nn_pkt_state state)
 
 int pkt_cancelled(struct nn_pkt *pkt)
 {
-    int r = 0;
 
 #if 0
+    int r = 0;
     pkt_lock(pkt);
 
     if(pkt->state == PKT_STATE_CANCELLED){
