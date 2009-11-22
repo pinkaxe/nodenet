@@ -90,6 +90,7 @@ void *thread0(struct nn_node *n, void *pdata)
             }else{
                 //assert(0); // slam
                 pkt_free(pkt);
+                usleep(10000);
             }
 
         }
@@ -121,7 +122,7 @@ void *thread1(struct nn_node *n, void *pdata)
             return NULL;
         }
 
-        while(!node_rx(n, &pkt)){
+        if(!node_rx(n, &pkt)){
 
             /* incoming packet */
             dpool_buf = pkt_get_data(pkt);
@@ -350,8 +351,8 @@ int main(int argc, char **argv)
     thread_create(&tid, NULL, main_thread, NULL);
 
     while(1){
-        sleep(111);
-        //printf("!!! spin\n");
+        sleep(10);
+        printf("!!! spin\n");
     }
 
     return 0;
@@ -375,7 +376,7 @@ static void *main_thread(void *none)
 
     int times;
     int thread0_no = 2;
-    int thread1_no = 4;
+    int thread1_no = 8;
 
     for(times=0; times < 100000; times++){
 
@@ -415,10 +416,25 @@ static void *main_thread(void *none)
 
         usleep(10000000);
 
+        for(i=0; i < thread0_no; i++){
+            node_set_state(n[i], NN_STATE_PAUSED);
+        }
+
+        for(i=0; i < thread1_no; i++){
+            node_set_state(n1[i], NN_STATE_PAUSED);
+        }
+
+        router_set_state(rt[0], NN_STATE_PAUSED);
+
+        printf("paused\n");
+        usleep(3000000);
+
         /* print status */
         router_get_status(rt[0], &rt_status);
         printf("Router rx_pkts_total: %d\n", rt_status.rx_pkts_total);
         printf("Router tx_pkts_total: %d\n", rt_status.tx_pkts_total);
+
+        router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
         for(i=0; i < thread0_no; i++){
             //router_rem_from_chan(rt[0], CHAN_SERVER, n[i]);
@@ -437,14 +453,15 @@ static void *main_thread(void *none)
             printf("Node 1.%d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
             node_set_state(n1[i], NN_STATE_SHUTDOWN);
         }
+        printf("Times: %d\n", times);
+
+        router_clean(rt[0]);
 
         //usleep(2000000);
         //
-        router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
         //node_clean(n[1]);
         //node_clean(n[0]);
-        router_clean(rt[0]);
 
     }
     dpool_free(dpool);

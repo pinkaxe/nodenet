@@ -106,7 +106,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     n->rx_pkts_no = 0;
     n->rx_pkts_total = 0;
 
-    PCHK(LWARN, n->tx_pkts, que_init(999));
+    PCHK(LWARN, n->tx_pkts, que_init(200));
     if(!(n->tx_pkts)){
         PCHK(LWARN, r, node_free(n));
         goto err;

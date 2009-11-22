@@ -141,12 +141,13 @@ static void *router_thread(void *arg)
     //struct timespec ts = {0, 0};
     struct nn_router *rt = arg;
     int rx_pkts_no;
+    int i;
 
     L(LNOTICE, "Router thread starting");
 
     thread_detach(thread_self());
 
-    for(;;){
+    for(i=0;; i++){
 
         router_lock(rt);
 
@@ -176,7 +177,9 @@ again:
                 break;
         }
 
-        router_rx_pkts(rt);
+        if(rt->rx_pkts_no < 9999){
+            router_rx_pkts(rt);
+        }
 
        // /* route packets to chan->nodes's */
         if(rt->rx_pkts_no){
@@ -188,6 +191,9 @@ again:
         router_unlock(rt);
 
         sched_yield();
+       // if(i % 16){
+       //     usleep(1000);
+       // }
         //if(rx_pkts_no){
         //    // yield if there is more rx packets to process
         //    sched_yield();
@@ -604,28 +610,33 @@ static int router_rx_pkts(struct nn_router *rt)
 {
     int r;
     struct nn_pkt *pkt;
+    int times;
 
     ROUTER_CHAN_ITER_PRE(rt);
     CHAN_NODES_ITER_PRE(chan);
 
     assert(n);
     /* loop through nodes's and move pkt's to rt */
-    r = node_get_pkt(n, &pkt);
-    if(r == NN_RET_NODE_DONE){
-        router_unlock(rt);
-        router_rem_node2(rt, n);
-        router_lock(rt);
-    }else if(!r){
-        assert(pkt);
+    for(times=0; times < 256; times++){
+        r = node_get_pkt(n, &pkt);
+        if(r == NN_RET_NODE_DONE){
+            router_unlock(rt);
+            router_rem_node2(rt, n);
+            router_lock(rt);
+        }else if(!r){
+            assert(pkt);
 
-        //rt->nodes_pkts_no--;
+            //rt->nodes_pkts_no--;
 
-        ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
-        rt->rx_pkts_no++;
-        rt->rx_pkts_total++;
-        router_cond_broadcast(rt);
+            ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
+            rt->rx_pkts_no++;
+            rt->rx_pkts_total++;
+            router_cond_broadcast(rt);
 
-        pkt_set_state(pkt, PKT_STATE_RT_RX);
+            pkt_set_state(pkt, PKT_STATE_RT_RX);
+        }else{
+            break;
+        }
     }
 
     CHAN_NODES_ITER_POST(chan);
@@ -644,9 +655,10 @@ static int router_route_pkts(struct nn_router *rt)
     int dest_no;
     int c;
     int send_to;
-    int pick_up = 10;
+    int pick_up = 1024;
 
     /* pick pkt's up from router and move to nodes */
+    //while(--pick_up && !router_get_rx_pkt(rt, &pkt)){
     while(--pick_up && !router_get_rx_pkt(rt, &pkt)){
         assert(pkt);
 
@@ -700,19 +712,6 @@ static int router_route_pkts(struct nn_router *rt)
         pkt_set_state(pkt, PKT_STATE_RT_ROUTED);
         pkt_free(pkt);
 
-
-
-        //if(!send_to){
-        //    /* not send, add back, IMPROVE: */
-        //   // ICHK(LWARN, r, que_add(rt->rx_pkts, pkt));
-        //   // rt->rx_pkts_no++;
-        //   // rt->rx_pkts_total++;
-        //   // router_cond_broadcast(rt);
-        //}else{
-        //    /* free for the orignal packet */
-        //    rt->tx_pkts_total++;
-        //    pkt_free(pkt);
-        //}
     }
 
     return 0;
