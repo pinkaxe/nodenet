@@ -7,16 +7,14 @@ libnode_net_la_SOURCES = \
 			 node.h \
 			 router.c \
 			 router.h \
-			 conn.c \
-			 conn.h \
-			 _conn.c \
-			 _conn.h \
 			 pkt.c \
 			 pkt.h \
 			 node_drivers/node_driver.c \
 			 node_drivers/node_driver.h \
 			 node_drivers/thread.c \
 			 node_drivers/thread.h
+
+#conn.c \ conn.h \ _conn.c \ _conn.h 
 
 #node_drivers/lproc.c /node_drivers/bin.c
 

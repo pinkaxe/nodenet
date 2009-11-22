@@ -21,7 +21,8 @@ int node_rx(struct nn_node *n, struct nn_pkt **pkt);
 int node_wait(struct nn_node *n);
 int node_do_state(struct nn_node *n);
 
-
+int node_put_pkt(struct nn_node *n, struct nn_pkt *pkt);
+int node_get_pkt(struct nn_node *n, struct nn_pkt **pkt);
 
 //int node_join_chan(struct nn_node *n, struct nn_chan_rel *grp_rel);
 //int node_quit_chan(struct nn_node *n, struct nn_chan_rel *grp_rel);

@@ -17,7 +17,6 @@
 
 #include "node_net/router.h"
 #include "node_net/node.h"
-#include "node_net/conn.h"
 
 #define ok(x){ \
     assert(x); \
@@ -36,9 +35,6 @@ struct buf {
 
 struct nn_chan *g[CHAN_NO];
 
-//static int recv_global = 0;
-//static int send_global = 0;
-//static int try_send_global = 0;
 
 static int dpool_free_cb(void *dpool, void *dpool_buf)
 {
@@ -108,7 +104,7 @@ void *thread1(struct nn_node *n, void *pdata)
 
 
         printf("!!! sleeping\n");
-        usleep(200000);
+        usleep(1000);
     }
 
     return NULL;
@@ -360,7 +356,7 @@ int main(int argc, char **argv)
     struct nn_router *rt[1];
 
     struct nn_node *n[1024];
-    struct nn_conn *cn[1024];
+    //struct nn_conn *cn[1024];
 
     //struct nn_pkt *pkt;
     struct dpool *dpool;
@@ -390,14 +386,42 @@ int main(int argc, char **argv)
        // printf("!!!???? c d\n");
 
         n[0] = node_init(NN_NODE_TYPE_THREAD, 0, thread1, dpool);
-        cn[0] = conn_conn(n[0], rt[0]);
-        conn_join_chan(cn[0], CHAN_SERVER);
+        router_add_node(rt[0], n[0]);
+        router_add_to_chan(rt[0], CHAN_SERVER, n[0]);
+        //cn[0] = conn_conn(n[0], rt[0]);
+        //conn_join_chan(cn[0], CHAN_SERVER);
 
         n[1] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
-        cn[1] = conn_conn(n[1], rt[0]);
+        router_add_node(rt[0], n[1]);
+        router_add_to_chan(rt[0], CHAN_MAIN_CHANNEL, n[1]);
+
+        router_set_state(rt[0], NN_STATE_RUNNING);
+
+        for(i=0; i < 2; i++){
+            node_set_state(n[i], NN_STATE_RUNNING);
+        }
+
+        sleep(5);
+
+        router_get_status(rt[0], &rt_status);
+
+        printf("Router rx_pkts_total: %d\n", rt_status.rx_pkts_total);
+        printf("Router tx_pkts_total: %d\n", rt_status.tx_pkts_total);
+
+        for(i=0; i < 2; i++){
+            node_get_status(n[i], &n_status[i]);
+            printf("Node %d rx_pkts_total: %d\n", i, n_status[i].rx_pkts_total);
+            printf("Node %d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
+        }
+        abort();
+
+    }
+
+#if 0
+       // cn[1] = conn_conn(n[1], rt[0]);
         //conn_join_chan(cn[1], CHAN_SERVER);
-        conn_join_chan(cn[1], CHAN_CONN_HANDLERS);
-        conn_join_chan(cn[1], CHAN_MAIN_CHANNEL);
+       // conn_join_chan(cn[1], CHAN_CONN_HANDLERS);
+       // conn_join_chan(cn[1], CHAN_MAIN_CHANNEL);
 
      //   printf("!!!???? n\n");
      //   sleep(3);
@@ -407,10 +431,10 @@ int main(int argc, char **argv)
         for(i=2; i < NODE_NO; i++){
 
             n[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
-            cn[i] = conn_conn(n[i], rt[0]);
+        //    cn[i] = conn_conn(n[i], rt[0]);
 
-            conn_join_chan(cn[i], CHAN_CONN_HANDLERS);
-            conn_join_chan(cn[i], CHAN_MAIN_CHANNEL);
+        //    conn_join_chan(cn[i], CHAN_CONN_HANDLERS);
+        //    conn_join_chan(cn[i], CHAN_MAIN_CHANNEL);
 
             //conn_conn(n[i], rt[0], CHAN_MAIN_CHANNEL); /* valgrind */
         }
@@ -418,6 +442,7 @@ int main(int argc, char **argv)
       //  printf("!!!???? n2\n");
       //  sleep(3);
       //  printf("!!!???? n2 d\n");
+      // 
 
         router_set_state(rt[0], NN_STATE_RUNNING);
 
@@ -453,22 +478,22 @@ int main(int argc, char **argv)
         while((x=sleep(x))){
         }
 
-        conn_quit_chan(cn[0], CHAN_SERVER);
+        //conn_quit_chan(cn[0], CHAN_SERVER);
         //conn_unconn(n[0], rt[0]);
         node_unconn(n[0], cn[0]);
         node_set_state(n[0], NN_STATE_SHUTDOWN);
 
         //conn_quit_chan(cn[1], CHAN_SERVER);
-        conn_quit_chan(cn[1], CHAN_CONN_HANDLERS);
-        conn_quit_chan(cn[1], CHAN_MAIN_CHANNEL);
+       // conn_quit_chan(cn[1], CHAN_CONN_HANDLERS);
+       // conn_quit_chan(cn[1], CHAN_MAIN_CHANNEL);
         //conn_unconn(n[1], rt[0]);
         node_unconn(n[1], cn[1]);
         node_set_state(n[1], NN_STATE_SHUTDOWN);
 
 
         for(i=2; i < NODE_NO; i++){
-            conn_quit_chan(cn[i], CHAN_CONN_HANDLERS);
-            conn_quit_chan(cn[i], CHAN_MAIN_CHANNEL);
+       //     conn_quit_chan(cn[i], CHAN_CONN_HANDLERS);
+       //     conn_quit_chan(cn[i], CHAN_MAIN_CHANNEL);
             //conn_unconn(n[i], rt[0]);
             node_unconn(n[i], cn[i]);
             node_set_state(n[i], NN_STATE_SHUTDOWN);
@@ -553,6 +578,7 @@ int main(int argc, char **argv)
             node_set_state(n[i], NN_STATE_SHUTDOWN);
         }
 
+#endif
 #endif
 
     return 0;

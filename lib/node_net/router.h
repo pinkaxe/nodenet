@@ -11,17 +11,20 @@ int router_add_chan(struct nn_router *rt, int id);
 int router_rem_chan(struct nn_router *rt, int id);
 struct nn_chan *router_get_chan(struct nn_router *rt, int id);
 
-int router_conn(struct nn_router *rt, struct nn_conn *cn);
-int router_unconn(struct nn_router *rt, struct nn_conn *n);
-int router_isconn(struct nn_router *rt, struct nn_node *n);
+int router_add_node(struct nn_router *rt, struct nn_node *n);
+int router_rem_node(struct nn_router *rt, struct nn_node *n);
+
+//int router_conn(struct nn_router *rt, struct nn_conn *cn);
+//int router_unconn(struct nn_router *rt, struct nn_conn *n);
+//int router_isconn(struct nn_router *rt, struct nn_node *n);
 
 enum nn_state router_get_state(struct nn_router *rt);
 int router_set_state(struct nn_router *rt, enum nn_state state);
 
 int router_print(struct nn_router *rt);
 
-int router_add_to_chan(struct nn_router *rt, int grp_id, struct nn_conn *cn);
-int router_rem_from_chan(struct nn_router *rt, int grp_id, struct nn_conn *cn);
+int router_add_to_chan(struct nn_router *rt, int grp_id, struct nn_node *n);
+int router_rem_from_chan(struct nn_router *rt, int grp_id, struct nn_node *n);
 
 /* notify router that conn buf avail */
 int router_conn_buf_avail(struct nn_router *rt, int cnt);
