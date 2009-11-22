@@ -98,7 +98,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     //n->ops = node_driver_get_ops(n->type);
     //assert(n->ops);
 
-    PCHK(LWARN, n->rx_pkts, que_init(9));
+    PCHK(LWARN, n->rx_pkts, que_init(999));
     if(!(n->rx_pkts)){
         PCHK(LWARN, r, node_free(n));
         goto err;
@@ -106,7 +106,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     n->rx_pkts_no = 0;
     n->rx_pkts_total = 0;
 
-    PCHK(LWARN, n->tx_pkts, que_init(9));
+    PCHK(LWARN, n->tx_pkts, que_init(999));
     if(!(n->tx_pkts)){
         PCHK(LWARN, r, node_free(n));
         goto err;
@@ -167,7 +167,7 @@ int node_free(struct nn_node *n)
     node_lock(n);
 
     if(n->rx_pkts){
-        printf("!!! n->rx_pkts: %p\n", n->rx_pkts);
+        //printf("!!! n->rx_pkts: %p\n", n->rx_pkts);
         while((pkt=que_get(n->rx_pkts, &ts))){
             pkt_free(pkt);
         }
@@ -179,7 +179,7 @@ int node_free(struct nn_node *n)
 
     if(n->tx_pkts){
         while((pkt=que_get(n->tx_pkts, &ts))){
-            printf("!!! packet: %p\n", pkt);
+            //printf("!!! packet: %p\n", pkt);
         //    abort();
             pkt_free(pkt);
         }

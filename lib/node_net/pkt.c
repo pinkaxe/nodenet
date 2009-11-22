@@ -141,7 +141,7 @@ int pkt_free(struct nn_pkt *pkt)
 
         pkt_lock(pkt);
 
-        printf("!!!! pkt_free: %d\n", pkt->refcnt);
+        //printf("!!!! pkt_free: %d\n", pkt->refcnt);
         if(--pkt->refcnt <= 0){
             if(pkt->buf_free_cb){
                 pkt->buf_free_cb(pkt->pdata, pkt->data);

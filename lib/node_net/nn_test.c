@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
-#include <pthread.h>
 #include <string.h>
 
+#include "sys/thread.h"
 #include "util/log.h"
 #include "util/dpool.h"
 
@@ -24,7 +24,7 @@
 
 struct buf {
     int i;
-    char var[1024 * 128];
+    char var[1024];
 };
 
 #define CHAN_NO 3
@@ -49,7 +49,7 @@ static int free_cb(void *none, void *buf)
     return 0;
 }
 
-void *thread1(struct nn_node *n, void *pdata)
+void *thread0(struct nn_node *n, void *pdata)
 {
     int i = 0;
     struct dpool *dpool = pdata;
@@ -58,7 +58,6 @@ void *thread1(struct nn_node *n, void *pdata)
     struct nn_pkt *pkt;
     enum nn_state state;
 
-    sleep(1);
     for(;;){
 
         i++;
@@ -87,31 +86,22 @@ void *thread1(struct nn_node *n, void *pdata)
             if(!node_tx(n, pkt)){
                 //usleep(10000);
                 //pkt_set_state(pkt, PKT_STATE_CANCELLED);
-                printf("!!! sent\n");
+                //printf("!!! sent\n");
             }else{
                 //assert(0); // slam
                 pkt_free(pkt);
             }
 
         }
-        //    while(pkt_get_state(pkt) != PKT_STATE_N_RX){
-        //        printf("state: %d\n", pkt_get_state(pkt));
-        //        usleep(1);
-        //    }
-        //    printf("state: %d\n", pkt_get_state(pkt));
-        //    //pkt_free(pkt);
-        //    exit(1);
-        //    sleep(1);
 
-
-        printf("!!! sleeping\n");
-        usleep(1000);
+        sched_yield();
+        //usleep(1000);
     }
 
     return NULL;
 }
 
-void *thread0(struct nn_node *n, void *pdata)
+void *thread1(struct nn_node *n, void *pdata)
 {
     //struct dpool *dpool = pdata;
     struct nn_pkt *pkt;
@@ -121,7 +111,7 @@ void *thread0(struct nn_node *n, void *pdata)
 
     for(;;){
 
-        //node_wait(n);
+        node_wait(n);
 
         /* check state */
         state = node_do_state(n);
@@ -140,8 +130,8 @@ void *thread0(struct nn_node *n, void *pdata)
             L(LNOTICE, "Got buf->i=%d", buf->i);
             pkt_free(pkt);
         }
-        //sched_yield();
-        usleep(1000);
+        sched_yield();
+        //usleep(1000);
     }
 
     return NULL;
@@ -351,266 +341,113 @@ void *connection(struct nn_node *n, void *pdata)
     return NULL;
 }
 
+static void *main_thread(void *none);
 
 int main(int argc, char **argv)
+{
+    thread_t tid;
+
+    thread_create(&tid, NULL, main_thread, NULL);
+
+    while(1){
+        sleep(111);
+        //printf("!!! spin\n");
+    }
+
+    return 0;
+}
+
+
+static void *main_thread(void *none)
 {
     int i;
     struct nn_router *rt[1];
 
     struct nn_node *n[1024];
-    //struct nn_conn *cn[1024];
+    struct nn_node *n1[1024];
 
-    //struct nn_pkt *pkt;
     struct dpool *dpool;
     struct buf *buf;
-    //struct dpool_buf *dpool_buf;
     struct  router_status rt_status;
     struct  node_status n_status[1024];
 
-
-    dpool = dpool_create(sizeof(*buf), 1000, 0);
+    dpool = dpool_create(sizeof(*buf), 3000, 0);
 
     int times;
-    for(times=0; times < 100000; times++){
+    int thread0_no = 2;
+    int thread1_no = 4;
 
+    for(times=0; times < 100000; times++){
 
         rt[0] = router_init();
         ok(rt[0]);
 
-       // printf("!!!???? r\n");
-       // sleep(3);
-       // printf("!!!???? r d\n");
-
         for(i=0; i < CHAN_NO; i++){
             router_add_chan(rt[0], i);
         }
-       // printf("!!!???? c\n");
-       // sleep(3);
-       // printf("!!!???? c d\n");
 
-        n[0] = node_init(NN_NODE_TYPE_THREAD, 0, thread1, dpool);
-        router_add_node(rt[0], n[0]);
-        router_add_to_chan(rt[0], CHAN_SERVER, n[0]);
-        //cn[0] = conn_conn(n[0], rt[0]);
-        //conn_join_chan(cn[0], CHAN_SERVER);
+        // node 0
+        for(i=0; i < thread0_no; i++){
+            n[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
 
-        n[1] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
-        router_add_node(rt[0], n[1]);
-        router_add_to_chan(rt[0], CHAN_MAIN_CHANNEL, n[1]);
+            router_add_node(rt[0], n[i]);
+            router_add_to_chan(rt[0], CHAN_SERVER, n[i]);
+        }
+
+
+        // node 1
+        for(i=0; i < thread1_no; i++){
+            n1[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread1, dpool);
+
+            router_add_node(rt[0], n1[i]);
+            router_add_to_chan(rt[0], CHAN_MAIN_CHANNEL, n1[i]);
+        }
 
         router_set_state(rt[0], NN_STATE_RUNNING);
 
-        for(i=0; i < 2; i++){
+        for(i=0; i < thread0_no; i++){
             node_set_state(n[i], NN_STATE_RUNNING);
         }
 
-        int x = 1;
-        while(x--){
+        for(i=0; i < thread1_no; i++){
+            node_set_state(n1[i], NN_STATE_RUNNING);
         }
-        /*
-        while((x=usleep(x)) > 1){
-            x -= 100;
-        }
-        */
 
+        usleep(10000000);
+
+        /* print status */
         router_get_status(rt[0], &rt_status);
-
         printf("Router rx_pkts_total: %d\n", rt_status.rx_pkts_total);
         printf("Router tx_pkts_total: %d\n", rt_status.tx_pkts_total);
 
-        for(i=0; i < 2; i++){
+        for(i=0; i < thread0_no; i++){
+            //router_rem_from_chan(rt[0], CHAN_SERVER, n[i]);
+            router_rem_node(rt[0], n[i]);
             node_get_status(n[i], &n_status[i]);
-            printf("Node %d rx_pkts_total: %d\n", i, n_status[i].rx_pkts_total);
-            printf("Node %d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
+            printf("Node 0.%d rx_pkts_total: %d\n", i, n_status[i].rx_pkts_total);
+            printf("Node 0.%d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
+            node_set_state(n[i], NN_STATE_SHUTDOWN);
         }
 
-        //router_rem_from_chan(rt[0], CHAN_MAIN_CHANNEL, n[1]);
-        router_rem_node(rt[0], n[1]);
+        for(i=0; i < thread1_no; i++){
+            //router_rem_from_chan(rt[0], CHAN_MAIN_CHANNEL, n1[i]);
+            router_rem_node(rt[0], n1[i]);
+            node_get_status(n1[i], &n_status[i]);
+            printf("Node 1.%d rx_pkts_total: %d\n", i, n_status[i].rx_pkts_total);
+            printf("Node 1.%d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
+            node_set_state(n1[i], NN_STATE_SHUTDOWN);
+        }
 
-        node_set_state(n[0], NN_STATE_SHUTDOWN);
-        node_set_state(n[1], NN_STATE_SHUTDOWN);
-
-        //router_rem_from_chan(rt[0], CHAN_SERVER, n[0]);
-        router_rem_node(rt[0], n[0]);
-
+        //usleep(2000000);
+        //
         router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
         //node_clean(n[1]);
         //node_clean(n[0]);
         router_clean(rt[0]);
 
-
-        sleep(1);
-        x = 1;
-        while(x--){
-        }
-
     }
     dpool_free(dpool);
-
-#if 0
-       // cn[1] = conn_conn(n[1], rt[0]);
-        //conn_join_chan(cn[1], CHAN_SERVER);
-       // conn_join_chan(cn[1], CHAN_CONN_HANDLERS);
-       // conn_join_chan(cn[1], CHAN_MAIN_CHANNEL);
-
-     //   printf("!!!???? n\n");
-     //   sleep(3);
-     //   printf("!!!???? n d\n");
-
-#define NODE_NO 2
-        for(i=2; i < NODE_NO; i++){
-
-            n[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread0, dpool);
-        //    cn[i] = conn_conn(n[i], rt[0]);
-
-        //    conn_join_chan(cn[i], CHAN_CONN_HANDLERS);
-        //    conn_join_chan(cn[i], CHAN_MAIN_CHANNEL);
-
-            //conn_conn(n[i], rt[0], CHAN_MAIN_CHANNEL); /* valgrind */
-        }
-
-      //  printf("!!!???? n2\n");
-      //  sleep(3);
-      //  printf("!!!???? n2 d\n");
-      // 
-
-        router_set_state(rt[0], NN_STATE_RUNNING);
-
-      //  printf("!!!???? rr\n");
-      //  sleep(3);
-      //  printf("!!!???? rr d\n");
-
-        for(i=0; i < NODE_NO; i++){
-            node_set_state(n[i], NN_STATE_RUNNING);
-        }
-      //  printf("!!!???? nr\n");
-      //  sleep(3);
-      //  printf("!!!???? nr d\n");
-
-        while(1){
-            usleep(1000000);
-        }
-       // assert(0);
-        printf("!!!???? s\n");
-        int x = 3;
-        while((x=sleep(x))){
-        }
-        //sleep(3);
-        printf("!!!???? e\n");
-
-        router_set_state(rt[0], NN_STATE_PAUSED);
-
-        for(i=0; i < NODE_NO; i++){
-            node_set_state(n[i], NN_STATE_PAUSED);
-        }
-
-        x = 1;
-        while((x=sleep(x))){
-        }
-
-        //conn_quit_chan(cn[0], CHAN_SERVER);
-        //conn_unconn(n[0], rt[0]);
-        node_unconn(n[0], cn[0]);
-        node_set_state(n[0], NN_STATE_SHUTDOWN);
-
-        //conn_quit_chan(cn[1], CHAN_SERVER);
-       // conn_quit_chan(cn[1], CHAN_CONN_HANDLERS);
-       // conn_quit_chan(cn[1], CHAN_MAIN_CHANNEL);
-        //conn_unconn(n[1], rt[0]);
-        node_unconn(n[1], cn[1]);
-        node_set_state(n[1], NN_STATE_SHUTDOWN);
-
-
-        for(i=2; i < NODE_NO; i++){
-       //     conn_quit_chan(cn[i], CHAN_CONN_HANDLERS);
-       //     conn_quit_chan(cn[i], CHAN_MAIN_CHANNEL);
-            //conn_unconn(n[i], rt[0]);
-            node_unconn(n[i], cn[i]);
-            node_set_state(n[i], NN_STATE_SHUTDOWN);
-        }
-
-
-
-       // for(i=0; i < CHAN_NO; i++){
-       //     router_rem_chan(rt[0], i);
-       // }
-
-
-        for(i=0; i < NODE_NO; i++){
-            node_get_status(n[i], &n_status[i]);
-            node_clean(n[i]);
-            //abort();
-        }
-
-        router_set_state(rt[0], NN_STATE_SHUTDOWN);
-
-        router_get_status(rt[0], &rt_status);
-
-        router_clean(rt[0]);
-
-
-        printf("Router rx_pkts_total: %d\n", rt_status.rx_pkts_total);
-        printf("Router tx_pkts_total: %d\n", rt_status.tx_pkts_total);
-
-        for(i=0; i < NODE_NO; i++){
-            printf("Node %d rx_pkts_total: %d\n", i, n_status[i].rx_pkts_total);
-            printf("Node %d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
-        }
-    }
-    dpool_free(dpool);
-
-        //printf("Router rx_pkts_no: %d\n", status.rx_pkts_no);
-        //printf("Router tx_pkts_no: %d\n", status.tx_pkts_no);
-
-        //printf("!!! try sent: %d\n", try_send_global);
-        //printf("!!! sent: %d\n", send_global);
-        //printf("!!! receive: %d\n", recv_global);
-
-
-        //exit(0);
-
-#if 0
-
-        /* send a pkt from the router */
-        /*
-        for(i=0; i < 100; i++){
-            dpool_buf = dpool_get_buf(dpool);
-            buf = dpool_buf->data;
-            buf->i = i;
-            pkt = pkt_init(c++, dpool_buf, sizeof(dpool_buf), dpool, 1,
-                    NN_SENDTO_ALL, 0);
-            while(nn_router_tx_pkt(rt[0], n[0], pkt)){
-                usleep(1000);
-            }
-        }
-        */
-        //while(1){
-            //sleep(3);
-        //}
-            sleep(10000);
-
-        /* pause everything */
-        for(i=0; i < 3; i++){
-            node_set_state(n[i], NN_STATE_PAUSED);
-        }
-        router_set_state(rt[0], NN_STATE_PAUSED);
-
-        /* run everything */
-        for(i=0; i < 3; i++){
-            node_set_state(n[i], NN_STATE_RUNNING);
-        }
-        router_set_state(rt[0], NN_STATE_RUNNING);
-
-
-        for(i=0; i < 3; i++){
-            /* unconn not needed but ok */
-            //conn_unconn(n[i], rt[0]);
-            node_set_state(n[i], NN_STATE_SHUTDOWN);
-        }
-
-#endif
-#endif
 
     return 0;
 }

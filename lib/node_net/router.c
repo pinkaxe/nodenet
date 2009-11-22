@@ -187,12 +187,13 @@ again:
 
         router_unlock(rt);
 
-        if(rx_pkts_no){
-            // yield if there is more rx packets to process
-            sched_yield();
-        }else{
-            usleep(1000);
-        }
+        sched_yield();
+        //if(rx_pkts_no){
+        //    // yield if there is more rx packets to process
+        //    sched_yield();
+        //}else{
+        //    usleep(1000);
+        //}
     }
     return NULL;
 }
