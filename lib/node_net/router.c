@@ -191,9 +191,9 @@ again:
         router_unlock(rt);
 
         sched_yield();
-       // if(i % 16){
-       //     usleep(1000);
-       // }
+        //if(i % 4){
+        //    usleep(10000);
+        //}
         //if(rx_pkts_no){
         //    // yield if there is more rx packets to process
         //    sched_yield();

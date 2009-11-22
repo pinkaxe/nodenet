@@ -344,13 +344,14 @@ int node_get_pkt(struct nn_node *n, struct nn_pkt **pkt)
     *pkt = que_get(n->tx_pkts, &ts);
     n->tx_pkts_no--;
 
-    node_unlock(n);
 
     if(*pkt){// && !pkt_cancelled(*pkt)){
         pkt_set_state(*pkt, PKT_STATE_N_RX);
         L(LDEBUG, "+ node_get_pkt %p", *pkt);
         r = 0;
     }
+
+    node_unlock(n);
 
 done:
     return r;
@@ -367,13 +368,14 @@ int node_rx(struct nn_node *n, struct nn_pkt **pkt)
     *pkt = que_get(n->rx_pkts, &ts);
     n->rx_pkts_no--;
 
-    node_unlock(n);
 
     if(*pkt){// && !pkt_cancelled(*pkt)){
         pkt_set_state(*pkt, PKT_STATE_N_RX);
         L(LDEBUG, "+ node_rx %p", *pkt);
         r = 0;
     }
+
+    node_unlock(n);
 
     return r;
 }
@@ -390,9 +392,9 @@ int node_tx(struct nn_node *n, struct nn_pkt *pkt)
     n->tx_pkts_total++;
     node_cond_broadcast(n);
 
-    node_unlock(n);
-
     pkt_set_state(pkt, PKT_STATE_N_TX);
+
+    node_unlock(n);
 
     L(LDEBUG, "+ node_tx %p(%d)\n", pkt, r);
 

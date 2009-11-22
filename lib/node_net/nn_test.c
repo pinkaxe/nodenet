@@ -351,8 +351,8 @@ int main(int argc, char **argv)
     thread_create(&tid, NULL, main_thread, NULL);
 
     while(1){
-        sleep(10);
-        printf("!!! spin\n");
+        usleep(10000000);
+        //printf("!!! spin\n");
     }
 
     return 0;
@@ -375,10 +375,22 @@ static void *main_thread(void *none)
     dpool = dpool_create(sizeof(*buf), 3000, 0);
 
     int times;
-    int thread0_no = 2;
-    int thread1_no = 8;
+    int thread0_no = 0;
+    int thread1_no = 0;
+    int thread0_no_max = 7;
+    int thread1_no_max = 9;
 
     for(times=0; times < 100000; times++){
+
+        thread0_no++;
+        if(thread0_no > thread0_no_max){
+            thread0_no = 1;
+        }
+
+        thread1_no++;
+        if(thread1_no > thread1_no_max){
+            thread1_no = 1;
+        }
 
         rt[0] = router_init();
         ok(rt[0]);
@@ -453,11 +465,11 @@ static void *main_thread(void *none)
             printf("Node 1.%d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
             node_set_state(n1[i], NN_STATE_SHUTDOWN);
         }
-        printf("Times: %d\n", times);
+        printf("Times: %d, thread_0_no=%d, thread1_no=%d\n", times, thread0_no, thread1_no);
 
         router_clean(rt[0]);
 
-        //usleep(2000000);
+        usleep(1000000);
         //
 
         //node_clean(n[1]);
