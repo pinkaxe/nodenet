@@ -51,6 +51,8 @@ struct nn_node {
     mutex_t mutex;
     cond_t cond;
 
+    int refcnt;
+
     DBG_STRUCT_END
 };
 
@@ -111,6 +113,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     }
     n->tx_pkts_no = 0;
     n->tx_pkts_total = 0;
+    n->refcnt = 0;
 
     n->type = type;
     n->attr = attr;
@@ -263,11 +266,32 @@ int node_do_state(struct nn_node *n)
     return state;
 }
 
+int node_inc_refcnt(struct nn_node *n, int cnt)
+{
+    int r;
+
+    node_lock(n);
+
+    n->refcnt += cnt;
+    r = n->refcnt;
+
+    node_unlock(n);
+
+    return r;
+}
+
 int node_put_pkt(struct nn_node *n, struct nn_pkt *pkt)
 {
     int r;
 
     node_lock(n);
+
+    if(n->state == NN_STATE_FINISHED && n->refcnt <= 0){
+        node_unlock(n);
+        node_free(n);
+        r = NN_RET_NODE_DONE;
+        goto done;
+    }
 
     ICHK(LWARN, r, que_add(n->rx_pkts, pkt));
     n->rx_pkts_no++;
@@ -277,8 +301,31 @@ int node_put_pkt(struct nn_node *n, struct nn_pkt *pkt)
 
     node_unlock(n);
 
+done:
+
     return r;
 }
+
+
+int node_check(struct nn_node *n)
+{
+    int r = 0;
+
+    node_lock(n);
+
+    if(n->state == NN_STATE_FINISHED && n->refcnt <= 0){
+        node_unlock(n);
+        node_free(n);
+        r = NN_RET_NODE_DONE;
+        goto done;
+    }
+
+    node_unlock(n);
+
+done:
+    return r;
+}
+
 
 int node_get_pkt(struct nn_node *n, struct nn_pkt **pkt)
 {
@@ -286,6 +333,13 @@ int node_get_pkt(struct nn_node *n, struct nn_pkt **pkt)
     struct timespec ts = {0, 0};
 
     node_lock(n);
+
+    if(n->state == NN_STATE_FINISHED && n->refcnt <= 0){
+        node_unlock(n);
+        node_free(n);
+        r = NN_RET_NODE_DONE;
+        goto done;
+    }
 
     *pkt = que_get(n->tx_pkts, &ts);
     n->tx_pkts_no--;
@@ -298,6 +352,7 @@ int node_get_pkt(struct nn_node *n, struct nn_pkt **pkt)
         r = 0;
     }
 
+done:
     return r;
 }
 
@@ -346,18 +401,31 @@ int node_tx(struct nn_node *n, struct nn_pkt *pkt)
 
 enum nn_state node_get_state(struct nn_node *n)
 {
-    return n->state;
+    enum nn_state state;
+
+    state = n->state;
+
+    return state;
 }
 
 int node_set_state(struct nn_node *n, enum nn_state state)
 {
     node_lock(n);
 
+    if(state == NN_STATE_FINISHED && n->refcnt <= 0){
+        /* if it's finished with no routers pointing to it, free */
+        node_unlock(n);
+        node_free(n);
+        n = NULL;
+        goto end;
+    }
+
     n->state = state;
 
     node_cond_broadcast(n);
     node_unlock(n);
 
+end:
     return 0;
 }
 
@@ -449,27 +517,6 @@ static int node_isok(struct nn_node *n)
 
     return 0;
 }
-
-#if 0
-int node_print(struct nn_node *n)
-{
-    int c;
-    //void *iter;
-
-    c = 0;
-
-    node_lock(n);
-    NODE_CONN_ITER_PRE
-
-    printf("node->conn\t");
-    printf("n=%p, cn:%p, rt=%p\n", n, cn, _conn_get_router(cn));
-
-    NODE_CONN_ITER_POST
-    node_unlock(n);
-
-    return 0;
-}
-#endif
 
 
 /* iter */

@@ -66,6 +66,7 @@ void *thread1(struct nn_node *n, void *pdata)
         state = node_do_state(n);
         if(state == NN_STATE_SHUTDOWN){
             // cleanup if need to
+            node_set_state(n, NN_STATE_FINISHED);
             return NULL;
         }
 
@@ -126,6 +127,7 @@ void *thread0(struct nn_node *n, void *pdata)
         state = node_do_state(n);
         if(state == NN_STATE_SHUTDOWN){
             // cleanup if need to
+            node_set_state(n, NN_STATE_FINISHED);
             return NULL;
         }
 
@@ -371,6 +373,7 @@ int main(int argc, char **argv)
     int times;
     for(times=0; times < 100000; times++){
 
+
         rt[0] = router_init();
         ok(rt[0]);
 
@@ -401,7 +404,14 @@ int main(int argc, char **argv)
             node_set_state(n[i], NN_STATE_RUNNING);
         }
 
-        sleep(5);
+        int x = 1;
+        while(x--){
+        }
+        /*
+        while((x=usleep(x)) > 1){
+            x -= 100;
+        }
+        */
 
         router_get_status(rt[0], &rt_status);
 
@@ -413,9 +423,30 @@ int main(int argc, char **argv)
             printf("Node %d rx_pkts_total: %d\n", i, n_status[i].rx_pkts_total);
             printf("Node %d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
         }
-        abort();
+
+        //router_rem_from_chan(rt[0], CHAN_MAIN_CHANNEL, n[1]);
+        router_rem_node(rt[0], n[1]);
+
+        node_set_state(n[0], NN_STATE_SHUTDOWN);
+        node_set_state(n[1], NN_STATE_SHUTDOWN);
+
+        //router_rem_from_chan(rt[0], CHAN_SERVER, n[0]);
+        router_rem_node(rt[0], n[0]);
+
+        router_set_state(rt[0], NN_STATE_SHUTDOWN);
+
+        //node_clean(n[1]);
+        //node_clean(n[0]);
+        router_clean(rt[0]);
+
+
+        sleep(1);
+        x = 1;
+        while(x--){
+        }
 
     }
+    dpool_free(dpool);
 
 #if 0
        // cn[1] = conn_conn(n[1], rt[0]);

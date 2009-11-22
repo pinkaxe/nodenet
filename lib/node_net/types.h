@@ -37,7 +37,12 @@ enum nn_state {
     NN_STATE_RUNNING,
     NN_STATE_PAUSED,
     NN_STATE_SHUTDOWN,
+    NN_STATE_FINISHED,
     NN_STATE_DONE,
+};
+
+enum {
+    NN_RET_NODE_DONE = 0x7F,
 };
 
 #endif

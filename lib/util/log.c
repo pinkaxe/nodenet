@@ -18,7 +18,7 @@ void dlog(int level, const char *filename, int line,
     setlogmask(LOG_UPTO(LOG_DEBUG));
 
     va_start(args, format);
-    level = LOG_WARNING;
+    level = LOG_INFO;
     /* valgrind error here from syslog ? */
     syslog(level, "%s:%d:%s->", filename, line, funcname);
     vsyslog(level, format, args);

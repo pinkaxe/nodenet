@@ -16,6 +16,7 @@
 #include "types.h"
 #include "pkt.h"
 #include "router.h"
+#include "node.h"
 
 struct chan_nodes_iter;
 struct router_nodes_iter;
@@ -163,11 +164,11 @@ again:
                 goto again;
                 break;
             case NN_STATE_SHUTDOWN:
-                L(LNOTICE, "Route shutdown start: %p", rt);
+                L(LNOTICE, "Router shutdown start: %p", rt);
                 router_unlock(rt);
                 router_nodes_free_all(rt);
                 router_set_state(rt, NN_STATE_DONE);
-                L(LNOTICE, "Route shutdown complete: %p", rt);
+                L(LNOTICE, "Router shutdown complete: %p", rt);
                 return NULL;
                 break;
             case NN_STATE_DONE:
@@ -332,6 +333,8 @@ int router_add_node(struct nn_router *rt, struct nn_node *n)
 
     router_unlock(rt);
 
+    node_inc_refcnt(n, 1);
+
     return r;
 }
 
@@ -355,6 +358,46 @@ int router_rem_node(struct nn_router *rt, struct nn_node *_n)
         done = 1;
     }
 
+
+    CHAN_NODES_ITER_POST(chan);
+
+    ROUTER_CHAN_ITER_POST(rt);
+
+    node_inc_refcnt(_n, -1);
+    if(node_check(_n) == NN_RET_NODE_DONE){
+        printf("!!! cleaned up!!\n"); 
+    }
+
+    ICHK(LWARN, r, ll_rem(rt->nodes, _n));
+    if(r) fail++;
+
+    router_unlock(rt);
+
+
+    return r;
+}
+
+int router_rem_node2(struct nn_router *rt, struct nn_node *_n)
+{
+    int r;
+    int fail = -1;
+
+    router_isvalid(rt);
+
+    router_lock(rt);
+
+    /* free all the chan ll pointers to n */
+    ROUTER_CHAN_ITER_PRE(rt);
+
+    CHAN_NODES_ITER_PRE(chan);
+
+    if(n == _n){
+        ICHK(LWARN, r, ll_rem(chan->nodes, n));
+        if(r) fail++;
+        done = 1;
+    }
+
+
     CHAN_NODES_ITER_POST(chan);
 
     ROUTER_CHAN_ITER_POST(rt);
@@ -363,6 +406,7 @@ int router_rem_node(struct nn_router *rt, struct nn_node *_n)
     if(r) fail++;
 
     router_unlock(rt);
+
 
     return r;
 }
@@ -438,7 +482,7 @@ struct nn_chan *router_get_chan(struct nn_router *rt, int id)
 {
     struct nn_chan *_g = NULL;
 
-    router_lock(rt); \
+    router_lock(rt);
     ROUTER_CHAN_ITER_PRE(rt);
 
     if(chan->id == id){
@@ -565,7 +609,12 @@ static int router_rx_pkts(struct nn_router *rt)
 
     assert(n);
     /* loop through nodes's and move pkt's to rt */
-    if(!node_get_pkt(n, &pkt)){
+    r = node_get_pkt(n, &pkt);
+    if(r == NN_RET_NODE_DONE){
+        router_unlock(rt);
+        router_rem_node2(rt, n);
+        router_lock(rt);
+    }else if(!r){
         assert(pkt);
 
         //rt->nodes_pkts_no--;
@@ -588,6 +637,7 @@ static int router_rx_pkts(struct nn_router *rt)
 /* rt have to be locked */
 static int router_route_pkts(struct nn_router *rt)
 {
+    int r;
     struct nn_pkt *pkt;
     int dest_chan_id;
     int dest_no;
@@ -619,8 +669,12 @@ static int router_route_pkts(struct nn_router *rt)
             /* don't send to sender */
             if(n != pkt_get_src(pkt)){
                 pkt_inc_refcnt(pkt, 1);
-                if(!node_put_pkt(n, pkt)){
-
+                r = node_put_pkt(n, pkt);
+                if(r == NN_RET_NODE_DONE){
+                    router_unlock(rt);
+                    router_rem_node2(rt, n);
+                    router_lock(rt);
+                }else if(!r){
                     send_to++;
                     if(dest_no && ++c >= dest_no){
                         done = 1;
