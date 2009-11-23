@@ -105,7 +105,6 @@ struct nn_router{
 struct router_chan_iter;
 
 static void *router_thread(void *arg);
-static int router_nodes_free_all(struct nn_router *rt);
 
 static int router_lock(struct nn_router *rt);
 static int router_unlock(struct nn_router *rt);
@@ -169,7 +168,6 @@ again:
             case NN_STATE_SHUTDOWN:
                 L(LNOTICE, "Router shutdown start: %p", rt);
                 router_unlock(rt);
-                router_nodes_free_all(rt);
                 router_set_state(rt, NN_STATE_DONE);
                 L(LNOTICE, "Router shutdown complete: %p", rt);
                 return NULL;
@@ -195,12 +193,6 @@ again:
         sched_yield();
         //if(i % 4){
         //    usleep(10000);
-        //}
-        //if(rx_pkts_no){
-        //    // yield if there is more rx packets to process
-        //    sched_yield();
-        //}else{
-        //    usleep(1000);
         //}
     }
     return NULL;
@@ -276,32 +268,63 @@ static int _router_free(struct nn_router *rt)
 
     router_isvalid(rt);
 
-    mutex_lock(&rt->mutex);
+    router_lock(rt);
 
-    if(rt->chan){
-
-        if(rt->rx_pkts){
-            while((pkt=que_get(rt->rx_pkts, &ts))){
-                pkt_free(pkt);
-            }
-            ICHK(LWARN, r, que_free(rt->rx_pkts));
-            if(r) fail++;
+    /* free all packets */
+    if(rt->rx_pkts){
+        while((pkt=que_get(rt->rx_pkts, &ts))){
+            pkt_free(pkt);
         }
-
-        if(rt->tx_pkts){
-            while((pkt=que_get(rt->tx_pkts, &ts))){
-                pkt_free(pkt);
-            }
-            ICHK(LWARN, r, que_free(rt->tx_pkts));
-            if(r) fail++;
-        }
-
-        ICHK(LWARN, r, ll_free(rt->nodes));
-        ICHK(LWARN, r, ll_free(rt->chan));
+        ICHK(LWARN, r, que_free(rt->rx_pkts));
+        if(r) fail++;
     }
 
+    if(rt->tx_pkts){
+        while((pkt=que_get(rt->tx_pkts, &ts))){
+            pkt_free(pkt);
+        }
+        ICHK(LWARN, r, que_free(rt->tx_pkts));
+        if(r) fail++;
+    }
 
-    mutex_unlock(&rt->mutex);
+    /* for each channel .. */
+    ROUTER_CHAN_ITER_PRE(rt);
+
+        /* remove all node connections */
+        CHAN_NODES_ITER_PRE(chan);
+            ICHK(LWARN, r, ll_rem(chan->nodes, n));
+            if(r) fail++;
+        CHAN_NODES_ITER_POST(chan);
+
+        /* then free the chan->nodes ll itself */
+        if(chan->nodes){
+            ICHK(LWARN, r, ll_free(chan->nodes));
+        }
+
+        /* remove the channel */
+        ICHK(LWARN, r, ll_rem(rt->chan, chan));
+        if(r) fail++;
+
+        /* free the chan */
+        free(chan);
+
+    ROUTER_CHAN_ITER_POST(rt);
+
+    ICHK(LWARN, r, ll_free(rt->chan));
+
+
+    ROUTER_NODES_ITER_PRE(rt);
+
+        /* rem from the rt nodes connections */
+        ICHK(LWARN, r, ll_rem(rt->nodes, n));
+        if(r) fail++;
+
+    ROUTER_NODES_ITER_POST(rt);
+
+    ICHK(LWARN, r, ll_free(rt->nodes));
+
+
+    router_unlock(rt);
 
     cond_destroy(&rt->cond);
     mutex_destroy(&rt->mutex);
@@ -567,46 +590,6 @@ enum nn_state router_get_state(struct nn_router *rt)
 
 
 /* helper functions */
-
-/* free router side of nodes */
-static int router_nodes_free_all(struct nn_router *rt)
-{
-    int fail = 0;
-    int r;
-    //struct router_chan_iter *iter;
-    //struct nn_nodes *cn;
-
-    router_lock(rt);
-    ROUTER_CHAN_ITER_PRE(rt);
-
-    CHAN_NODES_ITER_PRE(chan);
-
-    //r = router_unnodes(rt, chan->id, cn);
-
-    ICHK(LWARN, r, ll_rem(chan->nodes, n));
-    if(r) fail++;
-
-
-    CHAN_NODES_ITER_POST(chan);
-
-    router_unlock(rt);
-    router_rem_chan(rt, chan->id);
-    router_lock(rt);
-
-    ROUTER_CHAN_ITER_POST(rt);
-
-
-    ROUTER_NODES_ITER_PRE(rt);
-
-    ICHK(LWARN, r, ll_rem(rt->nodes, n));
-    if(r) fail++;
-
-    ROUTER_NODES_ITER_POST(rt);
-
-    router_unlock(rt);
-
-    return fail;
-}
 
 static int router_rx_pkts(struct nn_router *rt)
 {

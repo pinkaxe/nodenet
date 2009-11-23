@@ -377,19 +377,20 @@ static void *main_thread(void *none)
     int times;
     int thread0_no = 0;
     int thread1_no = 0;
-    int thread0_no_max = 7;
-    int thread1_no_max = 9;
+    int thread0_no_max = 99;
+    int thread1_no_max = 108;
 
-    for(times=0; times < 100000; times++){
+    for(;;){
+    for(times=0; times < 100; times++){
 
-        dpool = dpool_create(sizeof(*buf), 3000, 0);
+        dpool = dpool_create(sizeof(*buf), 300, 0);
 
-        thread0_no++;
+        thread0_no += times % 3;
         if(thread0_no > thread0_no_max){
             thread0_no = 1;
         }
 
-        thread1_no++;
+        thread1_no += times % 4;
         if(thread1_no > thread1_no_max){
             thread1_no = 1;
         }
@@ -409,7 +410,6 @@ static void *main_thread(void *none)
             router_add_to_chan(rt[0], CHAN_SERVER, n[i]);
         }
 
-
         // node 1
         for(i=0; i < thread1_no; i++){
             n1[i] = node_init(NN_NODE_TYPE_THREAD, 0, thread1, dpool);
@@ -428,8 +428,7 @@ static void *main_thread(void *none)
             node_set_state(n1[i], NN_STATE_RUNNING);
         }
 
-        //usleep(10000000);
-        usleep(3000000);
+        usleep(times * 200000);
 
         for(i=0; i < thread0_no; i++){
             node_set_state(n[i], NN_STATE_PAUSED);
@@ -449,12 +448,12 @@ static void *main_thread(void *none)
 
 
         for(i=0; i < thread0_no; i++){
-            //router_rem_from_chan(rt[0], CHAN_SERVER, n[i]);
+            router_rem_from_chan(rt[0], CHAN_SERVER, n[i]);
             router_rem_node(rt[0], n[i]);
+            node_set_state(n[i], NN_STATE_SHUTDOWN);
             node_get_status(n[i], &n_status[i]);
             printf("Node 0.%d rx_pkts_total: %d\n", i, n_status[i].rx_pkts_total);
             printf("Node 0.%d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
-            node_set_state(n[i], NN_STATE_SHUTDOWN);
         }
 
         for(i=0; i < thread1_no; i++){
@@ -465,9 +464,10 @@ static void *main_thread(void *none)
             printf("Node 1.%d tx_pkts_total: %d\n", i, n_status[i].tx_pkts_total);
             node_set_state(n1[i], NN_STATE_SHUTDOWN);
         }
-        printf("Times: %d, thread_0_no=%d, thread1_no=%d\n", times, thread0_no, thread1_no);
+        printf("Times: %d, thread_0_no=%d, thread1_no=%d\n", times,
+                thread0_no, thread1_no);
 
-        usleep(2000000);
+        usleep(1000000);
 
         router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
@@ -481,10 +481,9 @@ static void *main_thread(void *none)
 
         router_free(rt[0]);
 
-        //usleep(3000000);
-
         dpool_free(dpool);
 
+    }
     }
 
     return 0;
