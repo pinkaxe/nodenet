@@ -24,7 +24,7 @@
 
 struct buf {
     int i;
-    char var[1024];
+    //char var[1024];
 };
 
 #define CHAN_NO 3
@@ -61,17 +61,20 @@ void *thread0(struct nn_node *n, void *pdata)
 
     for(;;){
 
+        node_wait(n, NN_TX_READY);
+
         i++;
         /* do state */
         state = node_do_state(n);
         if(state == NN_STATE_SHUTDOWN){
             // cleanup if need to
-            node_set_state(n, NN_STATE_FINISHED);
+            node_set_state(n, NN_STATE_DONE);
             return NULL;
         }
 
         /* send packets */
         if((dpool_buf=dpool_get_buf(dpool))){
+
             /* */
             //buf = dpool_buf_get_datap(dpool_buf);
             buf = dpool_buf->data;
@@ -83,21 +86,18 @@ void *thread0(struct nn_node *n, void *pdata)
                         sizeof(*dpool_buf), dpool, dpool_free_cb));
             assert(pkt);
 
-            //try_send_global++;
             if(!node_tx(n, pkt)){
-                //usleep(10000);
+                //usleep(100);
                 //pkt_set_state(pkt, PKT_STATE_CANCELLED);
                 //printf("!!! sent\n");
             }else{
-                //assert(0); // slam
                 pkt_free(pkt);
-                usleep(10000);
             }
 
+        }else{
+            // no buffer available */
+            usleep(100);
         }
-
-        sched_yield();
-        //usleep(1000);
     }
 
     return NULL;
@@ -113,13 +113,13 @@ void *thread1(struct nn_node *n, void *pdata)
 
     for(;;){
 
-        node_wait(n);
+        node_wait(n, NN_RX_READY);
 
         /* check state */
         state = node_do_state(n);
         if(state == NN_STATE_SHUTDOWN){
             // cleanup if need to
-            node_set_state(n, NN_STATE_FINISHED);
+            node_set_state(n, NN_STATE_DONE);
             return NULL;
         }
 
@@ -132,7 +132,7 @@ void *thread1(struct nn_node *n, void *pdata)
             L(LNOTICE, "Got buf->i=%d", buf->i);
             pkt_free(pkt);
         }
-        sched_yield();
+        //sched_yield();
         //usleep(1000);
     }
 
@@ -382,15 +382,16 @@ static void *main_thread(void *none)
 
     for(;;){
     for(times=0; times < 100; times++){
+        times = 30;
 
         dpool = dpool_create(sizeof(*buf), 300, 0);
 
-        thread0_no += times % 3;
+        thread0_no = 2;//times % 3;
         if(thread0_no > thread0_no_max){
             thread0_no = 1;
         }
 
-        thread1_no += times % 4;
+        thread1_no = 4;//times % 3;
         if(thread1_no > thread1_no_max){
             thread1_no = 1;
         }
@@ -437,6 +438,20 @@ static void *main_thread(void *none)
         for(i=0; i < thread1_no; i++){
             node_set_state(n1[i], NN_STATE_PAUSED);
         }
+
+        printf("!! paused\n");
+        usleep(5000000);
+
+        for(i=0; i < thread0_no; i++){
+            node_set_state(n[i], NN_STATE_RUNNING);
+        }
+
+        for(i=0; i < thread1_no; i++){
+            node_set_state(n1[i], NN_STATE_RUNNING);
+        }
+
+        printf("!! running\n");
+        usleep(5000000);
 
         router_set_state(rt[0], NN_STATE_PAUSED);
 

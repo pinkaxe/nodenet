@@ -2,6 +2,12 @@
 #define NN_NODE_H__
 
 
+enum wait_type {
+    NN_RX_READY,
+    NN_TX_READY,
+    NN_RXTX_READY
+};
+
 struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata);
 int node_free(struct nn_node *n);
@@ -17,7 +23,7 @@ void *node_get_pdatap(struct nn_node *n);
 
 int node_tx(struct nn_node *n, struct nn_pkt *pkt);
 int node_rx(struct nn_node *n, struct nn_pkt **pkt);
-int node_wait(struct nn_node *n);
+int node_wait(struct nn_node *n, enum wait_type type);
 int node_do_state(struct nn_node *n);
 
 int node_put_pkt(struct nn_node *n, struct nn_pkt *pkt);

@@ -190,7 +190,13 @@ again:
 
         router_unlock(rt);
 
-        sched_yield();
+        if(rx_pkts_no){
+            /* more packets to do */
+            //sched_yield();
+        }else{
+            usleep(2000);
+        }
+
         //if(i % 4){
         //    usleep(10000);
         //}
@@ -363,9 +369,9 @@ int router_add_node(struct nn_router *rt, struct nn_node *n)
     ICHK(LWARN, r, ll_add_front(rt->nodes, (void **)&n));
     if(r) fail++;
 
-    router_unlock(rt);
-
     node_inc_refcnt(n, 1);
+
+    router_unlock(rt);
 
     return r;
 }
@@ -396,9 +402,6 @@ int router_rem_node(struct nn_router *rt, struct nn_node *_n)
     ROUTER_CHAN_ITER_POST(rt);
 
     node_inc_refcnt(_n, -1);
-    if(node_check(_n) == NN_RET_NODE_DONE){
-        printf("!!! cleaned up!!\n"); 
-    }
 
     ICHK(LWARN, r, ll_rem(rt->nodes, _n));
     if(r) fail++;
@@ -409,39 +412,6 @@ int router_rem_node(struct nn_router *rt, struct nn_node *_n)
     return r;
 }
 
-int router_rem_node2(struct nn_router *rt, struct nn_node *_n)
-{
-    int r;
-    int fail = -1;
-
-    router_isvalid(rt);
-
-    router_lock(rt);
-
-    /* free all the chan ll pointers to n */
-    ROUTER_CHAN_ITER_PRE(rt);
-
-    CHAN_NODES_ITER_PRE(chan);
-
-    if(n == _n){
-        ICHK(LWARN, r, ll_rem(chan->nodes, n));
-        if(r) fail++;
-        done = 1;
-    }
-
-
-    CHAN_NODES_ITER_POST(chan);
-
-    ROUTER_CHAN_ITER_POST(rt);
-
-    ICHK(LWARN, r, ll_rem(rt->nodes, _n));
-    if(r) fail++;
-
-    router_unlock(rt);
-
-
-    return r;
-}
 
 int router_add_chan(struct nn_router *rt, int id)
 {
@@ -605,8 +575,9 @@ static int router_rx_pkts(struct nn_router *rt)
     for(times=0; times < 256; times++){
         r = node_get_pkt(n, &pkt);
         if(r == NN_RET_NODE_DONE){
+            /* node is dead, remove it */
             router_unlock(rt);
-            router_rem_node2(rt, n);
+            router_rem_node(rt, n);
             router_lock(rt);
         }else if(!r){
             assert(pkt);
@@ -669,8 +640,9 @@ static int router_route_pkts(struct nn_router *rt)
                 pkt_inc_refcnt(pkt, 1);
                 r = node_put_pkt(n, pkt);
                 if(r == NN_RET_NODE_DONE){
+                    /* node is dead, remove it */
                     router_unlock(rt);
-                    router_rem_node2(rt, n);
+                    router_rem_node(rt, n);
                     router_lock(rt);
                 }else if(!r){
                     send_to++;

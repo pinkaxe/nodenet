@@ -64,10 +64,6 @@ struct node_pdata {
 };
 
 
-//static void *node_thread(void *arg);
-
-//static void *node_thread(void *arg);
-//static int node_conn_free_all(struct nn_node *n);
 static void *start_user_thread(void *arg);
 int node_print(struct nn_node *n);;
 
@@ -85,6 +81,8 @@ static int node_isok(struct nn_node *n);
 /* internal free */
 static int _node_free(struct nn_node *n);
 
+#define RX_QUE_SIZE 1024
+#define TX_QUE_SIZE 256
 
 struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata)
@@ -101,7 +99,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     //n->ops = node_driver_get_ops(n->type);
     //assert(n->ops);
 
-    PCHK(LWARN, n->rx_pkts, que_init(999));
+    PCHK(LWARN, n->rx_pkts, que_init(RX_QUE_SIZE));
     if(!(n->rx_pkts)){
         PCHK(LWARN, r, _node_free(n));
         goto err;
@@ -109,7 +107,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     n->rx_pkts_no = 0;
     n->rx_pkts_total = 0;
 
-    PCHK(LWARN, n->tx_pkts, que_init(200));
+    PCHK(LWARN, n->tx_pkts, que_init(TX_QUE_SIZE));
     if(!(n->tx_pkts)){
         PCHK(LWARN, r, _node_free(n));
         goto err;
@@ -129,11 +127,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
 
     n->state = NN_STATE_PAUSED;
 
-    //node_isok(n);
-
-    /* start the node thread that will handle coms from and to node */
-    //thread_create(&tid, NULL, node_thread, n);
-    //thread_detach(tid);
+    node_isok(n);
 
     if(code){
         thread_t tid;
@@ -169,8 +163,8 @@ static int _node_free(struct nn_node *n)
 
     node_lock(n);
 
+    /* free all the packets it holds */
     if(n->rx_pkts){
-        //printf("!!! n->rx_pkts: %p\n", n->rx_pkts);
         while((pkt=que_get(n->rx_pkts, &ts))){
             pkt_free(pkt);
         }
@@ -182,8 +176,6 @@ static int _node_free(struct nn_node *n)
 
     if(n->tx_pkts){
         while((pkt=que_get(n->tx_pkts, &ts))){
-            //printf("!!! packet: %p\n", pkt);
-        //    abort();
             pkt_free(pkt);
         }
         ICHK(LWARN, r, que_free(n->tx_pkts));
@@ -223,12 +215,21 @@ int node_free(struct nn_node *n)
 }
 
 
-int node_wait(struct nn_node *n)
+int node_wait(struct nn_node *n, enum wait_type type)
 {
     node_lock(n);
 
-    while(node_get_state(n) == NN_STATE_RUNNING && n->rx_pkts_no <= 0){
-        node_cond_wait(n);
+    while(node_get_state(n) == NN_STATE_RUNNING){
+
+       if((type == NN_RX_READY || type == NN_RXTX_READY) &&
+               n->rx_pkts_no > 0){
+           break;
+       }
+       if((type == NN_TX_READY || type == NN_RXTX_READY) &&
+               n->tx_pkts_no < TX_QUE_SIZE - 1){
+           break;
+       }
+       node_cond_wait(n);
     }
 
     node_unlock(n);
@@ -248,25 +249,23 @@ int node_do_state(struct nn_node *n)
 
     node_lock(n);
 
-
+again:
     switch((state=node_get_state(n))){
         case NN_STATE_RUNNING:
             break;
         case NN_STATE_PAUSED:
             L(LNOTICE, "Node paused: %p", n);
             while(node_get_state(n) == NN_STATE_PAUSED){
-                node_unlock(n);
-                sleep(1);
-                node_lock(n);
-                //node_cond_wait(n);
+                node_cond_wait(n);
             }
             L(LNOTICE, "Node paused state exit: %p", n);
+            goto again;
             break;
         case NN_STATE_SHUTDOWN:
             L(LNOTICE, "Node thread shutdown start: %p", n);
             break;
         case NN_STATE_DONE:
-            L(LCRIT, "Node thread illegally in finished state");
+            L(LCRIT, "Node thread illegally running in done state");
             break;
     }
 
@@ -295,8 +294,7 @@ int node_put_pkt(struct nn_node *n, struct nn_pkt *pkt)
 
     node_lock(n);
 
-    if(n->state == NN_STATE_FINISHED){
-        n->state = NN_STATE_DONE;
+    if(n->state == NN_STATE_DONE){
         r = NN_RET_NODE_DONE;
         goto done;
     }
@@ -320,13 +318,10 @@ int node_check(struct nn_node *n)
 
     node_lock(n);
 
-    if(n->state == NN_STATE_FINISHED){
-        n->state = NN_STATE_DONE;
+    if(n->state == NN_STATE_DONE){
         r = NN_RET_NODE_DONE;
-        goto done;
     }
 
-done:
     node_unlock(n);
 
     return r;
@@ -340,17 +335,16 @@ int node_get_pkt(struct nn_node *n, struct nn_pkt **pkt)
 
     node_lock(n);
 
-    if(n->state == NN_STATE_FINISHED){
-        n->state = NN_STATE_DONE;
+    if(n->state == NN_STATE_DONE){
         r = NN_RET_NODE_DONE;
         goto done;
     }
 
     *pkt = que_get(n->tx_pkts, &ts);
-    n->tx_pkts_no--;
-
 
     if(*pkt){// && !pkt_cancelled(*pkt)){
+        n->tx_pkts_no--;
+        node_cond_broadcast(n);
         pkt_set_state(*pkt, PKT_STATE_N_RX);
         L(LDEBUG, "+ node_get_pkt %p", *pkt);
         r = 0;
@@ -419,13 +413,7 @@ int node_set_state(struct nn_node *n, enum nn_state state)
 {
     node_lock(n);
 
-    if(state == NN_STATE_FINISHED && n->refcnt <= 0){
-        /* if it's finished with no routers pointing to it, free */
-        n->state = NN_STATE_DONE;
-    }else{
-        n->state = state;
-    }
-
+    n->state = state;
     node_cond_broadcast(n);
     node_unlock(n);
     return 0;
