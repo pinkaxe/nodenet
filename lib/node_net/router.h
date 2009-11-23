@@ -4,7 +4,7 @@
 
 struct nn_router *router_init();
 int router_free(struct nn_router *rt);
-int router_clean(struct nn_router *rt);
+int router_free(struct nn_router *rt);
 
 int router_add_chan(struct nn_router *rt, int id);
 /* return -1 no such group */

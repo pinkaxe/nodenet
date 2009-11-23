@@ -58,6 +58,7 @@ void *thread0(struct nn_node *n, void *pdata)
     struct nn_pkt *pkt;
     enum nn_state state;
 
+
     for(;;){
 
         i++;
@@ -372,7 +373,6 @@ static void *main_thread(void *none)
     struct  router_status rt_status;
     struct  node_status n_status[1024];
 
-    dpool = dpool_create(sizeof(*buf), 3000, 0);
 
     int times;
     int thread0_no = 0;
@@ -381,6 +381,8 @@ static void *main_thread(void *none)
     int thread1_no_max = 9;
 
     for(times=0; times < 100000; times++){
+
+        dpool = dpool_create(sizeof(*buf), 3000, 0);
 
         thread0_no++;
         if(thread0_no > thread0_no_max){
@@ -426,7 +428,8 @@ static void *main_thread(void *none)
             node_set_state(n1[i], NN_STATE_RUNNING);
         }
 
-        usleep(10000000);
+        //usleep(10000000);
+        usleep(3000000);
 
         for(i=0; i < thread0_no; i++){
             node_set_state(n[i], NN_STATE_PAUSED);
@@ -438,15 +441,12 @@ static void *main_thread(void *none)
 
         router_set_state(rt[0], NN_STATE_PAUSED);
 
-        printf("paused\n");
-        usleep(3000000);
 
         /* print status */
         router_get_status(rt[0], &rt_status);
         printf("Router rx_pkts_total: %d\n", rt_status.rx_pkts_total);
         printf("Router tx_pkts_total: %d\n", rt_status.tx_pkts_total);
 
-        router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
         for(i=0; i < thread0_no; i++){
             //router_rem_from_chan(rt[0], CHAN_SERVER, n[i]);
@@ -467,16 +467,25 @@ static void *main_thread(void *none)
         }
         printf("Times: %d, thread_0_no=%d, thread1_no=%d\n", times, thread0_no, thread1_no);
 
-        router_clean(rt[0]);
+        usleep(2000000);
 
-        usleep(1000000);
-        //
+        router_set_state(rt[0], NN_STATE_SHUTDOWN);
 
-        //node_clean(n[1]);
-        //node_clean(n[0]);
+        for(i=0; i < thread0_no; i++){
+            node_free(n[i]);
+        }
+
+        for(i=0; i < thread1_no; i++){
+            node_free(n1[i]);
+        }
+
+        router_free(rt[0]);
+
+        //usleep(3000000);
+
+        dpool_free(dpool);
 
     }
-    dpool_free(dpool);
 
     return 0;
 }

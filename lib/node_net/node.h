@@ -4,8 +4,7 @@
 
 struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata);
-int node_free(struct nn_node *node);
-int node_clean(struct nn_node *n);
+int node_free(struct nn_node *n);
 
 /* connections  */
 

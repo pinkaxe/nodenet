@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 
         for(i=0; i < NODE_NO; i++){
             node_get_status(n[i], &n_status[i]);
-            node_clean(n[i]);
+            node_free(n[i]);
         }
 
         router_get_status(rt[0], &rt_status);

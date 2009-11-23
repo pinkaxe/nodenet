@@ -82,6 +82,9 @@ static int node_cond_broadcast(struct nn_node *n);
 
 static int node_isok(struct nn_node *n);
 
+/* internal free */
+static int _node_free(struct nn_node *n);
+
 
 struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
         void *code, void *pdata)
@@ -100,7 +103,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
 
     PCHK(LWARN, n->rx_pkts, que_init(999));
     if(!(n->rx_pkts)){
-        PCHK(LWARN, r, node_free(n));
+        PCHK(LWARN, r, _node_free(n));
         goto err;
     }
     n->rx_pkts_no = 0;
@@ -108,7 +111,7 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
 
     PCHK(LWARN, n->tx_pkts, que_init(200));
     if(!(n->tx_pkts)){
-        PCHK(LWARN, r, node_free(n));
+        PCHK(LWARN, r, _node_free(n));
         goto err;
     }
     n->tx_pkts_no = 0;
@@ -154,7 +157,7 @@ err:
     return n;
 }
 
-int node_free(struct nn_node *n)
+static int _node_free(struct nn_node *n)
 {
     int fail = 0;
     int r = 0;
@@ -198,9 +201,15 @@ int node_free(struct nn_node *n)
     return fail;
 }
 
-int node_clean(struct nn_node *n)
+int node_free(struct nn_node *n)
 {
     node_lock(n);
+
+    /* if not shutdown, shutdown */
+    if(n->state != NN_STATE_SHUTDOWN && n->state !=
+            NN_STATE_DONE){
+        n->state = NN_STATE_SHUTDOWN;
+    }
 
     while(node_get_state(n) != NN_STATE_DONE){
         node_cond_wait(n);
@@ -208,7 +217,7 @@ int node_clean(struct nn_node *n)
 
     node_unlock(n);
 
-    node_free(n);
+    _node_free(n);
 
     return 0;
 }
@@ -286,9 +295,8 @@ int node_put_pkt(struct nn_node *n, struct nn_pkt *pkt)
 
     node_lock(n);
 
-    if(n->state == NN_STATE_FINISHED && n->refcnt <= 0){
-        node_unlock(n);
-        node_free(n);
+    if(n->state == NN_STATE_FINISHED){
+        n->state = NN_STATE_DONE;
         r = NN_RET_NODE_DONE;
         goto done;
     }
@@ -299,9 +307,8 @@ int node_put_pkt(struct nn_node *n, struct nn_pkt *pkt)
     node_cond_broadcast(n);
     L(LDEBUG, "+ node_rx_pkts %p(%d)", pkt, r);
 
-    node_unlock(n);
-
 done:
+    node_unlock(n);
 
     return r;
 }
@@ -313,16 +320,15 @@ int node_check(struct nn_node *n)
 
     node_lock(n);
 
-    if(n->state == NN_STATE_FINISHED && n->refcnt <= 0){
-        node_unlock(n);
-        node_free(n);
+    if(n->state == NN_STATE_FINISHED){
+        n->state = NN_STATE_DONE;
         r = NN_RET_NODE_DONE;
         goto done;
     }
 
+done:
     node_unlock(n);
 
-done:
     return r;
 }
 
@@ -334,9 +340,8 @@ int node_get_pkt(struct nn_node *n, struct nn_pkt **pkt)
 
     node_lock(n);
 
-    if(n->state == NN_STATE_FINISHED && n->refcnt <= 0){
-        node_unlock(n);
-        node_free(n);
+    if(n->state == NN_STATE_FINISHED){
+        n->state = NN_STATE_DONE;
         r = NN_RET_NODE_DONE;
         goto done;
     }
@@ -351,9 +356,9 @@ int node_get_pkt(struct nn_node *n, struct nn_pkt **pkt)
         r = 0;
     }
 
+done:
     node_unlock(n);
 
-done:
     return r;
 }
 
@@ -416,18 +421,13 @@ int node_set_state(struct nn_node *n, enum nn_state state)
 
     if(state == NN_STATE_FINISHED && n->refcnt <= 0){
         /* if it's finished with no routers pointing to it, free */
-        node_unlock(n);
-        node_free(n);
-        n = NULL;
-        goto end;
+        n->state = NN_STATE_DONE;
+    }else{
+        n->state = state;
     }
-
-    n->state = state;
 
     node_cond_broadcast(n);
     node_unlock(n);
-
-end:
     return 0;
 }
 

@@ -134,6 +134,8 @@ static int chan_nodes_iter_next(struct chan_nodes_iter *iter, struct nn_node **n
 static int router_isvalid(struct nn_router *rt);
 
 
+/* internal free */
+static int _router_free(struct nn_router *rt);
 
 /* main loop, check status rx packets and route */
 static void *router_thread(void *arg)
@@ -218,21 +220,21 @@ struct nn_router *router_init()
 
     PCHK(LWARN, rt->chan, ll_init());
     if(!rt->chan){
-        PCHK(LWARN, r, router_free(rt));
+        PCHK(LWARN, r, _router_free(rt));
         rt = NULL;
         goto err;
     }
 
     PCHK(LWARN, rt->nodes, ll_init());
     if(!rt->nodes){
-        PCHK(LWARN, r, router_free(rt));
+        PCHK(LWARN, r, _router_free(rt));
         rt = NULL;
         goto err;
     }
 
     PCHK(LWARN, rt->rx_pkts, que_init(9999));
     if(!(rt->rx_pkts)){
-        PCHK(LWARN, r, router_free(rt));
+        PCHK(LWARN, r, _router_free(rt));
         rt = NULL;
         goto err;
     }
@@ -240,7 +242,7 @@ struct nn_router *router_init()
 
     PCHK(LWARN, rt->tx_pkts, que_init(9999));
     if(!(rt->tx_pkts)){
-        PCHK(LWARN, r, router_free(rt));
+        PCHK(LWARN, r, _router_free(rt));
         rt = NULL;
         goto err;
     }
@@ -265,7 +267,7 @@ err:
     return rt;
 }
 
-int router_free(struct nn_router *rt)
+static int _router_free(struct nn_router *rt)
 {
     int r = 0;
     struct nn_pkt *pkt;
@@ -309,7 +311,7 @@ int router_free(struct nn_router *rt)
     return r;
 }
 
-int router_clean(struct nn_router *rt)
+int router_free(struct nn_router *rt)
 {
     int r = 0;
 
@@ -320,7 +322,7 @@ int router_clean(struct nn_router *rt)
     }
 
     router_unlock(rt);
-    router_free(rt);
+    _router_free(rt);
 
     return r;
 }
