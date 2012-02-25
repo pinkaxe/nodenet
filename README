@@ -93,8 +93,8 @@ ______________________
 
 3) Code layout
 
-    A lot of abbreviations is used in the code which I think makes it more
-    readable.
+    A lot of abbreviations is used in the code.
+
         n -> node
         rt -> router
         g -> group
