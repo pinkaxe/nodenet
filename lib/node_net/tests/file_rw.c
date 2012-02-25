@@ -16,7 +16,7 @@
 
 #include "node_net/router.h"
 #include "node_net/node.h"
-#include "node_net/conn.h"
+//#include "node_net/conn.h"
 
 #define CHAN_NO 2
 
@@ -102,7 +102,7 @@ void *writer(struct nn_node *n, void *pdata)
 
     for(;;){
 
-        node_wait(n);
+        node_wait(n, NN_TX_READY);
 
         /* do state */
         state = node_do_state(n);
@@ -140,7 +140,7 @@ void *writer2(struct nn_node *n, void *pdata)
 
     for(;;){
 
-        node_wait(n);
+        node_wait(n, NN_TX_READY);
 
         /* do state */
         state = node_do_state(n);

@@ -1,3 +1,3 @@
 
 
-SUBDIRS = sys wrap util util/tests db node_net node_net/tests
+SUBDIRS = sys wrap util db node_net util/tests #node_net/tests 
