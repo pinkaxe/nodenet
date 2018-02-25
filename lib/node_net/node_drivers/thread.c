@@ -8,7 +8,7 @@
 #include <assert.h>
 
 #include "util/log.h"
-#include "util/que.h"
+#include "que/que.h"
 
 #include "types.h"
 #include "pkt.h"

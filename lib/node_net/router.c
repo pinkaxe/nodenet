@@ -10,8 +10,8 @@
 #include "sys/thread.h"
 
 #include "util/log.h"
-#include "util/que.h"
-#include "util/ll.h"
+#include "que/que.h"
+#include "ll/ll.h"
 
 #include "types.h"
 #include "pkt.h"

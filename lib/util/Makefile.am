@@ -12,10 +12,6 @@ libutil_la_SOURCES = \
 	bitmap.h \
 	dpool.c \
 	dpool.h \
-	que.c \
-	que.h \
-	ll.c \
-	ll.h \
 	link.c \
 	link.h
 

@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <assert.h>
 
-#include "util/que.h"
+#include "que/que.h"
 
 static struct que *q;
 static char *str[] = {"abc", "def", "ghi"};
