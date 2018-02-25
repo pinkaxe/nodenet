@@ -16,6 +16,7 @@ AC_CONFIG_FILES([Makefile
 		lib/util/tests/Makefile
 		lib/db/Makefile
 		lib/file/Makefile
+		lib/thread_pool/Makefile
 		lib/node_net/Makefile
 		lib/node_net/tests/Makefile
             ])
