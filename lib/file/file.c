@@ -5,9 +5,10 @@
 #include<errno.h>
 #include<unistd.h>
 
-#include "dlog.h"
-#include "debug.h"
+//#include "dlog.h"
+//#include "debug.h"
 #include "file.h"
+#include "../util/log.h"
 
 
 int file_len(char *filename)
@@ -15,10 +16,10 @@ int file_len(char *filename)
 	FILE *fd;
 	int end;
 
-	ASSERT(filename);
+	//ASSERT(filename);
 
 	if(!(fd = fopen(filename, "r"))){
-		DLOG2(LOG_WARNING, "Couldn't open file: %s(%s)\n", 
+		log2(LWARN, "Couldn't open file: %s(%s)\n", 
 			filename, strerror(errno));
 		return 0;
 	}
