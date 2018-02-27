@@ -5,9 +5,9 @@
 #include<stdbool.h>
 #include<stdint.h>
 
-#include "util/log.h"
-#include "util/bitmap.h"
-#include "util/dpool.h"
+#include "log/log.h"
+#include "bitmap/bitmap.h"
+#include "dpool/dpool.h"
 
 struct item {
     int x;

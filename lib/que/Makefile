@@ -75,8 +75,8 @@ libque_la_OBJECTS = $(am_libque_la_OBJECTS)
 PROGRAMS = $(bin_PROGRAMS)
 am_que_test_OBJECTS = que_test.$(OBJEXT)
 que_test_OBJECTS = $(am_que_test_OBJECTS)
-que_test_DEPENDENCIES = libque.la ../util/libutil.la \
-	../wrap/libwrap.la
+que_test_DEPENDENCIES = ../util/libutil.la ../wrap/libwrap.la \
+	libque.la ../log/liblog.la
 DEFAULT_INCLUDES = -I. -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -102,10 +102,10 @@ AUTOCONF = ${SHELL} /mnt/share/code/mine/missing --run autoconf
 AUTOHEADER = ${SHELL} /mnt/share/code/mine/missing --run autoheader
 AUTOMAKE = ${SHELL} /mnt/share/code/mine/missing --run automake-1.11
 AWK = gawk
-CC = clang
+CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -O0 -g -pg -fno-inline -Wall -I/mnt/share/code/mine/lib
-CPP = clang -E
+CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
@@ -161,7 +161,7 @@ abs_srcdir = /mnt/share/code/mine/lib/que
 abs_top_builddir = /mnt/share/code/mine
 abs_top_srcdir = /mnt/share/code/mine
 ac_ct_AR = ar
-ac_ct_CC = clang
+ac_ct_CC = gcc
 ac_ct_DUMPBIN = 
 am__include = include
 am__leading_dot = .
@@ -214,7 +214,7 @@ libque_la_SOURCES = \
 			 que.h
 
 libque_la_LIBADD = 
-que_test_LDADD = libque.la ../util/libutil.la ../wrap/libwrap.la -lpthread -lrt
+que_test_LDADD = ../util/libutil.la ../wrap/libwrap.la libque.la ../log/liblog.la  -lpthread -lrt
 que_test_SOURCES = que_test.c
 all: all-am
 

@@ -22,5 +22,5 @@ libnode_net_la_LIBADD =
 
 bin_PROGRAMS = nn_test
 #
-nn_test_LDADD = libnode_net.la ../../lib/util/libutil.la  ../../lib/wrap/libwrap.la ../../lib/que/libque.la ../../lib/ll/libll.la -lrt -lpthread
+nn_test_LDADD = libnode_net.la ..//util/libutil.la  ../wrap/libwrap.la ../que/libque.la ../ll/libll.la ../dpool/libdpool.la ../bitmap/libbitmap.la ../log/liblog.la -lrt -lpthread
 nn_test_SOURCES = nn_test.c

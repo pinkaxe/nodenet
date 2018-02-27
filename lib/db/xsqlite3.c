@@ -7,7 +7,7 @@
 #include<stdlib.h>
 #include<errno.h>
 
-#include "util/log.h"
+#include "log/log.h"
 
 #include<sqlite3.h>
 

@@ -8,7 +8,7 @@
 //#include "dlog.h"
 //#include "debug.h"
 #include "file.h"
-#include "../util/log.h"
+#include "log/log.h"
 
 
 int file_len(char *filename)

@@ -6,7 +6,7 @@
 #include <errno.h>
 #include<assert.h>
 
-#include "util/log.h"
+#include "log/log.h"
 #include "que/que.h"
 #include "sys/thread.h"
 

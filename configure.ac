@@ -10,6 +10,7 @@ AC_PROG_LIBTOOL
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile
 		lib/Makefile
+        lib/log/Makefile
 		lib/sys/Makefile
 		lib/wrap/Makefile
 		lib/util/Makefile
@@ -19,6 +20,11 @@ AC_CONFIG_FILES([Makefile
 		lib/thread_pool/Makefile
 		lib/que/Makefile
 		lib/ll/Makefile
+        lib/bitmap/Makefile
+        lib/dpool/Makefile
+        lib/link/Makefile
+        lib/sbuf/Makefile
+
 		lib/node_net/Makefile
 		lib/node_net/tests/Makefile
             ])

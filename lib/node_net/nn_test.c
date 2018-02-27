@@ -9,8 +9,8 @@
 #include <string.h>
 
 #include "sys/thread.h"
-#include "util/log.h"
-#include "util/dpool.h"
+#include "log/log.h"
+#include "dpool/dpool.h"
 
 #include "node_net/types.h"
 #include "node_net/pkt.h"

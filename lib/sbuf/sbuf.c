@@ -5,7 +5,7 @@
 #include<stdio.h>
 #include<stdarg.h>
 
-#include "util/sbuf.h"
+#include "sbuf/sbuf.h"
 #include "wrap/xstdlib.h"
 
 /* FIXME: vasprintf is GNU specific have to be implemented for other systems

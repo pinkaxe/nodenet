@@ -3,7 +3,7 @@
 #include<stdio.h>
 #include<stddef.h>
 
-#include "util/log.h"
+#include "log/log.h"
 #include "ll.h"
 
 struct node {

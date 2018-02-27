@@ -10,7 +10,7 @@
 
 #include "sys/thread.h"
 
-#include "util/log.h"
+#include "log/log.h"
 
 #include "node_net/pkt.h"
 

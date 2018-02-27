@@ -9,7 +9,7 @@
 
 #include "sys/thread.h"
 
-#include "util/log.h"
+#include "log/log.h"
 #include "que/que.h"
 #include "ll/ll.h"
 

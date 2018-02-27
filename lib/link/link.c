@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "log.h"
+#include "log/log.h"
 #include "link.h"
 
 struct link {

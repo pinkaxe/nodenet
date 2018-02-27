@@ -4,7 +4,7 @@
 #include<stdbool.h>
 #include<assert.h>
 
-#include "util/bitmap.h"
+#include "bitmap/bitmap.h"
 
 /* - loop bits_no = min .. max
  *      - create a bitmap with size bits_no

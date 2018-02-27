@@ -9,7 +9,7 @@
 #include<errno.h>
 #include<assert.h>
 
-#include "util/log.h"
+#include "log/log.h"
 
 #include "ll.h"
 
