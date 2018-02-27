@@ -9,7 +9,7 @@
 #include<getopt.h>
 #include<pthread.h>
 
-#include "../thread_pool.h"
+#include "thread_pool.h"
 
 
 
