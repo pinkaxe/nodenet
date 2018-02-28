@@ -25,6 +25,8 @@ AC_CONFIG_FILES([Makefile
         lib/link/Makefile
         lib/sbuf/Makefile
 
+        lib/sock_serv/Makefile
+
 		lib/node_net/Makefile
 		lib/node_net/tests/Makefile
             ])

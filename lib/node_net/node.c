@@ -11,7 +11,7 @@
 #include "sys/thread.h"
 
 #include "log/log.h"
-#include "util/dbg.h"
+#include "debug/dbg.h"
 #include "que/que.h"
 #include "ll/ll.h"
 

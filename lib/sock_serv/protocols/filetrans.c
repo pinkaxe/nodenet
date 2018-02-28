@@ -38,9 +38,9 @@
 #include<sys/select.h>
 
 
-#include "../file.h"
-#include "../debug.h"
-#include "../dlog.h"
+#include "file/file.h"
+#include "debug/debug.h"
+#include "log/log.h"
 #include "protocol_if.h"
 #include "filetrans.h"
 
@@ -177,7 +177,7 @@ static int serv_put(int fd)
 	}
 
 	len = ntohl(lenn);
-	DLOG1(LOG_INFO, "Length of filename of incoming file: %d", len);
+	log1(LINFO, "Length of filename of incoming file: %d", len);
 	
 	if(len > MAX_FILE_LEN){
 		return RET_ERR;
@@ -188,24 +188,24 @@ static int serv_put(int fd)
 	}
 
 	filename[r] = '\0';
-	DLOG1(LOG_INFO, "Filename of incoming file: %s", filename);
+	log1(LINFO, "Filename of incoming file: %s", filename);
 
 	if((ret=read_to(fd, NULL, &lenn, sizeof(lenn), &r)) != RET_OK){
 		return ret;
 	}
 
 	len = ntohl(lenn);
-	DLOG1(LOG_INFO, "Length of incoming file: %d", len);
+	log1(LINFO, "Length of incoming file: %d", len);
 
 
 	strncat(save_as, filename, MAX_FILE_LEN);
 	if((ofd=open(save_as, O_WRONLY | O_CREAT | O_EXCL)) == -1){
 		if(errno == EEXIST){
-			DLOG2(LOG_WARNING, "File already exist: %s(%s)", 
+			log2(LWARN, "File already exist: %s(%s)", 
 				save_as, strerror(errno));
 			return RET_FILEEXIST;
 		}else{
-			DLOG2(LOG_WARNING, "Couldn't open file: %s(%s)", 
+			log2(LWARN, "Couldn't open file: %s(%s)", 
 				save_as, strerror(errno));
 			return RET_ERR;
 		}
@@ -225,7 +225,7 @@ static int serv_put(int fd)
 			}
 
 			if((w=write(ofd, buf, r)) == -1) {
-				DLOG2(LOG_WARNING, "Couldn't write file: %s(%s)", 
+				log2(LWARN, "Couldn't write file: %s(%s)", 
 					save_as, strerror(errno));
 				ret = RET_ERR;
 				goto close_file;
@@ -234,21 +234,21 @@ static int serv_put(int fd)
 		}
 
 		if(chmod(save_as, 0666) == -1){
-			DLOG2(LOG_WARNING, "Couldn't chmod file: %s(%s)", 
+			log2(LWARN, "Couldn't chmod file: %s(%s)", 
 				save_as, strerror(errno));
 			ret = RET_ERR;
 		}
 		
 close_file:
 		if(close(ofd) == -1){
-			DLOG2(LOG_WARNING, "Couldn't close file: %s(%s)", 
+			log2(LWARN, "Couldn't close file: %s(%s)", 
 				save_as, strerror(errno));
 			ret = RET_ERR;
 		}
 	}
 
 	if(ret == RET_OK){
-		DLOG1(LOG_INFO, "Successfully saved file: %s", save_as);
+		log1(LINFO, "Successfully saved file: %s", save_as);
 	}
 
 	return ret;
@@ -275,11 +275,11 @@ static int do_serv_cmd(struct sproto_if *self, int fd)
 	}
 		
 	cmd = ntohs(cmdn);
-	DLOG1(LOG_INFO, "Got command number: %d", cmd);
+	log1(LINFO, "Got command number: %d", cmd);
 
 	for(i=0; i < _cmd_func_map_no; i++){	
 		if(cmd == _cmd_func_map[i].cmd){
-			DLOG1(LOG_INFO, "Found command to execute: %s", 
+			log1(LINFO, "Found command to execute: %s", 
 				_cmd_func_map[i].cmd_str);
 			ret = _cmd_func_map[i].serv_func(fd);
 			break;
@@ -344,7 +344,7 @@ static int cli_put(int fd, void *arg)
 		filelenn = htonl(filelen);
 
 		if((ffd = open(filename, O_RDONLY)) == -1){
-			DLOG2(LOG_ERR, "Couldn't open file: %s(%s)", 
+			log2(LERR, "Couldn't open file: %s(%s)", 
 				filename, strerror(errno));
 			return RET_COULDNTOPENFILE;
 		}
@@ -368,7 +368,7 @@ static int cli_put(int fd, void *arg)
 		while(filelen > 0){
 			r = read(ffd, &buf, WRITE_BUF_SIZE);
 			if(r == -1){
-				DLOG1(LOG_WARNING, "Couldn't read file: %s", 
+				log1(LWARN, "Couldn't read file: %s", 
 					strerror(errno));
 				ret = RET_ERR;
 				goto close;
@@ -383,12 +383,12 @@ static int cli_put(int fd, void *arg)
 
 close:
 		if(close(ffd) != 0){
-			DLOG1(LOG_WARNING, "Couldn't close file: %s", 
+			log1(LWARN, "Couldn't close file: %s", 
 				strerror(errno));
 			ret = RET_ERR;
 		}
 	}else{
-		DLOG3(LOG_WARNING, "Couldn't open file: %s(%s), %d", 
+		log3(LWARN, "Couldn't open file: %s(%s), %d", 
 			filename, strerror(errno), errno);
 
 		/*if(errno == ENOENT){*/ /* IMPROVE: more err messages */
@@ -419,7 +419,7 @@ static int do_cli_cmd(struct cproto_if *self, int fd, const char *cmd, void *dat
 
 	for(i=0; i < _cmd_func_map_no; i++){	
 		if(!strcmp(cmd, _cmd_func_map[i].cmd_str)){
-			DLOG1(LOG_INFO, "Found command to execute: %s", cmd);
+			log1(LINFO, "Found command to execute: %s", cmd);
 			cmdn = htons(_cmd_func_map[i].cmd);
 			/* header */
 			if((ret=write_to(fd, NULL, &type, 
@@ -435,7 +435,7 @@ static int do_cli_cmd(struct cproto_if *self, int fd, const char *cmd, void *dat
 			if(ret == RET_OK || ret == RET_ERR || 
 					ret == RET_WRITE_ERR){		
 				if((r=read(fd, &ret, sizeof(ret))) == -1){
-					DLOG1(LOG_WARNING, "Read error: %s", 
+					log1(LWARN, "Read error: %s", 
 						strerror(errno));
 					ret = RET_ERR;
 				}
@@ -444,7 +444,7 @@ static int do_cli_cmd(struct cproto_if *self, int fd, const char *cmd, void *dat
 		}
 	}
 	if(i == _cmd_func_map_no){
-		DLOG1(LOG_WARNING, "No such command: %s", cmd);
+		log1(LWARN, "No such command: %s", cmd);
 		ret = RET_CMD_NOT_FOUND;
 	}
 	return ret;
@@ -483,14 +483,14 @@ static int write_to(int fd, struct timeval *timeout,
 	select(fd+1, NULL, &set, NULL, timeout);
 	if(FD_ISSET(fd, &set)){
 		if((*ret_no=write(fd, buf, size)) == -1){
-			DLOG2(LOG_WARNING, "Write error to fd %d: %s", 
+			log2(LWARN, "Write error to fd %d: %s", 
 				fd, strerror(errno));
 			return RET_WRITE_ERR;
 		}else{
 			return RET_OK;
 		}
 	}else{
-		DLOG1(LOG_WARNING, "Write timeout: %d", fd);
+		log1(LWARN, "Write timeout: %d", fd);
 		return RET_TIMEOUT;
 	}
 }
@@ -512,14 +512,14 @@ static int read_to(int fd, struct timeval *timeout,
 	select(fd+1, &set, NULL, NULL, timeout);
 	if(FD_ISSET(fd, &set)){
 		if((*ret_no=read(fd, buf, size)) == -1){
-			DLOG2(LOG_WARNING, "Read error from fd %d: %s", 
+			log2(LWARN, "Read error from fd %d: %s", 
 				fd, strerror(errno));
 			return RET_READ_ERR;
 		}else{
 			return RET_OK;
 		}
 	}else{
-		DLOG1(LOG_WARNING, "Read timeout: %d", fd);
+		log1(LWARN, "Read timeout: %d", fd);
 		return RET_TIMEOUT;
 	}
 }
