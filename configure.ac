@@ -4,6 +4,7 @@ AC_INIT([node_net], [0.0.0], [])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CC
 AC_PROG_LD
+AM_PROG_AR
 AC_PROG_LIBTOOL
 #AC_PROG_RANLIB
 
