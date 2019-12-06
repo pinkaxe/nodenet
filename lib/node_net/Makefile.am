@@ -18,9 +18,12 @@ libnode_net_la_SOURCES = \
 
 #node_drivers/lproc.c /node_drivers/bin.c
 
-libnode_net_la_LIBADD =
+libnode_net_la_LIBADD = -lpthread
 
-bin_PROGRAMS = nn_test
+bin_PROGRAMS = nn_test nn_test2
 #
 nn_test_LDADD = libnode_net.la ..//util/libutil.la  ../wrap/libwrap.la ../que/libque.la ../ll/libll.la ../dpool/libdpool.la ../bitmap/libbitmap.la ../log/liblog.la -lrt -lpthread
 nn_test_SOURCES = nn_test.c
+
+nn_test2_LDADD = libnode_net.la ..//util/libutil.la  ../wrap/libwrap.la ../que/libque.la ../ll/libll.la ../dpool/libdpool.la ../bitmap/libbitmap.la ../log/liblog.la -lrt -lpthread
+nn_test2_SOURCES = nn_test2.c
