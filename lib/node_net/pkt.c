@@ -38,7 +38,7 @@ int pkt_ev_inc_refcnt(struct nn_pkt *pkt, int inc)
 struct nn_pkt {
     enum nn_pkt_state state;
     struct nn_node *src;
-    int dest_chan_id;
+    struct nn_chan *dest_chan;
     int dest_no;
     void *data;
     int data_len;
@@ -55,7 +55,7 @@ static int pkt_lock(struct nn_pkt *pkt);
 static int pkt_unlock(struct nn_pkt *pkt);
 
 
-struct nn_pkt *pkt_init(struct nn_node *src, int dest_chan_id, int dest_no,
+struct nn_pkt *pkt_init(struct nn_node *src, struct nn_chan *ch, int dest_no,
         void *data, int data_len, void *pdata, buf_free_cb_f buf_free_cb)
 {
     struct nn_pkt *pkt;
@@ -66,7 +66,7 @@ struct nn_pkt *pkt_init(struct nn_node *src, int dest_chan_id, int dest_no,
         goto err;
     }
     pkt->src = src;
-    pkt->dest_chan_id = dest_chan_id; /* destination grp_id */
+    pkt->dest_chan = ch; /* destination grp_id */
     pkt->dest_no = dest_no;
     pkt->data = data;
     pkt->data_len = data_len;
@@ -109,7 +109,7 @@ struct nn_pkt *pkt_clone(struct nn_pkt *pkt)
         goto err;
     }
     clone->src = pkt->src;
-    clone->dest_chan_id = pkt->dest_chan_id;
+    clone->dest_chan = pkt->dest_chan;
     clone->data = pkt->data;
     clone->data_len = pkt->data_len;
     clone->pdata = pkt->pdata;
@@ -228,17 +228,17 @@ struct nn_node *pkt_get_src(struct nn_pkt *pkt)
     return n;
 }
 
-int pkt_get_dest_chan_id(struct nn_pkt *pkt)
+struct nn_chan *pkt_get_dest_chan(struct nn_pkt *pkt)
 {
-    int grp_id;
+    struct nn_chan *chan;
 
     pkt_lock(pkt);
 
-    grp_id = pkt->dest_chan_id;
+    chan = pkt->dest_chan;
 
     pkt_unlock(pkt);
 
-    return grp_id;
+    return chan;
 }
 
 int pkt_get_dest_no(struct nn_pkt *pkt)

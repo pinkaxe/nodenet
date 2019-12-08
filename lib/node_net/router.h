@@ -4,9 +4,8 @@
 
 struct nn_router *router_init();
 int router_free(struct nn_router *rt);
-int router_free(struct nn_router *rt);
 
-int router_add_chan(struct nn_router *rt, int id);
+int router_add_chan(struct nn_router *rt, struct nn_chan *chan);
 /* return -1 no such group */
 int router_rem_chan(struct nn_router *rt, int id);
 struct nn_chan *router_get_chan(struct nn_router *rt, int id);
@@ -23,7 +22,7 @@ int router_set_state(struct nn_router *rt, enum nn_state state);
 
 int router_print(struct nn_router *rt);
 
-int router_add_to_chan(struct nn_router *rt, int grp_id, struct nn_node *n);
+int router_add_to_chan(struct nn_router *rt, struct nn_chan *ch, struct nn_node *n);
 int router_rem_from_chan(struct nn_router *rt, int grp_id, struct nn_node *n);
 
 /* notify router that conn buf avail */
@@ -42,4 +41,8 @@ struct router_status {
 
 /* status must be allocated */
 int router_get_status(struct nn_router *rt, struct router_status *status);
+
+struct nn_chan *chan_init(void);
+int chan_free(struct nn_chan *chan);
+
 #endif

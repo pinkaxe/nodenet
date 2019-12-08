@@ -413,13 +413,13 @@ int router_rem_node(struct nn_router *rt, struct nn_node *_n)
 }
 
 
-int router_add_chan(struct nn_router *rt, int id)
+int router_add_chan(struct nn_router *rt, struct nn_chan *chan)
 {
     int r = 1;
-    struct nn_chan *chan;
 
     mutex_lock(&rt->mutex);
 
+/*
     PCHK(LWARN, chan, calloc(1, sizeof(*chan)));
     if(!chan){
         goto err;
@@ -432,11 +432,12 @@ int router_add_chan(struct nn_router *rt, int id)
         chan = NULL;
         goto err;
     }
+*/
 
     /* add newly created chan */
     ICHK(LWARN, r, ll_add_front(rt->chan, (void **)&chan));
     if(r){
-        PCHK(LWARN, r, router_rem_chan(rt, id));
+        //PCHK(LWARN, r, router_rem_chan(rt, id));
         goto err;
     }
 
@@ -446,6 +447,33 @@ err:
     mutex_unlock(&rt->mutex);
 
     return r;
+}
+
+struct nn_chan *chan_init(void)
+{
+    struct nn_chan *chan = NULL;
+
+    PCHK(LWARN, chan, calloc(1, sizeof(*chan)));
+    if(!chan){
+        goto err;
+    }
+    //chan->id = id;
+
+    PCHK(LWARN, chan->nodes, ll_init());
+    if(!chan->nodes){
+        chan = NULL;
+        goto err;
+    }
+
+err:
+    return chan;
+
+}
+
+int chan_free(struct nn_chan *chan)
+{
+    free(chan);
+    return 0;
 }
 
 /* return -1 no such group */
@@ -498,7 +526,7 @@ struct nn_chan *router_get_chan(struct nn_router *rt, int id)
     return _g;
 }
 
-int router_add_to_chan(struct nn_router *rt, int chan_id, struct nn_node *n)
+int router_add_to_chan(struct nn_router *rt, struct nn_chan *ch, struct nn_node *n)
 {
     int r = 1;
     assert(n);
@@ -506,7 +534,7 @@ int router_add_to_chan(struct nn_router *rt, int chan_id, struct nn_node *n)
     router_lock(rt);
     ROUTER_CHAN_ITER_PRE(rt);
 
-    if(chan->id == chan_id){
+    if(chan == ch){
         ICHK(LWARN, r, ll_add_front(chan->nodes, (void **)&n));
         done = 1;
     }
@@ -607,7 +635,7 @@ static int router_route_pkts(struct nn_router *rt)
 {
     int r;
     struct nn_pkt *pkt;
-    int dest_chan_id;
+    struct nn_chan *dest_chan;
     int dest_no;
     int c;
     int send_to;
@@ -622,7 +650,7 @@ static int router_route_pkts(struct nn_router *rt)
         //    continue;
         //}
 
-        dest_chan_id = pkt_get_dest_chan_id(pkt);
+        dest_chan = pkt_get_dest_chan(pkt);
         dest_no = pkt_get_dest_no(pkt);
         c = 0;
         send_to = -1;
@@ -630,7 +658,7 @@ static int router_route_pkts(struct nn_router *rt)
         ROUTER_CHAN_ITER_PRE(rt);
 
         /* route to the dest group */
-        if(chan->id == dest_chan_id){
+        if(chan == dest_chan){
 
             send_to = 0;
             CHAN_NODES_ITER_PRE(chan);

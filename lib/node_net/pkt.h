@@ -38,8 +38,7 @@ typedef int (*buf_free_cb_f)(void *pdata, void *buf);
 typedef int (*io_pkt_req_cb_t)(struct nn_router *rt, struct nn_pkt *pkt);
 typedef int (*io_data_req_cb_t)(struct nn_router *rt, struct nn_io_data *data);
 
-
-struct nn_pkt *pkt_init(struct nn_node *src, int dest_chan_id, int dest_no,
+struct nn_pkt *pkt_init(struct nn_node *src, struct nn_chan *ch, int dest_no,
         void *data, int data_len, void *pdata, buf_free_cb_f buf_free_cb);
 int pkt_free(struct nn_pkt *pkt);
 struct nn_pkt *pkt_clone(struct nn_pkt *pkt);
@@ -47,7 +46,7 @@ struct nn_pkt *pkt_clone(struct nn_pkt *pkt);
 int pkt_set_state(struct nn_pkt *pkt, enum nn_pkt_state state);
 enum nn_pkt_state pkt_get_state(struct nn_pkt *pkt);
 
-int pkt_get_dest_chan_id(struct nn_pkt *pkt);
+struct nn_chan *pkt_get_dest_chan(struct nn_pkt *pkt);
 int pkt_get_dest_no(struct nn_pkt *pkt);
 struct nn_node *pkt_get_src(struct nn_pkt *pkt);
 
