@@ -12,6 +12,7 @@
 #include "log/log.h"
 #include "que/que.h"
 #include "ll/ll.h"
+#include "dpool/dpool.h"
 
 #include "types.h"
 #include "pkt.h"
@@ -25,6 +26,7 @@ struct router_nodes_iter;
 struct nn_chan {
     int id;
     struct ll *nodes; /* all nodes in this chan, for router output */
+    struct dpool *dpool;
 };
 
 
@@ -449,7 +451,7 @@ err:
     return r;
 }
 
-struct nn_chan *chan_init(void)
+struct nn_chan *chan_init(int size)
 {
     struct nn_chan *chan = NULL;
 
@@ -461,6 +463,15 @@ struct nn_chan *chan_init(void)
 
     PCHK(LWARN, chan->nodes, ll_init());
     if(!chan->nodes){
+        free(chan);
+        chan = NULL;
+        goto err;
+    }
+
+    chan->dpool = dpool_create(sizeof(void *), size, 0);
+    if(!chan->dpool){
+        free(chan->nodes);
+        free(chan);
         chan = NULL;
         goto err;
     }
@@ -470,8 +481,74 @@ err:
 
 }
 
+static int dpool_free_cb(void *dpool, void *buf)
+{
+    L(LDEBUG, "dpool_free_cb called");
+    struct dpool_buf *dpool_buf = buf;
+    //free(dpool_buf->data);
+    return dpool_ret_buf(dpool, dpool_buf);
+}
+
+int chan_add_data(struct nn_chan *chan, struct nn_node *n, void *data)
+{
+    int r;
+    struct dpool_buf *dpool_buf;
+    struct nn_pkt *pkt;
+
+    /* send packets */
+    if((dpool_buf=dpool_get_buf(chan->dpool))){
+
+        dpool_buf->data = data;
+
+        /* build packet */
+        PCHK(LDEBUG, pkt, pkt_init(n, chan, 0, dpool_buf,
+                    sizeof(*dpool_buf), chan->dpool, dpool_free_cb));
+        assert(pkt);
+
+        if(!node_tx(n, pkt)){
+            usleep(100000);
+            //pkt_set_state(pkt, PKT_STATE_CANCELLED);
+            //printf("!!! sent\n");
+        }else{
+            pkt_free(pkt);
+        }
+        r = 0;
+    }else{
+        // no buffer available */
+        usleep(100);
+        r = 1;
+    }
+    return r;
+}
+
+/* TODO: this is checking all channels */
+void *chan_get_data(struct nn_chan *chan, struct nn_node *n)
+{
+    struct dpool_buf *dpool_buf;
+    struct nn_pkt *pkt;
+    void *data;
+
+    // get incoming on channel and write to socket
+    if(node_rx(n, &pkt) == 0){
+        /* incoming packet */
+        dpool_buf = pkt_get_data(pkt);
+
+        //L(LNOTICE, "Got buf->i=%d", buf->i);
+        L(LNOTICE, "Got buf=%s", dpool_buf->data);
+        data = dpool_buf->data;
+        //EAGAIN
+        pkt_free(pkt);
+    }else{
+        data = NULL;
+        L(LDEBUG, "nothing");
+    }
+    return data;
+}
+
 int chan_free(struct nn_chan *chan)
 {
+    dpool_free(chan->dpool);
+    free(chan->nodes);
     free(chan);
     return 0;
 }

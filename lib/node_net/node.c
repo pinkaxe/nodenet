@@ -364,6 +364,11 @@ int node_rx(struct nn_node *n, struct nn_pkt **pkt)
 
     node_lock(n);
 
+    if(n->rx_pkts_no == 0){
+        L(LDEBUG, "+ no packets available");
+        goto end;
+    }
+
     *pkt = que_get(n->rx_pkts, &ts);
     n->rx_pkts_no--;
 
@@ -374,6 +379,7 @@ int node_rx(struct nn_node *n, struct nn_pkt **pkt)
         r = 0;
     }
 
+end:
     node_unlock(n);
 
     return r;
