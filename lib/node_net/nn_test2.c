@@ -6,30 +6,19 @@
 #include <string.h>
 
 #include "log/log.h"
-#include "dpool/dpool.h"
 
 #include "node_net/types.h"
-#include "node_net/pkt.h"
 
 #include "node_net/router.h"
 #include "node_net/node.h"
 
-struct nn_chan *chan0;
-
-static int dpool_free_cb(void *dpool, void *buf)
-{
-    L(LDEBUG, "dpool_free_cb called");
-    struct dpool_buf *dpool_buf = buf;
-    free(dpool_buf->data);
-    return dpool_ret_buf(dpool, dpool_buf);
-}
 
 void *node_writer(struct nn_node *n, void *pdata)
 {
     L(LDEBUG, "Enter node_writer\n");
 
+    struct nn_chan *chan0 = pdata;
     enum nn_state state;
-    int i = 0;
 
     for(;;){
 
@@ -59,9 +48,9 @@ void *node_writer(struct nn_node *n, void *pdata)
 
 void *node_reader(struct nn_node *n, void *pdata)
 {
-    enum nn_state state;
-
     printf("Enter node_reader\n");
+    struct nn_chan *chan0 = pdata;
+    enum nn_state state;
 
     for(;;){
 
@@ -109,6 +98,7 @@ static int g_port = 4848;
 
 void *tcpserver(struct nn_node *n, void *pdata)
 {
+    struct nn_chan *chan0 = pdata;
     enum nn_state state;
     int r;
 
@@ -196,16 +186,10 @@ void *tcpserver(struct nn_node *n, void *pdata)
 
 int main(int argc, char **argv)
 {
-    struct dpool *dpool;
-    //struct buf *buf;
-    char *buf;
-
     struct nn_router *router;
-
-    dpool = dpool_create(sizeof(buf), 300, 0);
-
     router = router_init();
 
+    struct nn_chan *chan0;
     chan0 = chan_init(300);
     router_add_chan(router, chan0);
     router_set_state(router, NN_STATE_RUNNING);
@@ -214,33 +198,31 @@ int main(int argc, char **argv)
     //router_add_chan(router, 2);
 
     struct nn_node *node0;
-    node0 = node_init(NN_NODE_TYPE_THREAD, 0, node_writer, dpool);
+    node0 = node_init(NN_NODE_TYPE_THREAD, 0, node_writer, chan0);
     router_add_node(router, node0);
     router_add_to_chan(router, chan0, node0);
     node_set_state(node0, NN_STATE_RUNNING);
 
     struct nn_node *node1;
-    node1 = node_init(NN_NODE_TYPE_THREAD, 0, node_reader, dpool);
+    node1 = node_init(NN_NODE_TYPE_THREAD, 0, node_reader, chan0);
     router_add_node(router, node1);
     router_add_to_chan(router, chan0, node1);
     node_set_state(node1, NN_STATE_RUNNING);
 
     struct nn_node *tcpserver_node;
-    tcpserver_node = node_init(NN_NODE_TYPE_THREAD, 0, tcpserver, dpool);
+    tcpserver_node = node_init(NN_NODE_TYPE_THREAD, 0, tcpserver, chan0);
     router_add_node(router, tcpserver_node);
     router_add_to_chan(router, chan0, tcpserver_node);
-
     node_set_state(tcpserver_node, NN_STATE_RUNNING);
 
     struct nn_node *tcpserver_node2;
-    tcpserver_node2 = node_init(NN_NODE_TYPE_THREAD, 0, tcpserver, dpool);
+    tcpserver_node2 = node_init(NN_NODE_TYPE_THREAD, 0, tcpserver, chan0);
     router_add_node(router, tcpserver_node2);
     router_add_to_chan(router, chan0, tcpserver_node2);
-
     node_set_state(tcpserver_node2, NN_STATE_RUNNING);
 
     struct nn_node *tcpserver_node3;
-    tcpserver_node3 = node_init(NN_NODE_TYPE_THREAD, 0, tcpserver, dpool);
+    tcpserver_node3 = node_init(NN_NODE_TYPE_THREAD, 0, tcpserver, chan0);
     router_add_node(router, tcpserver_node3);
     router_add_to_chan(router, chan0, tcpserver_node3);
 
