@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "log/log.h"
 
@@ -52,6 +53,8 @@ void *node_reader(struct nn_node *n, void *pdata)
     struct nn_chan *chan0 = pdata;
     enum nn_state state;
 
+    node_block_rx(n, false);
+
     for(;;){
 
         L(LDEBUG, "before rx");
@@ -90,9 +93,9 @@ void *node_reader(struct nn_node *n, void *pdata)
 #include<netinet/in.h>
 #include<arpa/inet.h>
 #include<netdb.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
+#include<unistd.h>
+#include<fcntl.h>
+#include<string.h>
 
 static int g_port = 4848;
 
@@ -144,6 +147,10 @@ void *tcpserver(struct nn_node *n, void *pdata)
                 // nothing available
             }
         }else{
+
+            // unblock rx when we get a connection
+            node_block_rx(n, false);
+
             L(LINFO, "Connection from: %s:%d",
                     inet_ntoa(cin.sin_addr),ntohs(cin.sin_port));
 

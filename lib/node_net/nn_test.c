@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "sys/thread.h"
 #include "log/log.h"

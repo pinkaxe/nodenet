@@ -21,6 +21,8 @@ int node_unconn(struct nn_node *n, struct nn_conn *cn);
 
 void *node_get_pdatap(struct nn_node *n);
 
+void node_block_rx(struct nn_node *n, bool block);
+
 int node_tx(struct nn_node *n, struct nn_pkt *pkt);
 int node_rx(struct nn_node *n, struct nn_pkt **pkt);
 int node_wait(struct nn_node *n, enum wait_type type);

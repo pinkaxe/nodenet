@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include "log/log.h"
 #include "que/que.h"

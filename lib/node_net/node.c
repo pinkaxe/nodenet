@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include "sys/thread.h"
 
@@ -52,6 +53,8 @@ struct nn_node {
     cond_t cond;
 
     int refcnt;
+
+    bool block_rx;
 
     DBG_STRUCT_END
 };
@@ -120,6 +123,9 @@ struct nn_node *node_init(enum nn_node_driver type, enum nn_node_attr attr,
     n->attr = attr;
     n->code = code;
     n->pdata = pdata;
+
+    // start blocking rx
+    n->block_rx = true;
 
     // FIXME: err checking
     mutex_init(&n->mutex, NULL);
@@ -299,6 +305,10 @@ int node_put_pkt(struct nn_node *n, struct nn_pkt *pkt)
         goto done;
     }
 
+    if(n->block_rx){
+        goto done;
+    }
+
     ICHK(LWARN, r, que_add(n->rx_pkts, pkt));
     n->rx_pkts_no++;
     n->rx_pkts_total++;
@@ -311,6 +321,10 @@ done:
     return r;
 }
 
+void node_block_rx(struct nn_node *n, bool block)
+{
+    n->block_rx = block;
+}
 
 int node_check(struct nn_node *n)
 {
