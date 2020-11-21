@@ -4,6 +4,7 @@
 struct dpool_buf {
     int id;
     void *data;
+    size_t len;
     int ref_cnt;
 };
 
