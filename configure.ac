@@ -30,6 +30,7 @@ AC_CONFIG_FILES([Makefile
 
 		lib/node_net/Makefile
 		lib/node_net/tests/Makefile
+		lib/async_runner/Makefile
             ])
 
 AC_ARG_ENABLE(debug, [  --enable-debug            enable debugging

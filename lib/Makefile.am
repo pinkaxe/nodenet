@@ -1,3 +1,3 @@
 
 
-SUBDIRS = log sys wrap util que ll bitmap dpool link sbuf db file thread_pool node_net sock_serv #node_net/tests 
+SUBDIRS = log sys wrap util que ll bitmap dpool link sbuf db file thread_pool node_net sock_serv async_runner #node_net/tests 
