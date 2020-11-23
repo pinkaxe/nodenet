@@ -5,7 +5,7 @@ libll_la_SOURCES = \
 			 ll.c \
 			 ll.h
 
-libll_la_LIBADD =
+libll_la_LIBADD = ../log/liblog.la
 
 bin_PROGRAMS = ll_test
 
