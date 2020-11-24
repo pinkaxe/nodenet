@@ -21,14 +21,16 @@
 #include "sock_serv.h"
 #include "debug/debug.h"
 #include "file/file.h"
-#include "thread_pool/thread_pool.h"
+#include "async_runner/async_runner.h"
+//#include "thread_pool/thread_pool.h"
 
 
 struct server_handle {
 	int fd;
 	int max; /* max connections */
 	int port;
-	struct thread_pool *tpoolh;
+	//struct thread_pool *tpoolh;
+        struct async_runner *tpoolh;
 	struct sproto_if *ph;
 };
 
@@ -85,7 +87,8 @@ static void *_server_thread(void *sh_arg)
 		NULL_TEST(workp = malloc(sizeof *workp)); /* free in worker */
 		workp->fd = cfd;
 		workp->ph = sh->ph;
-		if(thread_pool_add_work(sh->tpoolh, workp, _server_conn_res)){	
+                if(async_runner_exec(sh->tpoolh, _server_worker, workp, _server_conn_res)) {
+		//if(thread_pool_add_work(sh->tpoolh, workp, _server_conn_res)){	
 			close(workp->fd); 
 			free(workp);
 			workp = NULL;
@@ -106,7 +109,7 @@ struct server_handle *server_create(struct sproto_if *ph, int port, int max)
 	NULL_TEST(sh = malloc(sizeof *sh));
 	sh->port = port;
 	sh->max = max;
-	sh->tpoolh = thread_pool_init(max, _server_worker);
+	sh->tpoolh = async_runner_init(max);
 	sh->ph = ph;
 
 	memset(&sin, 0, sizeof(sin));
@@ -127,7 +130,7 @@ struct server_handle *server_create(struct sproto_if *ph, int port, int max)
 
 int server_stop(struct server_handle *sh)
 {
-	thread_pool_free(sh->tpoolh);
+	async_runner_free(sh->tpoolh);
 	close(sh->fd);
 	free(sh);
 	sh = NULL;	
