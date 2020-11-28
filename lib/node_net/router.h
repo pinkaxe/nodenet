@@ -43,7 +43,7 @@ struct router_status {
 int router_get_status(struct nn_router *rt, struct router_status *status);
 
 struct nn_chan *chan_init(int size);
-int chan_add_data(struct nn_chan *chan, struct nn_node *n, void *data);
+int chan_add_data(struct nn_chan *chan, struct nn_node *n, void *data, size_t len);
 void *chan_get_data(struct nn_chan *chan, struct nn_node *n);
 int chan_free(struct nn_chan *chan);
 

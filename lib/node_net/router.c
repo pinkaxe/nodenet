@@ -185,6 +185,7 @@ again:
         }
 
        // /* route packets to chan->nodes's */
+        //L(LDEBUG, "rt->rx_pkts_no %d", rt->rx_pkts_no);
         if(rt->rx_pkts_no){
             router_route_pkts(rt);
         }
@@ -486,11 +487,11 @@ static int dpool_free_cb(void *dpool, void *buf)
 {
     L(LDEBUG, "dpool_free_cb called");
     struct dpool_buf *dpool_buf = buf;
-    //free(dpool_buf->data);
+    free(dpool_buf->data);
     return dpool_ret_buf(dpool, dpool_buf);
 }
 
-int chan_add_data(struct nn_chan *chan, struct nn_node *n, void *data)
+int chan_add_data(struct nn_chan *chan, struct nn_node *n, void *data, size_t len)
 {
     int r;
     struct dpool_buf *dpool_buf;
@@ -498,8 +499,9 @@ int chan_add_data(struct nn_chan *chan, struct nn_node *n, void *data)
 
     /* send packets */
     if((dpool_buf=dpool_get_buf(chan->dpool))){
-
-        dpool_buf->data = data;
+        dpool_buf->data = malloc(len);
+        dpool_buf->len = len;
+        memcpy(dpool_buf->data, data, len);
 
         /* build packet */
         PCHK(LDEBUG, pkt, pkt_init(n, chan, 0, dpool_buf,
@@ -507,7 +509,7 @@ int chan_add_data(struct nn_chan *chan, struct nn_node *n, void *data)
         assert(pkt);
 
         if(!node_tx(n, pkt)){
-            usleep(100000);
+            //usleep(100000);
             //pkt_set_state(pkt, PKT_STATE_CANCELLED);
             //printf("!!! sent\n");
         }else{
@@ -516,7 +518,8 @@ int chan_add_data(struct nn_chan *chan, struct nn_node *n, void *data)
         r = 0;
     }else{
         // no buffer available */
-        usleep(100);
+        L(LWARN, "!! no buffer available");
+        //usleep(100);
         r = 1;
     }
     return r;
@@ -536,12 +539,13 @@ void *chan_get_data(struct nn_chan *chan, struct nn_node *n)
 
         //L(LNOTICE, "Got buf->i=%d", buf->i);
         L(LNOTICE, "Got buf=%s", dpool_buf->data);
-        data = dpool_buf->data;
+        data = malloc(dpool_buf->len);
+        memcpy(data, dpool_buf->data, dpool_buf->len);
         //EAGAIN
         pkt_free(pkt);
     }else{
         data = NULL;
-        L(LDEBUG, "nothing");
+        //L(LDEBUG, "nothing");
     }
     return data;
 }
@@ -719,6 +723,7 @@ static int router_route_pkts(struct nn_router *rt)
     int send_to;
     int pick_up = 1024;
 
+    //L(LDEBUG, "router_route_pkts");
     /* pick pkt's up from router and move to nodes */
     //while(--pick_up && !router_get_rx_pkt(rt, &pkt)){
     while(--pick_up && !router_get_rx_pkt(rt, &pkt)){

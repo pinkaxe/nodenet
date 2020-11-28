@@ -23,7 +23,7 @@ void *node_writer(struct nn_node *n, void *pdata)
 
     for(;;){
 
-        sleep(2);
+        usleep(1);
 /*
         L(LDEBUG, "before tx");
         node_wait(n, NN_TX_READY);
@@ -38,9 +38,7 @@ void *node_writer(struct nn_node *n, void *pdata)
             return NULL;
         }
 
-        char *data = malloc(7);
-        strcpy(data, "okokok");
-        chan_add_data(chan0, n, data);
+        chan_add_data(chan0, n, "okokjack", strlen("okokjack") + 1);
 
     }
 
@@ -56,6 +54,7 @@ void *node_reader(struct nn_node *n, void *pdata)
     node_block_rx(n, false);
 
     for(;;){
+        usleep(1);
 
         L(LDEBUG, "before rx");
         node_wait(n, NN_RX_READY);
@@ -73,6 +72,7 @@ void *node_reader(struct nn_node *n, void *pdata)
         char *data = chan_get_data(chan0, n);
         if(data){
             L(LNOTICE, "!!!!! Got buf=%s", data);
+            free(data);
         }else{
             //L(LDEBUG, "nothing");
         }
@@ -166,9 +166,7 @@ void *tcpserver(struct nn_node *n, void *pdata)
                 if(c > 0){
                     buf[c] = '\0';
                     printf("received: %s (%d)\n", buf, c);
-                    char *data = malloc(c);
-                    strcpy(data, buf);
-                    chan_add_data(chan0, n, data);
+                    chan_add_data(chan0, n, buf, strlen(buf));
                 }else{
                     //printf("nothing\n");
                 }
@@ -177,11 +175,12 @@ void *tcpserver(struct nn_node *n, void *pdata)
                 char *data = chan_get_data(chan0, n);
                 if(data){
                     c = write(cfd, data, strlen(data));
+                    free(data);
                     //EAGAIN
                 }else{
                     //L(LDEBUG, "nothing");
                 }
-                usleep(1000000);
+                usleep(1);
             }
         }
 
@@ -197,7 +196,7 @@ int main(int argc, char **argv)
     router = router_init();
 
     struct nn_chan *chan0;
-    chan0 = chan_init(300);
+    chan0 = chan_init(2); // zero-copy buffered ...
     router_add_chan(router, chan0);
     router_set_state(router, NN_STATE_RUNNING);
 
