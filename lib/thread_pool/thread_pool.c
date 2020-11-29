@@ -10,7 +10,7 @@
 
 #include "log/log.h"
 #include "debug/debug.h"
-#include "thread_pool.h"
+#include "async_runner/async_runner.h"
 
 struct thread {
 	int num;
@@ -22,14 +22,12 @@ struct thread {
 	pthread_cond_t cond;	
 };
 
-struct thread_pool {
+struct async_runner {
 	int num;
 	struct thread **threads;
 	pthread_mutex_t mutex;
 };
 
-
-static void *worker(void *data);
 
 static void *worker(void *data)
 {
@@ -58,10 +56,10 @@ static void *worker(void *data)
 	}
 }
 
-struct thread_pool *thread_pool_init(int num, void *(*func)(void *arg))
-{	
+struct async_runner *async_runner_init(int num)
+{
 	int i;
-	struct thread_pool *poolh;
+	struct async_runner *poolh;
 	struct thread *threadp;
 
 	NULL_TEST(poolh = malloc(sizeof *poolh));
@@ -78,13 +76,12 @@ struct thread_pool *thread_pool_init(int num, void *(*func)(void *arg))
 		PTHREAD_TEST(pthread_mutex_init(&threadp->mutex, NULL));
 		PTHREAD_TEST(pthread_cond_init(&threadp->cond, NULL));
 		threadp->busy = false;
-		threadp->func = func;
 	}
 	return poolh; 
 }
 
 
-int thread_pool_free(struct thread_pool *poolh)
+int async_runner_free(struct async_runner *poolh)
 {
 	int i;
 	struct thread *threadp;
@@ -95,7 +92,7 @@ int thread_pool_free(struct thread_pool *poolh)
 		threadp = poolh->threads[i]; 
 		log1(LINFO, "Cancelling server thread: %d", 
 			(int)threadp->tid);
-        	PTHREAD_TEST(pthread_cancel(threadp->tid));	
+	    PTHREAD_TEST(pthread_cancel(threadp->tid));	
 		PTHREAD_TEST(pthread_mutex_destroy(&threadp->mutex));
 		PTHREAD_TEST(pthread_cond_destroy(&threadp->cond));
 		free(threadp);
@@ -110,8 +107,8 @@ int thread_pool_free(struct thread_pool *poolh)
 	return 0;
 }
 
-int thread_pool_add_work(struct thread_pool *poolh, void *data,
-	void (*res_func)(void *arg, bool succ))
+int async_runner_exec(struct async_runner *poolh, void *(*func)(void *arg),
+    void *data, void (*res_func)(void *arg, bool succ))
 {
 	int i;
 	int ret = 1;
@@ -123,22 +120,23 @@ int thread_pool_add_work(struct thread_pool *poolh, void *data,
 	for(i=0; i < poolh->num; i++){
 		threadp = poolh->threads[i];
 		PTHREAD_TEST(pthread_mutex_lock(&threadp->mutex));
-		if(!threadp->busy){			
-			if(res_func) res_func(data, true);			
+		if(!threadp->busy){
+			if(res_func) res_func(data, true);
 			threadp->busy = true;
 			threadp->data = data;
+		    threadp->func = func;
 			log1(LINFO, "Adding work for thread: %d\n", 
 				threadp->num);
 			PTHREAD_TEST(pthread_cond_signal(&threadp->cond));
 			PTHREAD_TEST(pthread_mutex_unlock(&threadp->mutex));
 			ret = 0;
-			break;						
+			break;
 		}
 		PTHREAD_TEST(pthread_mutex_unlock(&threadp->mutex));
-	}	
+	}
 	PTHREAD_TEST(pthread_mutex_unlock(&poolh->mutex));
 	if(i == poolh->num){
-		if(res_func) res_func(data, false);			
+		if(res_func) res_func(data, false);
 	}
 	return ret;
 }

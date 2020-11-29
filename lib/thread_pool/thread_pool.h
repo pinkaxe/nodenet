@@ -1,11 +1,11 @@
-#ifndef __THREAD_POOL
-#define __THREAD_POOL
+#ifndef __ASYNC_RUNNER
+#define __ASYNC_RUNNER
 
-struct thread_pool; 
+struct async_runner;
 
-struct thread_pool *thread_pool_init(int num, void *(*thread_func)(void *arg));
-int thread_pool_free(struct thread_pool *poolh);
-int thread_pool_add_work(struct thread_pool *poolh, void *data,
-	void (*res_func)(void *arg, bool succ));
+struct async_runner *async_runner_run(int num);
+int async_runner *async_runner_free(struct thread_pool *poolh);
+int async_runner_exec(struct thread_pool *poolh, void *(*func)(void *arg),
+    void *data, void (*res_func)(void *arg, bool succ));
 
 #endif

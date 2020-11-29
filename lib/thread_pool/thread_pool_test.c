@@ -9,27 +9,24 @@
 #include<getopt.h>
 #include<pthread.h>
 
-#include "thread_pool.h"
+#include "async_runner/async_runner.h"
 
-
-
-void *worker_thread(void *arg)
+void *run0(void *arg)
 {
-
-	printf("In worker\n");		
+	printf("In run0\n");
 	sleep(1);
-        return NULL;		
+        return NULL;
 }
 
 int main(int argc, char **argv)
 {
-	struct thread_pool *tpoolh;
+	struct async_runner *tpoolh;
 
-	tpoolh = thread_pool_init(5, worker_thread);
+	tpoolh = async_runner_init(5);
 	for(;;){
-		thread_pool_add_work(tpoolh, NULL, NULL);
+		async_runner_exec(tpoolh, run0, NULL, NULL);
 	}
-	thread_pool_free(tpoolh);
+	async_runner_free(tpoolh);
 
 	return 0;
 }
