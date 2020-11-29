@@ -22,14 +22,12 @@
 #include "debug/debug.h"
 #include "file/file.h"
 #include "async_runner/async_runner.h"
-//#include "thread_pool/thread_pool.h"
 
 
 struct server_handle {
 	int fd;
 	int max; /* max connections */
 	int port;
-	//struct thread_pool *tpoolh;
         struct async_runner *tpoolh;
 	struct sproto_if *ph;
 };
@@ -88,7 +86,6 @@ static void *_server_thread(void *sh_arg)
 		workp->fd = cfd;
 		workp->ph = sh->ph;
                 if(async_runner_exec(sh->tpoolh, _server_worker, workp, _server_conn_res)) {
-		//if(thread_pool_add_work(sh->tpoolh, workp, _server_conn_res)){	
 			close(workp->fd); 
 			free(workp);
 			workp = NULL;
