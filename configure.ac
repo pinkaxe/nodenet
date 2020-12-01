@@ -1,7 +1,7 @@
 
 AC_INIT([node_net], [0.0.0], [])
 #AC_PREREQ([2.61])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_CC
 AC_PROG_LD
 AM_PROG_AR
@@ -18,7 +18,6 @@ AC_CONFIG_FILES([Makefile
 		lib/util/tests/Makefile
 		lib/db/Makefile
 		lib/file/Makefile
-		lib/thread_pool/Makefile
 		lib/que/Makefile
 		lib/ll/Makefile
         lib/bitmap/Makefile
