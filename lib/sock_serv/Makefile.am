@@ -12,5 +12,5 @@ libsock_serv_la_LIBADD =
 
 bin_PROGRAMS = sock_serv_test
 
-sock_serv_test_LDADD= libsock_serv.la ../file/libfile.la ../log/liblog.la -lpthread
+sock_serv_test_LDADD= libsock_serv.la ../file/libfile.la ../async_runner/libasync_runner.la ../log/liblog.la -lpthread
 sock_serv_test_SOURCES = sock_serv_test.c
