@@ -1,15 +1,27 @@
 
-1) Basic Idea
+2) Basic Idea
 
-2) Basic architecture
+3) Basic architecture
 
-3) Code layout
+4) Code layout
 
-4) Usage
+5) Usage
 
 ______________________
 
-1) Basic Idea
+______________________
+
+1) Build
+
+Build with,
+
+    autoreconf --install --force
+    ./configure
+    make
+
+______________________
+
+2) Basic Idea
 
     Very thin layer to abstract communication between different
     programs/components local and remote. Originally I thought of having a
@@ -24,7 +36,7 @@ ______________________
 
 ______________________
 
-2) Basic architecture
+3) Basic architecture
 
     There are a few basic parts to the system which makes it possible
     for the user of the system to create code nodes which could be
@@ -91,7 +103,7 @@ ______________________
 
 ______________________
 
-3) Code layout
+4) Code layout
 
     A lot of abbreviations is used in the code.
 
@@ -159,7 +171,7 @@ ______________________
 
 ______________________
 
-4) Usage
+5) Usage
 
     Basic api usage can be seen in the file lib/node_net/nn_test.c. It uses
     the public api in lib/node_net/nn.h to create nodes/router/groups and
