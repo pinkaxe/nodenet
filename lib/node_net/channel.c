@@ -38,6 +38,7 @@ struct nn_chan {
 
 struct nn_chan *channel_init(void)
 {
+    int r;
     struct nn_chan *chan = NULL;
 
     PCHK(LWARN, chan, calloc(1, sizeof(*chan)));
@@ -48,6 +49,7 @@ struct nn_chan *channel_init(void)
 
     PCHK(LWARN, chan->nodes, ll_init());
     if(!chan->nodes){
+        PCHK(LWARN, r, channel_free(chan));
         chan = NULL;
         goto err;
     }

@@ -196,7 +196,7 @@ int main(int argc, char **argv)
     router = router_init();
 
     struct nn_chan *chan0;
-    chan0 = chan_init(2); // zero-copy buffered ...
+    chan0 = chan_init(1024 * 1024); // zero-copy buffered ...
     router_add_chan(router, chan0);
     router_set_state(router, NN_STATE_RUNNING);
 
