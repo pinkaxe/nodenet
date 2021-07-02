@@ -1,4 +1,6 @@
 
+CRAGBAG_DIR = ../../external/cragbag/lib
+
 lib_LTLIBRARIES = libnode_net.la
 
 libnode_net_la_SOURCES = \
@@ -18,12 +20,13 @@ libnode_net_la_SOURCES = \
 
 #node_drivers/lproc.c /node_drivers/bin.c
 
+libnode_net_la_CPPFLAGS = -I$(CRAGBAG_DIR)
 libnode_net_la_LIBADD = -lpthread
 
-bin_PROGRAMS = nn_test nn_test2
+bin_PROGRAMS = nn_test2
 #
-nn_test_LDADD = libnode_net.la ..//util/libutil.la  ../wrap/libwrap.la ../que/libque.la ../ll/libll.la ../dpool/libdpool.la ../bitmap/libbitmap.la ../log/liblog.la -lrt -lpthread
-nn_test_SOURCES = nn_test.c
-
-nn_test2_LDADD = libnode_net.la ..//util/libutil.la  ../wrap/libwrap.la ../que/libque.la ../ll/libll.la ../dpool/libdpool.la ../bitmap/libbitmap.la ../log/liblog.la -lrt -lpthread
+#nn_test_LDADD = libnode_net.la $(CRAGBAG_DIR)/util/libutil.la  $(CRAGBAG_DIR)/wrap/libwrap.la $(CRAGBAG_DIR)/que/libque.la $(CRAGBAG_DIR)/ll/libll.la $(CRAGBAG_DIR)/dpool/libdpool.la $(CRAGBAG_DIR)/bitmap/libbitmap.la $(CRAGBAG_DIR)/log/liblog.la -lrt -lpthread
+#nn_test_SOURCES = nn_test.c
+nn_test2_CPPFLAGS = -I$(CRAGBAG_DIR)
+nn_test2_LDADD = libnode_net.la $(CRAGBAG_DIR)//util/libutil.la  $(CRAGBAG_DIR)/wrap/libwrap.la $(CRAGBAG_DIR)/que/libque.la $(CRAGBAG_DIR)/ll/libll.la $(CRAGBAG_DIR)/dpool/libdpool.la $(CRAGBAG_DIR)/bitmap/libbitmap.la $(CRAGBAG_DIR)/log/liblog.la -lrt -lpthread
 nn_test2_SOURCES = nn_test2.c
