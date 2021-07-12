@@ -1,7 +1,7 @@
 #ifndef NN_PKT_H__
 #define NN_PKT_H__
 
-#include "node_net/types.h"
+#include "nodenet/types.h"
 
 enum {
     NN_SENDTO_NODE,

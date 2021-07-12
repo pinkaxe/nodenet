@@ -1,8 +1,8 @@
 
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <time.h>
@@ -11,10 +11,10 @@
 
 #include "util/log.h"
 #include "sys/thread.h"
-#include "node_net/types.h"
+#include "nodenet/types.h"
 
 /*
-int dispatcher_lproc(struct nn_node *n) 
+int dispatcher_bin(struct nn_node *n) 
 {
     thread_t tid;
     thread_create(&tid, NULL, thread_loop, n);
@@ -23,9 +23,10 @@ int dispatcher_lproc(struct nn_node *n)
 
 static int fd[2];
 
+
+#if 0
 void *lproc_middle(void *arg)
 {
-#if 0
     char buf[5];
     write(fd[0], "yes", 4);
     read(fd[0], buf, 3);
@@ -87,28 +88,27 @@ void *lproc_middle(void *arg)
         }
 
     }
-#endif
-    return NULL;
 }
+#endif
 
-int lproc_loop()
+int bin_loop()
 {
     char buf[5];
     read(fd[1], buf, 4);
     printf("!! read0: %s\rt", buf);
     write(fd[1], "no", 3);
     while(1){
+        // wait for input to nodeent, fork, exe and 
         sleep(1);
         printf("in process\rt");
     }
-
-    printf("... lproc exit\rt");
+    printf("... bin exit\rt");
     return 0;
 
 }
 
 
-int dispatcher_lproc(struct nn_node *n)
+int dispatcher_bin(struct nn_node *n)
 {
     int r = 0;
     int pid;
@@ -124,9 +124,7 @@ int dispatcher_lproc(struct nn_node *n)
         // parent
         close(fd[1]);
         //printf("parent\rt");
-        thread_t tid;
-        thread_create(&tid, NULL, lproc_middle, n);
-        thread_detach(tid);
+        //thread_create(&tid, NULL, bin_middle, n);
     }else if(pid == 0){
         // child
         close(fd[0]);
@@ -137,9 +135,8 @@ int dispatcher_lproc(struct nn_node *n)
         if(fd[1] != STDOUT_FILENO)
             dup2(fd[1], STDOUT_FILENO);
 
-        //printf("child\rt");
-        lproc_loop();
-        // or exec here
+   //     //printf("child\rt");
+        bin_loop();
     }
 
 err:

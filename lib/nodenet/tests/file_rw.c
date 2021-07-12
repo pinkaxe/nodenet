@@ -11,12 +11,12 @@
 
 #include "util/log.h"
 
-#include "node_net/types.h"
-#include "node_net/pkt.h"
+#include "nodenet/types.h"
+#include "nodenet/pkt.h"
 
-#include "node_net/router.h"
-#include "node_net/node.h"
-//#include "node_net/conn.h"
+#include "nodenet/router.h"
+#include "nodenet/node.h"
+//#include "nodenet/conn.h"
 
 #define CHAN_NO 2
 

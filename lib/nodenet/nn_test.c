@@ -1,5 +1,5 @@
 
-/* a simple test program for node_net, for now 
+/* a simple test program for nodenet, for now 
  * create nodes, routers and cahnnels's, change their states, send pkt's to
  * them, and cleanup in a loop. */
 #include <stdio.h>
@@ -13,11 +13,11 @@
 #include "log/log.h"
 #include "dpool/dpool.h"
 
-#include "node_net/types.h"
-#include "node_net/pkt.h"
+#include "nodenet/types.h"
+#include "nodenet/pkt.h"
 
-#include "node_net/router.h"
-#include "node_net/node.h"
+#include "nodenet/router.h"
+#include "nodenet/node.h"
 
 #define ok(x){ \
     assert(x); \

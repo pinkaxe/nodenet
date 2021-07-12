@@ -8,10 +8,10 @@
 
 #include "log/log.h"
 
-#include "node_net/types.h"
+#include "nodenet/types.h"
 
-#include "node_net/router.h"
-#include "node_net/node.h"
+#include "nodenet/router.h"
+#include "nodenet/node.h"
 
 
 void *node_writer(struct nn_node *n, void *pdata)

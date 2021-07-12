@@ -12,7 +12,7 @@
 
 #include "log/log.h"
 
-#include "node_net/pkt.h"
+#include "nodenet/pkt.h"
 
 
 #if 0

@@ -1,10 +1,10 @@
 
 #include <stdio.h>
 
-#include "node_net/types.h"
+#include "nodenet/types.h"
 
-#include "node_net/node_drivers/node_driver.h"
-#include "node_net/node_drivers/thread.h"
+#include "nodenet/node_drivers/node_driver.h"
+#include "nodenet/node_drivers/thread.h"
 
 /* set the ops depending on type */
 struct node_driver_ops *node_driver_get_ops(int type)

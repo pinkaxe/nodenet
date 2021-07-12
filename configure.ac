@@ -1,5 +1,5 @@
 
-AC_INIT([node_net], [0.0.0], [])
+AC_INIT([nodenet], [0.0.0], [])
 #AC_PREREQ([2.61])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_CC
@@ -28,8 +28,8 @@ AC_CONFIG_FILES([Makefile
         external/cragbag/lib/sock_serv/Makefile
 
 		lib/Makefile
-		lib/node_net/Makefile
-		lib/node_net/tests/Makefile
+		lib/nodenet/Makefile
+		lib/nodenet/tests/Makefile
 		external/cragbag/lib/async_runner/Makefile
             ])
 
