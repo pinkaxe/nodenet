@@ -1,7 +1,7 @@
 
 /* a simple test program for node_net, for now 
- * create nodes/routers/conn's, change their states, send pkt's to them, 
- * and cleanup in loop. */
+ * create nodes, routers and cahnnels's, change their states, send pkt's to
+ * them, and cleanup in a loop. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -308,7 +308,7 @@ void *connection(struct nn_node *n, void *pdata)
                 buf_len = c;
                 buf_in[c] = '\0';
 
-                printf("!!!!! tx %s(%d)\n", buf_in, (int) c);
+                printf("TX %s(%d)\n", buf_in, (int) c);
                 if(!strncmp(buf_in, "quit", 4)){
                     break;
                 }
@@ -327,7 +327,7 @@ void *connection(struct nn_node *n, void *pdata)
             while(!node_rx(n, &pkt)){
                 //struct dpool_buf *dpool_buf = pkt_get_data(pkt);
                 buf_out = pkt_get_data(pkt);
-                printf("!!!! writing: %s\n", buf_out);
+                printf("writing packet: %s\n", buf_out);
                 write(fd, "resp: ", strlen("resp: "));
                 write(fd, buf_out, strlen(buf_out));
                 /* when done call pkt_free */
@@ -440,7 +440,7 @@ static void *main_thread(void *none)
             node_set_state(n1[i], NN_STATE_PAUSED);
         }
 
-        printf("!! paused\n");
+        printf("Paused\n");
         usleep(5000000);
 
         for(i=0; i < thread0_no; i++){
@@ -451,7 +451,7 @@ static void *main_thread(void *none)
             node_set_state(n1[i], NN_STATE_RUNNING);
         }
 
-        printf("!! running\n");
+        printf("Running\n");
         usleep(5000000);
 
         router_set_state(rt[0], NN_STATE_PAUSED);
