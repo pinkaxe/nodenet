@@ -1,194 +1,107 @@
 
-sudo apt-get install -y \
-  autoconf automake build-essential git libtool \
-    libsqlite3-dev
+* [Introduction](#introduction)
 
-1) Build
+* [Build](#build)
 
-2) Basic Idea
+* [Architecture and code](#architecture-and-code)
 
-3) Basic architecture
+* [External libraries](#external-libraries)
 
-4) Code layout
-
-5) Usage
+* [API usage](#api-usage)
 
 
-## 1) Build
+## Introduction
 
-Build with,
+This is infrastruture to facilitate communication between different
+programs/components. The implemenation is in c but the end-points could be
+written in other languages if the proper wrappers are implemented.  It doesn't
+assume a specific protocol for the communication and is very general and can be
+used anywhere where different pieces of code have to communicate with each
+other.
 
-    autoreconf --install --force
-    ./configure
-    make
-
-There are test programs in the lib/* directories. The main test for the node
-net is lib/node_net/nn_test2.
-
-
-## 2) Basic Idea
-
-Very thin layer to abstract communication between different programs/components
-local and remote. Originally I thought of having a management computer with a
-lot of avr chips on the board communicating over i2c but it is very general and
-can be used for example for:
-
-- Distributed computing(clusters etc.)
-- Software pipelines
-- It can simulates a computer network in software that could be taken
-further.
-- Anywhere where different systems have to communicate with each other.
+There are very few dependencies so it could be used on systems with limited
+resources. Main dependency is on https://github.com/pinkaxe/cragbag.git which
+contains a a few c helper libraries that doesn't have external dependencies.
 
 
-## Basic architecture
+## Build
 
-There are a few basic parts to the system which makes it possible
-for the user of the system to create code nodes which could be
-threads/remote processes etc. and then communicate between them.
+Install dependencies for building, eg. for Debian/Ubuntu,
 
-1) Essential parts:
+    sudo apt-get install -y autoconf automake build-essential libtool
 
-a) Router: This gets request from nodes and routes to the appropriate
-node/s. One could replace the router functionality with your own
-callbacks.
+Get the submodules it depends on,
 
-    files - lib/node_net/router_io.c, lib/node_net/router.c
+    git submodule update --init
 
+Then build everything with,
 
-b) Node: For each node there is a thread that runs that handles the io for
-it.  From this thread it gets passed to the specific node_driver which
-then handles communication with the user part.
+    autoreconf --install --force && \
+    ./configure --prefix=$PWD/out && \
+    make -j$(nproc) && \
+    make install
 
-    files - lib/node_net/node_io.c, lib/node_net/node.c
-
-
-c) Connection: A node and router never communicates directly but go
-through a connection.  This is done so one thread never has to lock a
-router and node simultaneously which will cause a deadlock. The router
-always locks, router and then conn and does it job while the node always
-locks the node and conn and does it job.  For example when a node gets
-free'd it locks itself and the connection, sets a flag in the connection
-but doesn't clean it up, only itself. Next time the router connects to the
-connection it cleans it up.  The connection also contains all the buffers
-for the connection.
-
-    files - lib/node_net/conn.c, lib/node_net/conn_io.c(not yet)
+This should build and install the libraries in out/lib and test programs in
+out/bin. The main test is lib/nodenet/nn_test2.
 
 
-d) Groups: Nodes can belong to multiple groups and according to that the
-router will then route. A node can for example request to route a buffer
-to a node in a specific group.
+## Architecture and code
 
-    files - lib/node_net/grp.c
+The code is located in lib/nodenet.
 
-
-e) Node drivers: For each kind of communication to a system outside
-one have to implement a driver that passes the buffers to and from
-them. This will be different for different types of nodes. eg. thread or
-some socket communication of a legacy system.
-
-    files - lib/node_net/node_drivers/*
-
-2) Optional parts:
-
-Command: to send commands between nodes. This can optionally be used
-but a different protocol can also be used.
-
-    files - lib/node_net/pkt.c
-
-3) lib/util usage:
-
-Throughout the system lib/util/que.c and lib/util/ll.c(linked list) gets
-used.  For example, each router have a linked list of pointers to all it's
-connections,  each connection have que's of pointers to the buffers that
-come through them.  etc. These structures can be seen in the respective
-c files. All the buffers get passed by pointers for speed.
-
-
-## Code layout
-
-A lot of abbreviations is used in the code.
+Abbreviations are used in the code,
 
     n -> node
     rt -> router
-    g -> group
-    cn -> connection
+    chan -> channel
     pkt -> pkt
     h -> local handle
 
+A short discussion of the parts and files follows,
 
-Files:
+a) Router: This gets request from nodes and routes to the appropriate
+node/s. One could replace the router functionality with your own
+callbacks to implement different architectures.
 
-#### lib/util
+    lib/nodenet/router.c
 
-    - this contains useful util functions, like que(queue), ll(linked
-    list), dpool(data pool), bitmap etc. This can be used separately for
-    different projects and not dependent on anything else here.
+b) Node: For each node there is a node driver that then handles communication
+with the user part.
 
-#### lib/util/tests
+    lib/nodenet/node.c
+    lib/nodenet/node_drivers/node_driver.h
 
-    - basic test for the utils
+c) Channnel: Nodes and routers communicates through a channel.  This is
+done so one thread never has to lock a router and node simultaneously which will
+cause a deadlock. The router always locks, router and then channel and does its
+job while the node always locks the node and channel and does it job.  For example
+when a node gets free'd it locks itself and the channel, sets a flag in the
+channel but doesn't clean it up, only itself. Next time the router connects
+to the channel it cleans it up. The channel also contains all the buffers
+for the channel.
 
-#### lib/sys
-
-    - functions to override for different systems, for now it just wraps
-    libpthread so one can put another threading system under it.
-
-#### lib/wrap
-
-    - wrap some system functions for debugging(malloc, calloc etc.)
-    keeping the stdlib interface. These should be able to be included in
-    any other file where the headers gets used to debug other programs.
-
-#### lib/node_net
-
-- this is the main library keeping track of the net layout and doing
-all the work of transferring the buffers between nodes' and routers.
-It uses the libraries mentioned above.
-
-- there are a few layers to this:
-
-a) the data objects that gets used for storage and retrieval
-
-- lib/node_net/router.c
-- lib/node_net/node.c
-- lib/node_net/link.c
-- lib/node_net/grp.c
-- lib/node_net/pkt.c
-
-b) layer that take care of the io between the nodes/routers.
-
-- lib/node_net/router_io.c
-- lib/node_net/node_io.c
-
-c) public api
-
-- lib/node_net/nn.c
-
-d) node drivers that is in the directory node_drivers and do the
-interfacing to the external world by copying/passing buffers between
-node_io and the node implementation. There is only a thread
-implementation at the moment. I plan a improve ment to this so 
-the drivers run in separate processes and not influence the rest
-of the system if there is bugs.
-
-- lib/node_net/node_drivers/thread.c
+    lib/nodenet/channel.c
 
 
-## 5) Usage
+d) Packet: packet that holds content sent between nodes and routers. This can
+optionally be used but a different protocol can also be used.
 
-Basic api usage can be seen in the file lib/node_net/nn_test.c. It uses the
-public api in lib/node_net/nn.h to create nodes/router/groups and connect them
-up.  From this thread command buffers can be sent to nodes and routers directly
-but usually it will be handled from nodes. The user must only use the functions
-in nn.h and pkt.h. The other files is internal.
+    lib/nodenet/pkt.c
 
-For each initiated router a thread gets created(lib/node_net/router_io.c), for
-each initiated node a thread gets created(lib/node_net/node_io.c) and for each
-connection between a node and router, a connection object gets created. The
-other files just create api's so router_io.c, node_io.c and the public api. nn.c
-can do it's work.
+## External libraries
 
-The user don't have to worry about any locking.
+https://github.com/pinkaxe/cragbag.git
+
+Throughout the system this library gets used for for things like queues and
+linked lists etc. See lib/cragbag/que/que.c and lib/cragbag/ll/ll.c.  Another
+part that is often used is for data pools, see lib/cragbag/dpool/dpool.c. There
+are tests in the same directories that shows the example usage.
 
 
+## API usage
+
+Basic API usage can be seen in the file lib/nodenet/nn_test.c.  This is all
+done in one process but usually the nodes and routers would be running in
+different processes and devices. The user doesn't have to worry about any
+locking. This API could be used to build higher level API that applications can
+use.
