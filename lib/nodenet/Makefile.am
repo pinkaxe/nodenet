@@ -25,8 +25,8 @@ libnodenet_la_LIBADD = -lpthread
 
 bin_PROGRAMS = nn_test2
 #
-#nn_test_LDADD = libnodenet.la $(CRAGBAG_DIR)/util/libutil.la  $(CRAGBAG_DIR)/wrap/libwrap.la $(CRAGBAG_DIR)/que/libque.la $(CRAGBAG_DIR)/ll/libll.la $(CRAGBAG_DIR)/dpool/libdpool.la $(CRAGBAG_DIR)/bitmap/libbitmap.la $(CRAGBAG_DIR)/log/liblog.la -lrt -lpthread
+#nn_test_LDADD = libnodenet.la $(CRAGBAG_DIR)/wrap/libwrap.la $(CRAGBAG_DIR)/que/libque.la $(CRAGBAG_DIR)/ll/libll.la $(CRAGBAG_DIR)/dpool/libdpool.la $(CRAGBAG_DIR)/bitmap/libbitmap.la $(CRAGBAG_DIR)/log/liblog.la -lrt -lpthread
 #nn_test_SOURCES = nn_test.c
 nn_test2_CPPFLAGS = -I$(CRAGBAG_DIR)
-nn_test2_LDADD = libnodenet.la $(CRAGBAG_DIR)//util/libutil.la  $(CRAGBAG_DIR)/wrap/libwrap.la $(CRAGBAG_DIR)/que/libque.la $(CRAGBAG_DIR)/ll/libll.la $(CRAGBAG_DIR)/dpool/libdpool.la $(CRAGBAG_DIR)/bitmap/libbitmap.la $(CRAGBAG_DIR)/log/liblog.la -lrt -lpthread
+nn_test2_LDADD = libnodenet.la $(CRAGBAG_DIR)/wrap/libwrap.la $(CRAGBAG_DIR)/que/libque.la $(CRAGBAG_DIR)/ll/libll.la $(CRAGBAG_DIR)/dpool/libdpool.la $(CRAGBAG_DIR)/bitmap/libbitmap.la $(CRAGBAG_DIR)/log/liblog.la -lrt -lpthread
 nn_test2_SOURCES = nn_test2.c

@@ -14,8 +14,6 @@ AC_CONFIG_FILES([Makefile
         lib/cragbag/log/Makefile
 		lib/cragbag/sys/Makefile
 		lib/cragbag/wrap/Makefile
-		lib/cragbag/util/Makefile
-		lib/cragbag/util/tests/Makefile
 		lib/cragbag/db/Makefile
 		lib/cragbag/file/Makefile
 		lib/cragbag/que/Makefile

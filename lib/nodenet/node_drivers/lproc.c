@@ -9,7 +9,6 @@
 #include <assert.h>
 #include <sys/socket.h>
 
-#include "util/log.h"
 #include "sys/thread.h"
 #include "nodenet/types.h"
 

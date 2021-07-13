@@ -9,8 +9,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "util/log.h"
-
 #include "nodenet/types.h"
 #include "nodenet/pkt.h"
 
