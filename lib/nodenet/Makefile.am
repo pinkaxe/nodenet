@@ -1,5 +1,5 @@
 
-CRAGBAG_DIR = ../../external/cragbag/lib
+CRAGBAG_DIR = ../cragbag/
 
 lib_LTLIBRARIES = libnodenet.la
 

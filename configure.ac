@@ -10,27 +10,27 @@ AC_PROG_LIBTOOL
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile
-		external/cragbag/lib/Makefile
-        external/cragbag/lib/log/Makefile
-		external/cragbag/lib/sys/Makefile
-		external/cragbag/lib/wrap/Makefile
-		external/cragbag/lib/util/Makefile
-		external/cragbag/lib/util/tests/Makefile
-		external/cragbag/lib/db/Makefile
-		external/cragbag/lib/file/Makefile
-		external/cragbag/lib/que/Makefile
-		external/cragbag/lib/ll/Makefile
-        external/cragbag/lib/bitmap/Makefile
-        external/cragbag/lib/dpool/Makefile
-        external/cragbag/lib/link/Makefile
-        external/cragbag/lib/sbuf/Makefile
+		lib/cragbag/Makefile
+        lib/cragbag/log/Makefile
+		lib/cragbag/sys/Makefile
+		lib/cragbag/wrap/Makefile
+		lib/cragbag/util/Makefile
+		lib/cragbag/util/tests/Makefile
+		lib/cragbag/db/Makefile
+		lib/cragbag/file/Makefile
+		lib/cragbag/que/Makefile
+		lib/cragbag/ll/Makefile
+        lib/cragbag/bitmap/Makefile
+        lib/cragbag/dpool/Makefile
+        lib/cragbag/link/Makefile
+        lib/cragbag/sbuf/Makefile
+		lib/cragbag/async_runner/Makefile
 
-        external/cragbag/lib/sock_serv/Makefile
+        lib/cragbag/sock_serv/Makefile
 
 		lib/Makefile
 		lib/nodenet/Makefile
 		lib/nodenet/tests/Makefile
-		external/cragbag/lib/async_runner/Makefile
             ])
 
 AC_ARG_ENABLE(debug, [  --enable-debug            enable debugging

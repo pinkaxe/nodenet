@@ -1,3 +1,3 @@
 
-SUBDIRS = external/cragbag/lib lib
+SUBDIRS = lib
 EXTRA_DIST = README
