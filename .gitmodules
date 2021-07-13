@@ -1,3 +1,6 @@
 [submodule "external/cragbag"]
 	path = external/cragbag
 	url = git@github.com:pinkaxe/cragbag.git
+[submodule "lib/cragbag"]
+	path = lib/cragbag
+	url = git@github.com:pinkaxe/cragbag.git
